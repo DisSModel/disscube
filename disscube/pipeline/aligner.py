@@ -24,12 +24,14 @@ from __future__ import annotations
 
 import logging
 
+import rasterio
 import rioxarray  # noqa: F401 — registers the .rio accessor
 import numpy as np
 import xarray as xr
 import geopandas as gpd
 from pyproj import CRS as ProjCRS, Transformer
 from rasterio.warp import Resampling
+from rasterio.windows import Window
 from shapely.geometry import box
 
 from disscube.operators.base import OPERATOR_REGISTRY
@@ -97,6 +99,23 @@ class GridAligner(PipelineStage):
         band_map : dict[str, int]
             Optional ``{variable_name: 1-based band index}`` from the source.
         """
+        # ── Identity fast path ──────────────────────────────────────────
+        # If the source already shares the target grid's CRS, resolution and
+        # pixel origin (no resampling is mathematically needed — every source
+        # pixel maps onto exactly one target pixel), skip GDAL's warp
+        # machinery entirely: `.rio.reproject()` always allocates a full
+        # destination array via a real resampling pass, and `_align_fine`
+        # additionally burns a whole extra reproject just to *estimate* the
+        # source resolution. A plain windowed `rasterio.read()` produces the
+        # identical result — this is the same real-vs-needed-work gap
+        # confirmed against real MapBiomas/ANADEM data (2026-08-27): those
+        # sources already share one 30m EPSG:5880 grid, so every derive()
+        # against them was reprojecting via GDAL only to reproduce numbers a
+        # windowed copy already had.
+        offset = self._identity_offset(url, grid)
+        if offset is not None:
+            return self._align_raster_identity(url, grid, variables, band_map, offset)
+
         ds_src = rioxarray.open_rasterio(url)
         # Map of variable name -> aligned DataArray. A plain dict (not a
         # Dataset) is used because fine-aligned categorical arrays have a
@@ -183,6 +202,126 @@ class GridAligner(PipelineStage):
                 "aligned '%s' via '%s' (resampling=%s, shape=%s)",
                 var.name, var.operator, resampling.name, actual,
             )
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Identity fast path — no resampling needed, plain windowed read
+    # ------------------------------------------------------------------
+
+    def _identity_offset(
+        self, url: str, grid: GridSpec, offset_tolerance_px: float = 1e-3
+    ) -> tuple[int, int] | None:
+        """
+        Return ``(row_off, col_off)`` — the integer pixel offset of
+        ``grid``'s origin inside the source raster's own pixel grid — if,
+        and only if, the source can supply ``grid`` with a plain windowed
+        read: same CRS, same resolution, no rotation, origin aligned to a
+        whole pixel (within ``offset_tolerance_px``), and the requested
+        window fully covered by the source extent.
+
+        Returns ``None`` for any other case (different CRS/resolution,
+        sub-pixel misalignment, or the target grid falling partially or
+        fully outside the source) — the caller then falls back to the
+        general reproject path unchanged.
+        """
+        try:
+            with rasterio.open(url) as ds:
+                src_crs = ds.crs
+                transform = ds.transform
+                src_h, src_w = ds.height, ds.width
+        except Exception:
+            return None
+
+        if src_crs is None:
+            return None
+
+        try:
+            if not ProjCRS.from_user_input(src_crs).equals(ProjCRS.from_user_input(grid.crs)):
+                return None
+        except Exception:
+            return None
+
+        px_w, rot1, ox, rot2, px_h, oy = (
+            transform.a, transform.b, transform.c, transform.d, transform.e, transform.f,
+        )
+        if abs(rot1) > 1e-9 or abs(rot2) > 1e-9:
+            return None
+        if abs(abs(px_w) - grid.resolution) > 1e-6 or abs(abs(px_h) - grid.resolution) > 1e-6:
+            return None
+
+        minx, _miny, _maxx, maxy = grid.bbox
+        col_f = (minx - ox) / px_w
+        row_f = (oy - maxy) / abs(px_h)
+        col_off, row_off = round(col_f), round(row_f)
+        if abs(col_f - col_off) > offset_tolerance_px or abs(row_f - row_off) > offset_tolerance_px:
+            return None
+
+        if (
+            row_off < 0 or col_off < 0
+            or row_off + grid.rows > src_h or col_off + grid.cols > src_w
+        ):
+            # Grid falls partially/fully outside the source's own extent —
+            # a plain read can't pad with nodata, so fall back to reproject
+            # (rio.reproject handles the padding via the target transform).
+            return None
+
+        return row_off, col_off
+
+    def _align_raster_identity(
+        self,
+        url: str,
+        grid: GridSpec,
+        variables: list[Variable],
+        band_map: dict[str, int],
+        offset: tuple[int, int],
+    ) -> dict[str, xr.DataArray]:
+        """
+        Build one ``(grid.rows, grid.cols)`` DataArray per variable via a
+        plain windowed ``rasterio`` read — no reprojection. Only called when
+        ``_identity_offset`` has already confirmed the source needs none.
+        """
+        row_off, col_off = offset
+        window = Window(col_off, row_off, grid.cols, grid.rows)
+        result: dict[str, xr.DataArray] = {}
+
+        with rasterio.open(url) as ds:
+            n_bands = ds.count
+            for i, var in enumerate(variables):
+                if n_bands > 1:
+                    if band_map and var.name in band_map:
+                        band_idx = band_map[var.name]  # rasterio bands are 1-based
+                        if not (1 <= band_idx <= n_bands):
+                            raise ValueError(
+                                f"Band index {band_idx} for variable "
+                                f"'{var.name}' is out of range; "
+                                f"source has {n_bands} bands."
+                            )
+                    elif i < n_bands:
+                        band_idx = i + 1
+                    else:
+                        raise ValueError(
+                            f"No band available for variable '{var.name}' at "
+                            f"index {i}; source has {n_bands} bands "
+                            "and no band_map was provided."
+                        )
+                else:
+                    band_idx = 1
+
+                arr = ds.read(band_idx, window=window)
+                nodata = ds.nodatavals[band_idx - 1] if ds.nodatavals else ds.nodata
+
+                da = xr.DataArray(arr, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
+                da.rio.write_crs(grid.crs, inplace=True)
+                if nodata is not None:
+                    da.attrs["_disscube_nodata"] = nodata
+                    da.rio.write_nodata(nodata, inplace=True)
+
+                result[var.name] = da
+                log.debug(
+                    "identity-aligned '%s' (windowed read, no reprojection; "
+                    "window=%s)", var.name, (row_off, col_off, grid.cols, grid.rows),
+                )
 
         return result
 

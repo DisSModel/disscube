@@ -192,8 +192,13 @@ def test_alignment_invariant_raises_on_shape_mismatch(tmp_path, monkeypatch):
 
     We force the failure by monkeypatching the .rio.reproject result to a wrong
     shape, isolating the invariant check itself.
+
+    The source is deliberately at a different resolution (5m) than the grid
+    (10m) so GridAligner's identity fast path (same CRS/resolution/origin ->
+    plain windowed read, no reproject) does not intercept — this test only
+    means to exercise the general reproject path's shape invariant.
     """
-    src = np.zeros((10, 10), dtype=np.float32)
+    src = np.zeros((20, 20), dtype=np.float32)  # 100/20 = 5m pixels, vs grid's 10m
     url = _write_raster(tmp_path / "z.tif", src)
 
     grid = _grid(resolution=10)  # expects 10x10
