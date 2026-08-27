@@ -41,7 +41,12 @@ A diferença entre os dois está só na partição e no CRS de trabalho:
 | Malha | ad hoc, 4096² em pixel | **BDC_SM**, canônica |
 | Grade | EPSG:5880 (a da fonte) | BDC Albers |
 | Reprojeção | nenhuma (caminho de identidade) | 5880 → Albers |
-| Medido | 30 tiles, 80 s, < 1 GB | 32 tiles, 100 s, 3,7 GB de pico |
+| Medido | 15 tiles, 36 s, < 1 GB | 15 tiles, 57 s, 2,8 GB de pico |
+
+Ambos selecionam os recortes por uma máscara de dado válido, não pela extensão:
+o mosaico é um retângulo mas o dado é uma faixa costeira, então metade dos
+recortes cobriria só nodata (30→15 e 32→15). Uma leitura decimada da fonte
+resolve isso, e o resultado é bit a bit o mesmo — verificado.
 
 Use a malha BDC quando os derivados forem virar patrimônio do cubo — os tiles têm
 significado fora do script e alinham com o resto do ecossistema BDC. Use a ad hoc

@@ -89,6 +89,35 @@ PAPEIS_ESTADOS = {
 MAPPING = {c: papel for _, (codes, papel) in PAPEIS_ESTADOS.items() for c in codes}
 
 
+def _mascara_valida(vrt: Path, largura_alvo: int = 2048):
+    """
+    Máscara booleana, em baixa resolução, de onde a fonte tem dado válido,
+    junto com o fator de decimação usado.
+
+    Uma única leitura decimada — a memória fica limitada por ``largura_alvo``,
+    não pelo tamanho da fonte. A máscara é dilatada em uma célula porque a
+    decimação por vizinho mais próximo pode perder feições finas (a faixa de
+    mangue tem poucos pixels de largura em muitos trechos), e aqui um falso
+    positivo custa um recorte derivado à toa enquanto um falso negativo custa
+    dado faltando no produto final.
+    """
+    from scipy.ndimage import binary_dilation
+
+    with rasterio.open(vrt) as ds:
+        fator = max(1, int(np.ceil(ds.width / largura_alvo)))
+        baixa = ds.read(
+            1,
+            out_shape=(max(1, ds.height // fator), max(1, ds.width // fator)),
+            resampling=rasterio.enums.Resampling.nearest,
+        )
+        nodata = ds.nodata
+
+    valida = np.isfinite(baixa)
+    if nodata is not None and np.isfinite(nodata):
+        valida &= baixa != nodata
+    return binary_dilation(valida), fator
+
+
 def main() -> None:
     if not TILES_DIR.is_dir():
         raise RuntimeError(
@@ -131,12 +160,27 @@ def main() -> None:
         asset_url=str(vrt_elev), crs=str(contract.crs),
     ))
 
+    # A extensão do mosaico é um retângulo, mas o dado válido é só a faixa
+    # costeira: boa parte dos recortes cobre apenas nodata, e derivá-los é
+    # tempo jogado fora. Uma passada decimada sobre a fonte dá a máscara de
+    # onde há dado de verdade, e só esses recortes entram no loop.
+    mascara, fator = _mascara_valida(vrt_estado)
+
     # Cada recorte vira um SpatialSource {grid_id}_{tile_id} carregando só o
     # bbox — é assim que derive(tile_id=...) descobre a janela a processar.
-    janelas = []
+    janelas, vazios = [], 0
     for r0 in range(0, altura, TILE):
         for c0 in range(0, largura, TILE):
             h, w = min(TILE, altura - r0), min(TILE, largura - c0)
+
+            # Os recortes são janelas em pixel na própria fonte, então basta
+            # indexar a máscara na mesma proporção — sem transformar CRS.
+            sub = mascara[r0 // fator:-(-(r0 + h) // fator),
+                          c0 // fator:-(-(c0 + w) // fator)]
+            if not sub.any():
+                vazios += 1
+                continue
+
             tile_id = f"R{r0:05d}C{c0:05d}"
             minx, maxy = ox + c0 * resolution, oy - r0 * abs(e)
             cube.register_spatial_source(SpatialSource(
@@ -145,7 +189,8 @@ def main() -> None:
                 bbox=[minx, maxy - h * abs(e), minx + w * resolution, maxy],
             ))
             janelas.append((tile_id, r0, c0, h, w))
-    print(f"      {len(janelas)} tiles de {TILE}x{TILE}")
+    print(f"      {len(janelas)} tiles de {TILE}x{TILE} com dado válido "
+          f"({vazios} descartados por serem só nodata)")
 
     deriv_papel = SpatialDerivation(
         source_id="estado_2024", grid_id=GRID_ID, role="state",
