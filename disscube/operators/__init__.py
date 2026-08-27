@@ -7,7 +7,7 @@ each submodule defines ``Operator`` subclasses that self-register via
 """
 
 # Import submodules to trigger auto-registration of all operator classes.
-from . import zonal, proximity  # noqa: F401
+from . import zonal, proximity, reclassify  # noqa: F401
 
 from .zonal import ZonalAggregator
 from .proximity import ProximityAggregator

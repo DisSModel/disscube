@@ -52,6 +52,11 @@ class Operator:
 
     name: ClassVar[str]
     requires_class_code: ClassVar[bool] = False
+    # When True, ``Derivation`` enforces that ``mapping`` (a source-value ->
+    # target-value lookup table) is set at construction time, the same
+    # fail-fast contract ``requires_class_code`` provides for class-aware
+    # operators.
+    requires_mapping: ClassVar[bool] = False
     _resampling: ClassVar[Resampling] = Resampling.nearest
 
     # When True, GridAligner must NOT pre-aggregate the band with this

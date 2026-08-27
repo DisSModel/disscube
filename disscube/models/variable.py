@@ -10,6 +10,12 @@ class Variable(BaseModel):
     operator: str
     class_code: int | None = None
 
+    # Explicit source-value -> target-value lookup table, used by value-remapping
+    # operators (e.g. "reclassify"). Kept as plain data (not a callable) so it
+    # travels through the catalog and is folded into spec_hash() — two
+    # derivations using different tables are always distinct products.
+    mapping: dict[int, int] | None = None
+
 
 class SpatialSource(BaseModel):
     id: str
