@@ -96,6 +96,59 @@ PAPEIS_ESTADOS = {
 MAPPING = {c: papel for _, (codes, papel) in PAPEIS_ESTADOS.items() for c in codes}
 
 
+def _mascara_valida(vrt: Path, largura_alvo: int = 2048):
+    """
+    Máscara booleana, em baixa resolução, de onde a fonte tem dado válido.
+
+    Uma única leitura decimada — a memória fica limitada por ``largura_alvo``,
+    não pelo tamanho da fonte. A máscara é dilatada em uma célula porque a
+    decimação por vizinho mais próximo pode perder feições finas (a faixa de
+    mangue tem poucos pixels de largura em muitos trechos), e aqui um falso
+    positivo custa um tile derivado à toa enquanto um falso negativo custa
+    dado faltando no produto final.
+
+    Returns
+    -------
+    (mascara, transform, resolucao_da_mascara)
+    """
+    from scipy.ndimage import binary_dilation
+
+    with rasterio.open(vrt) as ds:
+        fator = max(1, int(np.ceil(ds.width / largura_alvo)))
+        altura = max(1, ds.height // fator)
+        largura = max(1, ds.width // fator)
+        baixa = ds.read(
+            1, out_shape=(altura, largura), resampling=rasterio.enums.Resampling.nearest
+        )
+        nodata = ds.nodata
+        transform = ds.transform
+        resolucao = abs(transform.a) * (ds.width / largura)
+
+    valida = np.isfinite(baixa)
+    if nodata is not None and np.isfinite(nodata):
+        valida &= baixa != nodata
+    return binary_dilation(valida), transform, resolucao
+
+
+def _tem_dado(bounds, mascara, transform, resolucao, para_fonte) -> bool:
+    """True se o tile (bounds em BDC Albers) toca algum pixel válido da fonte."""
+    minx, miny, maxx, maxy = bounds
+    xs, ys = para_fonte.transform(
+        [minx, minx, maxx, maxx], [miny, maxy, miny, maxy]
+    )
+    c0 = int(np.floor((min(xs) - transform.c) / resolucao))
+    c1 = int(np.ceil((max(xs) - transform.c) / resolucao))
+    r0 = int(np.floor((transform.f - max(ys)) / resolucao))
+    r1 = int(np.ceil((transform.f - min(ys)) / resolucao))
+
+    h, w = mascara.shape
+    r0, r1 = max(0, r0), min(h, r1)
+    c0, c1 = max(0, c0), min(w, c1)
+    if r0 >= r1 or c0 >= c1:
+        return False
+    return bool(mascara[r0:r1, c0:c1].any())
+
+
 def main() -> None:
     if not TILES_DIR.is_dir():
         raise RuntimeError(
@@ -146,16 +199,38 @@ def main() -> None:
     px, py = para_bdc.transform([p[0] for p in contorno], [p[1] for p in contorno])
     alvo = MultiPoint(list(zip(px, py))).convex_hull
 
-    selecionados = []
+    candidatos = []
     with fiona.open(BDC_SM) as src:
         for rec in src:
             geom = shape(rec["geometry"])
             if geom.intersects(alvo):
-                selecionados.append((rec["properties"]["tile"], geom.bounds))
-    if not selecionados:
+                candidatos.append((rec["properties"]["tile"], geom.bounds))
+    if not candidatos:
         raise RuntimeError("Nenhum tile BDC_SM cobre a extensão da fonte.")
-    selecionados.sort()
-    print(f"      {len(selecionados)} tiles BDC_SM selecionados")
+    candidatos.sort()
+
+    # A extensão do mosaico é um retângulo, mas o dado válido é só a faixa
+    # costeira — mais da metade dos tiles que a intersectam cobrem apenas
+    # nodata. Derivá-los é trabalho e disco jogados fora (medido: 17 de 32
+    # tiles saíam 100% vazios). Uma passada decimada sobre a fonte dá a
+    # máscara de onde há dado de verdade, e a seleção passa a ser por ela.
+    print(f"      {len(candidatos)} tiles intersectam a extensão; "
+          "lendo máscara de dado válido")
+    mascara, m_transform, m_res = _mascara_valida(vrt_estado)
+    para_fonte = Transformer.from_crs(
+        ProjCRS.from_user_input(BDC_CRS),
+        ProjCRS.from_user_input(str(contract.crs)),
+        always_xy=True,
+    )
+
+    selecionados = [
+        (tile, bounds) for tile, bounds in candidatos
+        if _tem_dado(bounds, mascara, m_transform, m_res, para_fonte)
+    ]
+    if not selecionados:
+        raise RuntimeError("Nenhum tile BDC_SM contém dado válido.")
+    print(f"      {len(selecionados)} tiles com dado válido "
+          f"({len(candidatos) - len(selecionados)} descartados por serem só nodata)")
 
     # Extensão de saída = envoltória dos tiles escolhidos (já alinhada à malha).
     out_minx = min(b[0] for _t, b in selecionados)
