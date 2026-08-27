@@ -32,6 +32,7 @@ import geopandas as gpd
 from pyproj import CRS as ProjCRS, Transformer
 from rasterio.warp import Resampling
 from rasterio.windows import Window
+from rioxarray.exceptions import NoDataInBounds
 from shapely.geometry import box
 
 from disscube.operators.base import OPERATOR_REGISTRY
@@ -157,6 +158,20 @@ class GridAligner(PipelineStage):
             # against real MapBiomas/ANADEM data. Cropping first turns
             # this into a windowed read.
             band = self._crop_to_grid(band, grid)
+
+            if band is None:
+                # Source and grid do not overlap at all. Reading the source to
+                # reproject it would produce an all-nodata result at the cost
+                # of materialising the whole raster — build the empty result
+                # directly instead. This is a normal case in tiled workflows,
+                # where the tile mesh is selected by envelope and some tiles
+                # fall outside the data.
+                result[var.name] = self._empty_for_grid(grid, ds_src)
+                log.debug(
+                    "'%s': source does not overlap grid %r; emitting empty result",
+                    var.name, grid.id,
+                )
+                continue
 
             # ── Per-operator resampling method ─────────────────────────
             op_cls = OPERATOR_REGISTRY.get(var.operator)
@@ -330,7 +345,32 @@ class GridAligner(PipelineStage):
     # whole source raster for a small target grid)
     # ------------------------------------------------------------------
 
-    def _crop_to_grid(self, band: xr.DataArray, grid: GridSpec, buffer_px: int = 4) -> xr.DataArray:
+    def _empty_for_grid(self, grid: GridSpec, ds_src: xr.DataArray) -> xr.DataArray:
+        """
+        Build an all-nodata ``(grid.rows, grid.cols)`` array for a source that
+        does not overlap ``grid``.
+
+        Carries the source nodata in ``_disscube_nodata`` so the categorical
+        operators mark every cell invalid, exactly as they would for a
+        reprojected but empty window.
+        """
+        try:
+            nodata = ds_src.rio.nodata
+        except Exception:
+            nodata = None
+        fill = float(nodata) if nodata is not None else np.nan
+
+        da = xr.DataArray(
+            np.full((grid.rows, grid.cols), fill, dtype=np.float64),
+            dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs},
+        )
+        if nodata is not None:
+            da.attrs["_disscube_nodata"] = nodata
+        return da
+
+    def _crop_to_grid(
+        self, band: xr.DataArray, grid: GridSpec, buffer_px: int = 4
+    ) -> xr.DataArray | None:
         """
         Crop ``band`` (still in its native CRS) to the region overlapping
         ``grid``'s bbox, with a small buffer for resampling kernels, before
@@ -340,10 +380,20 @@ class GridAligner(PipelineStage):
         (when it differs from ``grid.crs``) so the crop is correct even
         when the source raster is not already in the target CRS.
 
-        Falls back to the unclipped ``band`` (same behaviour as before this
-        fix) if the CRS is unknown or the crop fails for any reason — e.g.
-        the source doesn't actually overlap the grid, which the existing
-        downstream shape/coverage checks already surface clearly.
+        Returns
+        -------
+        xr.DataArray | None
+            The cropped band, or ``None`` when the source and the grid do not
+            overlap at all. ``None`` is a distinct outcome from a failed crop:
+            reading the whole source only to reproject it into an all-nodata
+            window costs the full raster in memory (measured at 31x the target
+            window for a real BDC tile) and produces nothing, so the caller
+            builds the empty result directly instead.
+
+        Falls back to the unclipped ``band`` only when the crop cannot be
+        computed for some other reason (unknown CRS, transform failure) — the
+        pre-crop behaviour, kept so an unexpected failure degrades to a correct
+        if expensive read rather than to wrong output.
         """
         try:
             src_crs = band.rio.crs
@@ -370,9 +420,15 @@ class GridAligner(PipelineStage):
 
         try:
             return band.rio.clip_box(minx, miny, maxx, maxy, auto_expand=True)
+        except NoDataInBounds:
+            log.debug(
+                "crop-to-grid: source does not overlap grid %r; "
+                "skipping the read entirely", grid.id,
+            )
+            return None
         except Exception:
             log.debug(
-                "crop-to-grid: clip_box failed (grid may not overlap source), "
+                "crop-to-grid: clip_box failed for an unexpected reason, "
                 "falling back to unclipped read", exc_info=True,
             )
             return band
