@@ -46,11 +46,31 @@ cube.derive(derivation, tile_id="009002")
 # Tiles são registrados com IDs no formato BDC_SM_<tile> (ex: BDC_SM_009002)
 tiles = [s for s in cube.catalog.list_spatial_sources() if s.id.startswith("BDC_SM_")]
 for tile_source in tiles:
-    tile_id = tile_source.id.split("_")[-1]
-    cube.derive(derivation, tile_id=tile_id)
+    cube.derive(derivation, tile_id=tile_source.id)   # ID completo: BDC_SM_009002
 ```
 
 Cada tile é processado de forma independente e pode ser paralelizado.
+
+!!! warning "IDs de tile não são únicos entre níveis"
+    O mesmo número identifica tiles diferentes em níveis diferentes — nas grades
+    V2, 189 IDs existem em SM **e** MD, cobrindo áreas distintas. Um ID simples
+    (`"009002"`) só é aceito quando existe em um único nível; se existir em mais
+    de um, `derive()` levanta `ValueError` em vez de escolher por precedência.
+    **Em loops, prefira sempre o ID completo** (`tile_source.id`), como acima.
+
+## Como o tile é localizado
+
+`derive(tile_id=...)` procura o `SpatialSource` que carrega o `bbox`, nesta ordem:
+
+1. `{grid_id}_{tile_id}` — malha de tiles definida para uma grade específica
+   (ver `docs/architecture/tiling.md`);
+2. o `tile_id` tratado como ID completo — é assim que se desambigua
+   (`"BDC_SM_009002"`);
+3. `BDC_{SM,MD,LG}_{tile_id}` — as grades nacionais BDC, registradas uma única
+   vez e compartilhadas por todas as grades no CRS do BDC.
+
+Os tiles BDC são independentes de grade: a mesma envoltória serve qualquer grade
+que compartilhe o CRS, por isso não são duplicados por grade.
 
 ## Carregar resultado tileado
 

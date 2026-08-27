@@ -64,9 +64,7 @@ class CubeClient:
             raise ValueError(f"Grid not found: {derivation.grid_id}")
 
         if tile_id:
-            tile_source = self.catalog.get_spatial_source(f"{grid.id}_{tile_id}")
-            if not tile_source or not tile_source.bbox:
-                raise ValueError(f"Tile {tile_id} with valid bbox not found for grid {grid.id}")
+            tile_source = self._resolve_tile_source(grid.id, tile_id)
 
             grid = GridSpec(
                 id=grid.id,
@@ -93,6 +91,72 @@ class CubeClient:
             d for d in self.catalog.search_derived_variables(tile_id=tile_id)
             if d.spec_hash == spec_hash
         ]
+
+    # BDC tile levels, coarsest-last. Order is only used for reporting; an
+    # ambiguous id is always an error, never resolved by precedence.
+    _BDC_TILE_LEVELS = ("SM", "MD", "LG")
+
+    def _resolve_tile_source(self, grid_id: str, tile_id: str) -> SpatialSource:
+        """
+        Find the ``SpatialSource`` whose ``bbox`` defines ``tile_id``.
+
+        Two registration conventions are supported, tried in this order:
+
+        1. ``{grid_id}_{tile_id}`` — a tile mesh defined for one specific
+           grid (see ``docs/architecture/tiling.md``).
+        2. ``BDC_{LEVEL}_{tile_id}`` — the national BDC tile grids, as
+           registered by ``disscube.utils.bdc_importer``. These are
+           grid-independent: the same tile envelope serves every grid that
+           shares the BDC CRS, so they are not duplicated per grid.
+
+        A fully-qualified id (``"BDC_SM_027005"``) is also accepted directly,
+        which is the way to disambiguate a bare id that exists at more than
+        one BDC level.
+
+        Raises
+        ------
+        ValueError
+            If nothing matches, if the match has no ``bbox``, or if a bare
+            tile id exists at several BDC levels. The levels cover different
+            areas (SM ~1.5°, MD ~3°, LG ~6°) and share many ids, so guessing
+            a level would silently derive the wrong extent.
+        """
+        scoped = self.catalog.get_spatial_source(f"{grid_id}_{tile_id}")
+        if scoped is not None:
+            if not scoped.bbox:
+                raise ValueError(
+                    f"Tile source {scoped.id!r} has no bbox; a tile source must "
+                    "carry the bbox of the partition to process."
+                )
+            return scoped
+
+        qualified = self.catalog.get_spatial_source(tile_id)
+        if qualified is not None and qualified.bbox:
+            return qualified
+
+        matches = []
+        for level in self._BDC_TILE_LEVELS:
+            candidate = self.catalog.get_spatial_source(f"BDC_{level}_{tile_id}")
+            if candidate is not None and candidate.bbox:
+                matches.append((level, candidate))
+
+        if len(matches) == 1:
+            return matches[0][1]
+
+        if len(matches) > 1:
+            found = ", ".join(f"BDC_{lvl}_{tile_id}" for lvl, _ in matches)
+            raise ValueError(
+                f"Tile id {tile_id!r} is ambiguous: it exists at several BDC "
+                f"levels ({found}), which cover different areas. Pass the "
+                f"fully-qualified id instead, e.g. tile_id='BDC_"
+                f"{matches[0][0]}_{tile_id}'."
+            )
+
+        raise ValueError(
+            f"Tile {tile_id!r} with valid bbox not found for grid {grid_id!r}. "
+            f"Looked for {grid_id}_{tile_id}, {tile_id}, and BDC_"
+            f"{{{','.join(self._BDC_TILE_LEVELS)}}}_{tile_id}."
+        )
 
     def derive_declarative(
         self,

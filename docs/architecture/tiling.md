@@ -23,7 +23,10 @@ cube.derive(derivation, tile_id="009002")
 
 Internamente:
 1. Busca `GridSpec` da master grid.
-2. Busca `SpatialSource` com id `{grid_id}_{tile_id}` para obter o `bbox` do tile.
+2. Busca o `SpatialSource` que carrega o `bbox` do tile, tentando nesta ordem:
+   `{grid_id}_{tile_id}` (malha própria da grade), o `tile_id` como id completo,
+   e `BDC_{SM,MD,LG}_{tile_id}` (grades nacionais BDC). Um id simples que exista
+   em mais de um nível BDC levanta `ValueError` — ver `docs/guides/bdc.md`.
 3. Cria um `GridSpec` temporário: mesmos CRS e resolução, bbox restrito ao tile.
 4. Executa o pipeline nessa grade temporária.
 5. Salva em `data/derived/{grid_id}/009002/{spec_hash}/{var}.zarr`.
