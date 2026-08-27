@@ -24,16 +24,33 @@ Dois estudos sobre a mesma área geográfica e grade.
 Standalone — não depende dos scripts de `setup/`; registra a própria grade e fontes.
 - `python examples/case_studies/brmangue_dominio/01_dominio_estrutural.py` — reclassifica
   a legenda de estados num raster de papéis, tile a tile, e escreve o GeoTIFF final.
+- `python examples/case_studies/brmangue_dominio/02_dominio_bdc.py` — o mesmo produto
+  sobre a malha nacional **BDC_SM**, com a grade mestra em BDC Albers.
 
-Demonstra três coisas de uso geral:
+Demonstram três coisas de uso geral:
 - o operador genérico **`reclassify`** (tabela `{valor_origem: valor_destino}` como dado);
 - **`derive(tile_id=...)`** para processar uma extensão grande (391M células) com
   memória limitada — ver `docs/architecture/tiling.md`;
 - a fronteira entre o que é do cubo e o que é do projeto: a tabela de papéis e o
   cruzamento entre duas bandas ficam no exemplo, não no pacote.
 
-Requer `geomosaic` (`pip install geomosaic`) e a variável `BRMANGUE_ENTRADA`
-apontando para o diretório com os tiles ANADEM v2.
+A diferença entre os dois está só na partição e no CRS de trabalho:
+
+| | `01_` | `02_` |
+|---|---|---|
+| Malha | ad hoc, 4096² em pixel | **BDC_SM**, canônica |
+| Grade | EPSG:5880 (a da fonte) | BDC Albers |
+| Reprojeção | nenhuma (caminho de identidade) | 5880 → Albers |
+| Medido | 30 tiles, 80 s, < 1 GB | 32 tiles, 100 s, 3,7 GB de pico |
+
+Use a malha BDC quando os derivados forem virar patrimônio do cubo — os tiles têm
+significado fora do script e alinham com o resto do ecossistema BDC. Use a ad hoc
+quando forem só um passo intermediário: é mais leve e reproduz a fonte bit a bit
+(reprojetar reamostra, então `02_` perde ~1% de células por classe nas bordas).
+
+Requerem `geomosaic` (`pip install geomosaic`) e a variável `BRMANGUE_ENTRADA`
+apontando para o diretório com os tiles ANADEM v2. O `02_` também precisa de
+`pip install "disscube[bdc]"` e das grades em `data/bdc_grids/`.
 
 ### 5. Estudo de caso: Acre (AC/5km)
 - `python examples/drivers/02_acre_5km.py` — drivers regionais Acre 5 km.
