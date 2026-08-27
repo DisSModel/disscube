@@ -66,8 +66,14 @@ except ImportError as exc:  # pragma: no cover — exemplo, não faz parte do pa
 # ── Configuração ──────────────────────────────────────────────────────────────
 ENTRADA   = Path(os.environ.get("BRMANGUE_ENTRADA", "./dados/entrada"))
 TILES_DIR = ENTRADA / "anadem_v2"
-TRABALHO  = Path("./data/brmangue_dominio")
-SAIDA     = TRABALHO / "dominio_estrutural_2024.tif"
+
+# Catálogo e store compartilhados, como em todos os demais exemplos: os
+# derivados entram no MESMO cubo e aparecem em cube.search() junto com as
+# outras variáveis — que é o ponto de catalogá-los.
+CATALOGO  = "catalog.db"
+STORE     = "./data/"
+VRT_DIR   = Path("./data/raw/brmangue")
+SAIDA     = Path("./data/brmangue_dominio_2024.tif")
 
 GRID_ID       = "brmangue/30m"
 TILE          = 4096          # lado do recorte processado por vez
@@ -129,7 +135,7 @@ def main() -> None:
         raise RuntimeError(f"Nenhum .tif em {TILES_DIR}")
 
     t0 = time.perf_counter()
-    TRABALHO.mkdir(parents=True, exist_ok=True)
+    VRT_DIR.mkdir(parents=True, exist_ok=True)
 
     # ── 1. geomosaic: contrato + um VRT por banda ────────────────────────────
     print(f"\n[1/3] geomosaic: {len(tiles)} tiles -> contrato")
@@ -139,13 +145,13 @@ def main() -> None:
     resolution = a
     print(f"      grade mestra: {altura}x{largura} @ {contract.crs}")
 
-    vrt_estado = write_vrt(contract, str(TRABALHO / "estado.vrt"), band=BANDA_ESTADO)
-    vrt_elev   = write_vrt(contract, str(TRABALHO / "elevacao.vrt"), band=BANDA_ELEV)
+    vrt_estado = write_vrt(contract, str(VRT_DIR / "estado.vrt"), band=BANDA_ESTADO)
+    vrt_elev   = write_vrt(contract, str(VRT_DIR / "elevacao.vrt"), band=BANDA_ELEV)
 
     # ── 2. disscube: grade, fontes e tiles ───────────────────────────────────
     print("[2/3] disscube: registrando grade, fontes e tiles")
     cube = CubeClient(
-        catalog=str(TRABALHO / "catalog.db"), store=str(TRABALHO / "store")
+        catalog=CATALOGO, store=STORE
     )
     cube.register_grid(GridSpec(
         id=GRID_ID, type="reference", crs=str(contract.crs), resolution=resolution,

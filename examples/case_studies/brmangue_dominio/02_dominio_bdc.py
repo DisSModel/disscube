@@ -74,8 +74,13 @@ except ImportError as exc:  # pragma: no cover
 ENTRADA   = Path(os.environ.get("BRMANGUE_ENTRADA", "./dados/entrada"))
 TILES_DIR = ENTRADA / "anadem_v2"
 BDC_SM    = "zip://data/bdc_grids/BDC_SM_V2.zip"
-TRABALHO  = Path("./data/brmangue_dominio_bdc")
-SAIDA     = TRABALHO / "dominio_estrutural_2024_bdc.tif"
+# Catálogo e store compartilhados, como em todos os demais exemplos: os
+# derivados entram no MESMO cubo e aparecem em cube.search() junto com as
+# outras variáveis — que é o ponto de catalogá-los.
+CATALOGO  = "catalog.db"
+STORE     = "./data/"
+VRT_DIR   = Path("./data/raw/brmangue")
+SAIDA     = Path("./data/brmangue_dominio_2024_bdc.tif")
 
 GRID_ID      = "brmangue/30m_bdc"
 RESOLUCAO    = 30.0
@@ -160,7 +165,7 @@ def main() -> None:
         raise RuntimeError(f"Nenhum .tif em {TILES_DIR}")
 
     t0 = time.perf_counter()
-    TRABALHO.mkdir(parents=True, exist_ok=True)
+    VRT_DIR.mkdir(parents=True, exist_ok=True)
 
     # ── 1. geomosaic: VRTs na projeção nativa da fonte (EPSG:5880) ───────────
     print(f"\n[1/4] geomosaic: {len(tiles_src)} tiles -> contrato")
@@ -172,8 +177,8 @@ def main() -> None:
     )
     print(f"      fonte: {contract.mosaic_height}x{contract.mosaic_width} @ {contract.crs}")
 
-    vrt_estado = write_vrt(contract, str(TRABALHO / "estado.vrt"), band=BANDA_ESTADO)
-    vrt_elev   = write_vrt(contract, str(TRABALHO / "elevacao.vrt"), band=BANDA_ELEV)
+    vrt_estado = write_vrt(contract, str(VRT_DIR / "estado.vrt"), band=BANDA_ESTADO)
+    vrt_elev   = write_vrt(contract, str(VRT_DIR / "elevacao.vrt"), band=BANDA_ELEV)
 
     # ── 2. Selecionar os tiles BDC_SM que cobrem a fonte ─────────────────────
     print("[2/4] BDC: selecionando tiles SM sobre a extensão da fonte")
@@ -243,9 +248,7 @@ def main() -> None:
 
     # ── 3. disscube: grade mestra BDC + fontes + tiles ───────────────────────
     print("[3/4] disscube: registrando grade, fontes e tiles")
-    cube = CubeClient(
-        catalog=str(TRABALHO / "catalog.db"), store=str(TRABALHO / "store")
-    )
+    cube = CubeClient(catalog=CATALOGO, store=STORE)
     cube.register_grid(GridSpec(
         id=GRID_ID, type="reference", crs=BDC_CRS, resolution=RESOLUCAO,
         bbox=[out_minx, out_miny, out_maxx, out_maxy],
