@@ -28,7 +28,7 @@ import rioxarray  # noqa: F401 — registers the .rio accessor
 import numpy as np
 import xarray as xr
 import geopandas as gpd
-from pyproj import CRS as ProjCRS
+from pyproj import CRS as ProjCRS, Transformer
 from rasterio.warp import Resampling
 from shapely.geometry import box
 
@@ -127,6 +127,18 @@ class GridAligner(PipelineStage):
             else:
                 band = ds_src.isel(band=0) if "band" in ds_src.dims else ds_src
 
+            # ── Crop to target grid before any reprojection ─────────────
+            # Without this, .rio.reproject() (and _align_fine's internal
+            # resolution-estimation reproject) forces rioxarray to read
+            # the ENTIRE source raster via `self._obj.values`, regardless
+            # of how small `grid` actually is. For a real multi-tile
+            # mosaic this reads/reprojects the full extent per variable —
+            # confirmed to OOM-kill (whole-mosaic case) or take ~30 min
+            # per variable (a grid window 48x smaller than the mosaic)
+            # against real MapBiomas/ANADEM data. Cropping first turns
+            # this into a windowed read.
+            band = self._crop_to_grid(band, grid)
+
             # ── Per-operator resampling method ─────────────────────────
             op_cls = OPERATOR_REGISTRY.get(var.operator)
             needs_fine = bool(getattr(op_cls, "needs_fine_alignment", False))
@@ -173,6 +185,58 @@ class GridAligner(PipelineStage):
             )
 
         return result
+
+    # ------------------------------------------------------------------
+    # Crop source to target grid extent (avoids reading/reprojecting the
+    # whole source raster for a small target grid)
+    # ------------------------------------------------------------------
+
+    def _crop_to_grid(self, band: xr.DataArray, grid: GridSpec, buffer_px: int = 4) -> xr.DataArray:
+        """
+        Crop ``band`` (still in its native CRS) to the region overlapping
+        ``grid``'s bbox, with a small buffer for resampling kernels, before
+        any reprojection touches it.
+
+        ``grid.bbox`` is transformed into the source's native CRS first
+        (when it differs from ``grid.crs``) so the crop is correct even
+        when the source raster is not already in the target CRS.
+
+        Falls back to the unclipped ``band`` (same behaviour as before this
+        fix) if the CRS is unknown or the crop fails for any reason — e.g.
+        the source doesn't actually overlap the grid, which the existing
+        downstream shape/coverage checks already surface clearly.
+        """
+        try:
+            src_crs = band.rio.crs
+        except Exception:
+            src_crs = None
+
+        minx, miny, maxx, maxy = grid.bbox
+
+        if src_crs is not None:
+            try:
+                target_crs = ProjCRS.from_user_input(grid.crs)
+                source_crs = ProjCRS.from_user_input(src_crs)
+                if not source_crs.equals(target_crs):
+                    transformer = Transformer.from_crs(target_crs, source_crs, always_xy=True)
+                    xs, ys = transformer.transform([minx, minx, maxx, maxx], [miny, maxy, miny, maxy])
+                    minx, maxx = min(xs), max(xs)
+                    miny, maxy = min(ys), max(ys)
+            except Exception:
+                log.debug("crop-to-grid: CRS check/transform failed, skipping crop", exc_info=True)
+                return band
+
+        buffer = grid.resolution * buffer_px
+        minx, miny, maxx, maxy = minx - buffer, miny - buffer, maxx + buffer, maxy + buffer
+
+        try:
+            return band.rio.clip_box(minx, miny, maxx, maxy, auto_expand=True)
+        except Exception:
+            log.debug(
+                "crop-to-grid: clip_box failed (grid may not overlap source), "
+                "falling back to unclipped read", exc_info=True,
+            )
+            return band
 
     # ------------------------------------------------------------------
     # Fine alignment for categorical operators

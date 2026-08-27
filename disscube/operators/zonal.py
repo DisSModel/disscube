@@ -125,6 +125,35 @@ def _categorical_reduce(
     fr, fc = fine.shape
     tr, tc = grid.rows, grid.cols
 
+    if fr == tr and fc == tc:
+        # Fast path: fine resolution already equals target resolution
+        # (GridAligner._align_fine's factor == 1, the common case whenever
+        # the source is already at the target's native resolution) -- every
+        # target cell maps to exactly ONE fine pixel, so this is an
+        # identity remap, not a real window reduction. The general loop
+        # below computes "mode of 1 value" via np.unique per target cell;
+        # for a multi-million-cell real grid that Python-level per-cell
+        # cost dominates total derive() wall time (confirmed: ~30us/cell,
+        # so minutes per variable on a real MapBiomas-sized grid even after
+        # GridAligner stopped reading/reprojecting the whole source raster).
+        # Vectorize the n=1 case directly instead of looping.
+        if nodata is not None and not np.isnan(nodata):
+            valid_mask = fine != nodata
+        else:
+            valid_mask = np.ones_like(fine, dtype=bool)
+        valid_mask &= ~np.isnan(fine)
+
+        coverage = valid_mask.astype(np.float64)
+        dominance = np.where(valid_mask, 1.0, np.nan)
+
+        if mode == "percentage":
+            hit = valid_mask & (fine == class_code)
+            value = np.where(valid_mask, hit.astype(np.float64), np.nan)
+        else:  # majority / minority: with n=1 both equal the single value
+            value = np.where(valid_mask, fine.astype(np.float64), np.nan)
+
+        return value, coverage, dominance
+
     value = np.full((tr, tc), np.nan, dtype=np.float64)
     coverage = np.zeros((tr, tc), dtype=np.float64)
     dominance = np.full((tr, tc), np.nan, dtype=np.float64)
