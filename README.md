@@ -196,8 +196,15 @@ Cada chamada a `derive()` carrega o dado completo de um tile em memória. Não h
 **Agregação vetorial por rasterização (não área-ponderada)**
 Operadores sobre fontes vetoriais (`majority`, `percentage`, `attribute`, `presence`, `minority`) convertem geometrias em raster antes de agregar pixels. A fração de cobertura de cada célula é estimada por contagem de pixels, não por cálculo de área de interseção. Para cobertura proporcional mais precisa, use uma fonte raster em resolução substancialmente maior que a célula-alvo.
 
-**Desambiguação de tiles em `load()`**
-`CubeClient.load(name)` sem `tile_id` retorna silenciosamente o primeiro resultado quando múltiplos tiles da mesma variável existem na mesma grade. Erro explícito ou mosaico automático estão planejados. **Especifique sempre `tile_id` em workloads multi-tile.**
+**Sem mosaico automático em `load()`**
+`CubeClient.load(name)` sem `tile_id` levanta `ValueError` quando múltiplos tiles da mesma variável existem na mesma grade — remontá-los num array único não está implementado. Para consumir uma variável multi-tile, use `tile_layout(name, grid_id)`: ele devolve onde cada pedaço cai na grade (caminho e posição, como dado puro) e deixa a montagem a cargo de quem consome. Para variáveis temporais é preciso escolher a fatia, com `time=<ano>`, já que cada fatia repete as mesmas posições de tile.
+
+**Memória acumula ao longo de um loop de `derive()`**
+Cada `derive()` deixa cerca de 50 objetos presos em ciclos de referência, retendo aproximadamente 380 MB. Contagem de referências não desfaz ciclo, e o coletor geracional quase nunca dispara aqui: o gatilho dele é o *número* de alocações, enquanto o NumPy concentra centenas de MB em pouquíssimos objetos — o coletor não enxerga a pressão de memória.
+
+Na prática, um loop longo cresce até estourar. Medido ao derivar 140 tiles: o RSS sobe ~380 MB por tile e passa de 7 GB, sendo morto pelo sistema; com `gc.collect()` após cada chamada, fica estável em ~1 GB. O custo é cerca de 7% (0,05 s por coleta contra ~0,7 s por `derive()`).
+
+Até que a coleta seja feita internamente, **quem deriva muitos tiles ou muitas fatias em sequência deve chamar `gc.collect()` no loop** — ver `examples/case_studies/brmangue_dominio/04_serie_temporal_mangue.py`. Rodar cada tile em subprocesso separado também resolve, ao custo de reabrir o catálogo a cada vez.
 
 **`SpatialRelation` não atua no pipeline**
 O modelo `SpatialRelation` é persistido no catálogo, mas nenhum estágio do pipeline usa as relações durante a derivação — e por isso elas são **excluídas do `spec_hash`**. Incluí-las tornaria a chave de cache sensível a metadados que não afetam o resultado, quebrando a garantia de reprodutibilidade. A integração com estratégias hierárquicas de grades está reservada para versão futura.
