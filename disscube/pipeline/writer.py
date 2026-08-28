@@ -41,6 +41,12 @@ class VariableWriter(PipelineStage):
                 da.attrs["crs"] = grid.crs
             
             # Storage path: derived/{grid_id}/{tile_id or 'global'}/{spec_hash}/{var_name}.zarr
+            #
+            # `relative_path` is what the catalog records and `full_path` is
+            # what actually gets written: the store root is a deployment
+            # detail (it may be "./data/" in one run and "/srv/cube" in the
+            # next), so baking it into the catalog would tie every entry to
+            # the machine and working directory that produced it.
             partition = tile_id if tile_id else "global"
             relative_path = f"derived/{grid.id}/{partition}/{spec_hash}/{var_name}.zarr"
             full_path = self.storage.get_full_path(relative_path)
@@ -80,7 +86,7 @@ class VariableWriter(PipelineStage):
                 spec_hash=spec_hash,
                 tile_id=tile_id,
                 content_hash=content_hash,
-                asset_url=full_path
+                asset_url=relative_path,
             )
             self.catalog.save_derived(derived)
             

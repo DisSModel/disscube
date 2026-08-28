@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import Optional, List, Any
-import os
 import numpy as np
 import xarray as xr
 from disscube.catalog.sqlite_store import SqliteCatalogStore
@@ -48,7 +47,8 @@ class CubeClient:
         all_derived = self.catalog.search_derived_variables(tile_id=tile_id)
         cached_vars = [
             d for d in all_derived
-            if d.spec_hash == spec_hash and self.store.fs.exists(d.asset_url)
+            if d.spec_hash == spec_hash
+            and self.store.fs.exists(self.store.resolve(d.asset_url))
         ]
         cached_names = {d.name for d in cached_vars}
 
@@ -191,7 +191,7 @@ class CubeClient:
         all_derived = self.catalog.search_derived_variables()
         removed = 0
         for d in all_derived:
-            if not os.path.exists(d.asset_url):
+            if not self.store.fs.exists(self.store.resolve(d.asset_url)):
                 self.catalog.delete_derived(d.id)
                 log.debug("Purged stale catalog entry: %s", d.asset_url)
                 removed += 1
@@ -242,7 +242,7 @@ class CubeClient:
         # whose files no longer exist on disk (catalog can accumulate orphans when
         # a source_id or other spec field changes between runs).
         def _exists(d: DerivedVariable) -> bool:
-            ok = os.path.exists(d.asset_url)
+            ok = self.store.fs.exists(self.store.resolve(d.asset_url))
             if not ok:
                 log.debug("Stale catalog entry skipped (file missing): %s", d.asset_url)
             return ok
@@ -256,7 +256,7 @@ class CubeClient:
             slices = []
             time_coords = []
             for d in temporal_sorted:
-                da = xr.open_zarr(d.asset_url, consolidated=False)[d.name]
+                da = xr.open_zarr(self.store.resolve(d.asset_url), consolidated=False)[d.name]
                 slices.append(da)
                 time_coords.extend(d.times)
             return xr.concat(slices, dim=xr.DataArray(time_coords, dims="time"))
@@ -268,7 +268,9 @@ class CubeClient:
                 msg += f" on grid {grid_id}"
             raise ValueError(msg)
         derived = static[0]
-        return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+        return xr.open_zarr(
+            self.store.resolve(derived.asset_url), consolidated=False
+        )[derived.name]
 
     def tile_layout(
         self,
@@ -376,7 +378,7 @@ class CubeClient:
                 layout.append({
                     "tile_id": None,
                     "variable": d.name,
-                    "url": d.asset_url,
+                    "url": self.store.resolve(d.asset_url),
                     "row_off": 0,
                     "col_off": 0,
                     "height": grid.rows,
@@ -402,7 +404,7 @@ class CubeClient:
             layout.append({
                 "tile_id": d.tile_id,
                 "variable": d.name,
-                "url": d.asset_url,
+                "url": self.store.resolve(d.asset_url),
                 "row_off": int(round((grid.bbox[3] - maxy) / grid.resolution)),
                 "col_off": int(round((minx - grid.bbox[0]) / grid.resolution)),
                 "height": int(round((maxy - miny) / grid.resolution)),
@@ -534,8 +536,15 @@ class CubeClient:
         if not derived:
             raise ValueError(f"Derived variable not found: {derived_id}")
 
+        # The store's own protocol decides the type. Inferring it from the
+        # path shape ("starts with /") misread every store opened with a
+        # relative base_url, e.g. "./data/", as remote.
+        protocol = self.store.fs.protocol
+        if isinstance(protocol, (list, tuple)):
+            protocol = protocol[0]
+
         return {
-            "uri": derived.asset_url,
+            "uri": self.store.resolve(derived.asset_url),
             "checksum": derived.content_hash,
-            "type": "local" if derived.asset_url.startswith("/") else "s3"
+            "type": "local" if protocol in ("file", "local") else protocol,
         }

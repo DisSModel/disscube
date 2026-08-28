@@ -214,7 +214,10 @@ def test_time_selects_one_slice(cube):
         _derived_t(cube, "v", "T1", [ano], f"v_{ano}.zarr")
     layout = cube.tile_layout("v", "G", time=1995)
     assert len(layout) == 1
-    assert layout[0]["url"] == "v_1995.zarr"
+    # `url` is the resolved, openable path — the catalog stores the path
+    # relative to the store root, and tile_layout hands consumers something
+    # they can open without knowing where the store lives.
+    assert layout[0]["url"] == cube.store.get_full_path("v_1995.zarr")
     assert layout[0]["times"] == [1995]
 
 
