@@ -31,6 +31,8 @@ Standalone — não depende dos scripts de `setup/`; registra a própria grade e
   `maranhao/03_brmangue_simulate.py`, que entrega em RAM). Requer `haloexec[zarr]`.
 - `python examples/case_studies/brmangue_dominio/04_serie_temporal_mangue.py` — série
   **temporal** mangue/não-mangue: cada ano é uma fatia, `load()` devolve `(time, y, x)`.
+- `python examples/case_studies/brmangue_dominio/05_serie_temporal_bdc.py` — a mesma
+  série sobre a malha **BDC_SM**, com reprojeção 5880 → Albers. Requer `disscube[bdc]`.
 
 Demonstram três coisas de uso geral:
 - o operador genérico **`reclassify`** (tabela `{valor_origem: valor_destino}` como dado);
