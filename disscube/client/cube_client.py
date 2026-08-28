@@ -270,6 +270,115 @@ class CubeClient:
         derived = static[0]
         return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
 
+    def tile_layout(
+        self,
+        variable_id: str,
+        grid_id: str,
+    ) -> List[dict]:
+        """
+        Onde cada pedaço de uma variável derivada cai na grade mestra.
+
+        Responde a pergunta que ``load()`` não responde: uma variável
+        derivada tile a tile existe como N stores Zarr, e ``load()`` recusa
+        o caso multi-tile porque não há mosaico automático (ver
+        ``docs/architecture/tiling.md``). Este método devolve a informação
+        necessária para montá-la — sem montar nada, e sem impor um destino.
+
+        O retorno é **dado puro**, não um objeto de outro pacote: uma lista
+        de dicionários com caminho e posição. Quem consome decide o que
+        fazer — carregar em memória, escrever num workspace em disco,
+        inspecionar a cobertura. É o mesmo arranjo que o ``geomosaic`` usa
+        ao devolver ``tile_offsets`` sem conhecer quem vai lê-los.
+
+        Uma variável derivada sem tiles (``tile_id`` nulo, partição
+        ``global``) devolve uma lista de UM elemento cobrindo a grade
+        inteira, para que quem consome trate os dois casos igual.
+
+        Parameters
+        ----------
+        variable_id : str
+            Nome da variável derivada (ex.: ``"papel"``).
+        grid_id : str
+            Grade mestra sobre a qual os pedaços se posicionam.
+
+        Returns
+        -------
+        list[dict]
+            Ordenada por ``(row_off, col_off)``. Cada item tem:
+
+            - ``tile_id``  — identificador do tile, ou ``None`` se global
+            - ``variable`` — nome da variável dentro do store Zarr
+            - ``url``      — caminho do store
+            - ``row_off``  — linha, em pixel, onde o pedaço começa na grade
+            - ``col_off``  — coluna, em pixel
+            - ``height``   — altura do pedaço, em pixel
+            - ``width``    — largura do pedaço, em pixel
+
+            As dimensões vêm do ``bbox`` registrado, não do arquivo: é o
+            mesmo ``bbox`` que ``derive(tile_id=...)`` usou para recortar,
+            então descrevem a posição pretendida. Um store cujo conteúdo
+            divirja disso é inconsistência a detectar, não a mascarar.
+
+        Raises
+        ------
+        ValueError
+            Se a grade não existir, se a variável não tiver nenhum derivado
+            nela, ou se um tile não tiver ``SpatialSource`` com ``bbox`` —
+            sem o bbox não há como saber onde o pedaço cai.
+        """
+        grid = self.catalog.get_grid(grid_id)
+        if grid is None:
+            raise ValueError(f"Grid not found: {grid_id}")
+
+        derived = [
+            d for d in self.catalog.search_derived_variables(grid_id=grid_id)
+            if d.name == variable_id
+        ]
+        if not derived:
+            raise ValueError(
+                f"Derived variable not found: {variable_id} on grid {grid_id}"
+            )
+
+        layout: List[dict] = []
+        for d in derived:
+            if not d.tile_id:
+                layout.append({
+                    "tile_id": None,
+                    "variable": d.name,
+                    "url": d.asset_url,
+                    "row_off": 0,
+                    "col_off": 0,
+                    "height": grid.rows,
+                    "width": grid.cols,
+                })
+                continue
+
+            # Duas convenções de registro de tile, na mesma ordem que
+            # derive() usa para resolvê-las.
+            source = (
+                self.catalog.get_spatial_source(f"{grid_id}_{d.tile_id}")
+                or self.catalog.get_spatial_source(d.tile_id)
+            )
+            if source is None or not source.bbox:
+                raise ValueError(
+                    f"Tile {d.tile_id!r} of {variable_id!r} has no SpatialSource "
+                    f"with a bbox, so its position on grid {grid_id!r} is unknown. "
+                    f"Looked for {grid_id}_{d.tile_id} and {d.tile_id}."
+                )
+
+            minx, miny, maxx, maxy = source.bbox
+            layout.append({
+                "tile_id": d.tile_id,
+                "variable": d.name,
+                "url": d.asset_url,
+                "row_off": int(round((grid.bbox[3] - maxy) / grid.resolution)),
+                "col_off": int(round((minx - grid.bbox[0]) / grid.resolution)),
+                "height": int(round((maxy - miny) / grid.resolution)),
+                "width": int(round((maxx - minx) / grid.resolution)),
+            })
+
+        return sorted(layout, key=lambda t: (t["row_off"], t["col_off"]))
+
     def to_lucc_data(
         self,
         variables: List[str],
