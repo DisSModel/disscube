@@ -274,6 +274,7 @@ class CubeClient:
         self,
         variable_id: str,
         grid_id: str,
+        time: Optional[int] = None,
     ) -> List[dict]:
         """
         Onde cada pedaço de uma variável derivada cai na grade mestra.
@@ -300,6 +301,16 @@ class CubeClient:
             Nome da variável derivada (ex.: ``"papel"``).
         grid_id : str
             Grade mestra sobre a qual os pedaços se posicionam.
+        time : int, optional
+            Fatia temporal a devolver, para variáveis derivadas com janela
+            de validade (``valid_from``/``valid_until``). Uma variável
+            temporal tem um conjunto de pedaços POR ANO, todos nas mesmas
+            posições — devolvê-los juntos daria um layout em que cada
+            posição aparece várias vezes, e quem montasse a partir dele
+            sobrescreveria um ano com outro sem perceber. Por isso, se a
+            variável tiver mais de uma fatia e ``time`` não for informado,
+            o método falha em vez de escolher (mesma disciplina de
+            ``load()`` diante de multi-tile).
 
         Returns
         -------
@@ -313,6 +324,8 @@ class CubeClient:
             - ``col_off``  — coluna, em pixel
             - ``height``   — altura do pedaço, em pixel
             - ``width``    — largura do pedaço, em pixel
+            - ``times``    — anos cobertos por este pedaço (lista, vazia
+              quando a variável é estática)
 
             As dimensões vêm do ``bbox`` registrado, não do arquivo: é o
             mesmo ``bbox`` que ``derive(tile_id=...)`` usou para recortar,
@@ -339,6 +352,24 @@ class CubeClient:
                 f"Derived variable not found: {variable_id} on grid {grid_id}"
             )
 
+        # Uma variável temporal repete cada posição uma vez por fatia; sem
+        # escolher a fatia, o layout descreveria a mesma célula N vezes.
+        fatias = sorted({t for d in derived for t in (d.times or [])})
+        if time is not None:
+            derived = [d for d in derived if time in (d.times or [])]
+            if not derived:
+                raise ValueError(
+                    f"Derived variable {variable_id!r} on grid {grid_id!r} has no "
+                    f"slice for time {time}. Available: {fatias}"
+                )
+        elif len(fatias) > 1:
+            raise ValueError(
+                f"Derived variable {variable_id!r} on grid {grid_id!r} is temporal "
+                f"and spans several slices: {fatias}. Each slice repeats the same "
+                f"tile positions, so a combined layout would describe every cell "
+                f"more than once — pass time=<year> to pick one."
+            )
+
         layout: List[dict] = []
         for d in derived:
             if not d.tile_id:
@@ -350,6 +381,7 @@ class CubeClient:
                     "col_off": 0,
                     "height": grid.rows,
                     "width": grid.cols,
+                    "times": list(d.times or []),
                 })
                 continue
 
@@ -375,6 +407,7 @@ class CubeClient:
                 "col_off": int(round((minx - grid.bbox[0]) / grid.resolution)),
                 "height": int(round((maxy - miny) / grid.resolution)),
                 "width": int(round((maxx - minx) / grid.resolution)),
+                "times": list(d.times or []),
             })
 
         return sorted(layout, key=lambda t: (t["row_off"], t["col_off"]))

@@ -53,7 +53,8 @@ def test_layout_item_has_the_documented_keys(cube):
     _derived(cube, "v", "T1")
     item = cube.tile_layout("v", "G")[0]
     assert set(item) == {
-        "tile_id", "variable", "url", "row_off", "col_off", "height", "width"
+        "tile_id", "variable", "url", "row_off", "col_off", "height", "width",
+        "times",
     }
 
 
@@ -173,3 +174,77 @@ def test_tile_without_bbox_raises_naming_what_was_searched(cube):
     with pytest.raises(ValueError) as exc:
         cube.tile_layout("v", "G")
     assert "G_T1" in str(exc.value)
+
+
+# ── variáveis temporais ──────────────────────────────────────────────────────
+# Uma variável derivada com valid_from/valid_until tem um conjunto de pedaços
+# POR FATIA, todos nas mesmas posições. Juntá-los daria um layout em que cada
+# célula aparece N vezes — e quem montasse a partir dele sobrescreveria uma
+# fatia com outra sem erro nenhum. Foi o que dado real revelou (série mangue
+# 1985-2024): 140 pedaços em 28 posições.
+
+def _derived_t(cube, name, tile_id, times, url):
+    cube.catalog.save_derived(DerivedVariable(
+        id=f"{name}_{tile_id}_{times[0]}", name=name, grid_id="G", role="test",
+        times=times, dtype="float64", derivation_id="d",
+        spec_hash=f"h{times[0]}", tile_id=tile_id, asset_url=url,
+    ))
+
+
+def test_temporal_variable_without_time_raises(cube):
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    for ano in (1985, 1995):
+        _derived_t(cube, "v", "T1", [ano], f"v_{ano}.zarr")
+    with pytest.raises(ValueError, match="temporal"):
+        cube.tile_layout("v", "G")
+
+
+def test_error_lists_the_available_slices(cube):
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    for ano in (1985, 1995, 2005):
+        _derived_t(cube, "v", "T1", [ano], f"v_{ano}.zarr")
+    with pytest.raises(ValueError) as exc:
+        cube.tile_layout("v", "G")
+    assert "1985" in str(exc.value) and "2005" in str(exc.value)
+
+
+def test_time_selects_one_slice(cube):
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    for ano in (1985, 1995):
+        _derived_t(cube, "v", "T1", [ano], f"v_{ano}.zarr")
+    layout = cube.tile_layout("v", "G", time=1995)
+    assert len(layout) == 1
+    assert layout[0]["url"] == "v_1995.zarr"
+    assert layout[0]["times"] == [1995]
+
+
+def test_each_slice_covers_every_position_exactly_once(cube):
+    """O ponto todo: com a fatia escolhida, nenhuma posição se repete."""
+    for tid, bbox in [("A", (0.0, 500.0, 500.0, 1000.0)),
+                      ("B", (500.0, 500.0, 1000.0, 1000.0))]:
+        _tile_source(cube, f"G_{tid}", bbox)
+        for ano in (1985, 1995):
+            _derived_t(cube, "v", tid, [ano], f"v_{tid}_{ano}.zarr")
+    layout = cube.tile_layout("v", "G", time=1985)
+    posicoes = [(t["row_off"], t["col_off"]) for t in layout]
+    assert len(posicoes) == 2 and len(set(posicoes)) == 2
+
+
+def test_unknown_time_raises_naming_what_exists(cube):
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    _derived_t(cube, "v", "T1", [1985], "v.zarr")
+    with pytest.raises(ValueError, match="1985"):
+        cube.tile_layout("v", "G", time=2020)
+
+
+def test_single_slice_needs_no_time(cube):
+    """Uma variável com uma fatia só não é ambígua — não deve exigir time."""
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    _derived_t(cube, "v", "T1", [1985], "v.zarr")
+    assert len(cube.tile_layout("v", "G")) == 1
+
+
+def test_static_variable_reports_empty_times(cube):
+    _tile_source(cube, "G_T1", (0.0, 500.0, 500.0, 1000.0))
+    _derived(cube, "v", "T1")
+    assert cube.tile_layout("v", "G")[0]["times"] == []
