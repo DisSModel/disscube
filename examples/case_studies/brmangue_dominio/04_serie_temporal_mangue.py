@@ -65,6 +65,12 @@ GRID_ID   = "brmangue/30m"
 VARIAVEL  = "mangue"
 TILE      = 4096
 
+# Exportação para conferência: um GeoTIFF com um ano por banda. Não é
+# necessário para nada no cubo — serve para abrir no QGIS e ver que as fatias
+# estão certas, já que Zarr multi-tile não é diretamente visualizável.
+SAIDA_TIF    = Path("./data/brmangue_serie_mangue.tif")
+NODATA_SAIDA = 255
+
 # Cinco anos-marco, um por década. Trocar por range(1985, 2025) traz a série
 # completa — 40 anos x ~28 tiles, o que leva bem mais tempo.
 ANOS = [1985, 1995, 2005, 2015, 2024]
@@ -103,6 +109,40 @@ def _mascara_valida(vrt: Path, largura_alvo: int = 2048):
     if nodata is not None and np.isfinite(nodata):
         valida &= baixa != nodata
     return binary_dilation(valida), fator
+
+
+def _exportar_tif(cube, grid, anos: list[int]) -> None:
+    """Escreve um GeoTIFF com uma banda por ano, a partir dos Zarr do cubo.
+
+    Vai janela a janela, montando cada banda dos tiles daquela fatia — o Zarr
+    de uma variável multi-tile não é um arquivo só, então não há conversão
+    direta. (`tools/zarr_to_tif.py` converte UM store inteiro, o que não
+    cobre este caso.)
+    """
+    import zarr
+
+    perfil = dict(
+        driver="GTiff", height=grid.rows, width=grid.cols, count=len(anos),
+        dtype="uint8", nodata=NODATA_SAIDA, crs=grid.crs,
+        transform=grid.transform,
+        tiled=True, blockxsize=512, blockysize=512,
+        compress="deflate", zlevel=6, bigtiff="IF_SAFER", sparse_ok=True,
+    )
+    SAIDA_TIF.parent.mkdir(parents=True, exist_ok=True)
+
+    with rasterio.open(SAIDA_TIF, "w", **perfil) as dst:
+        for banda, ano in enumerate(anos, start=1):
+            dst.set_band_description(banda, f"{VARIAVEL}_{ano}")
+            for t in cube.tile_layout(VARIAVEL, GRID_ID, time=ano):
+                arr = np.asarray(zarr.open(t["url"], mode="r")[t["variable"]])
+                dst.write(
+                    np.where(np.isnan(arr), NODATA_SAIDA, arr).astype(np.uint8),
+                    banda,
+                    window=rasterio.windows.Window(
+                        t["col_off"], t["row_off"], t["width"], t["height"]
+                    ),
+                )
+            print(f"      banda {banda}: {VARIAVEL}_{ano}")
 
 
 def main() -> None:
@@ -204,7 +244,7 @@ def main() -> None:
               f"{_time.perf_counter() - t:.1f}s")
 
     # ── 4. o que ficou no catálogo ──────────────────────────────────────────
-    print("\n[4/4] catálogo")
+    print("\n[4/5] catálogo")
     derivados = [d for d in cube.search(grid=GRID_ID) if d.name == VARIAVEL]
     fatias = sorted({t for d in derivados for t in (d.times or [])})
     print(f"      {len(derivados)} pedaços em {len(fatias)} fatias: {fatias}")
@@ -215,7 +255,12 @@ def main() -> None:
         posicoes = {(t["row_off"], t["col_off"]) for t in layout}
         print(f"      {ano}: {len(layout)} pedaços em {len(posicoes)} posições")
 
+    # ── 5. exportação para conferência visual ───────────────────────────────
+    print(f"\n[5/5] GeoTIFF multibanda -> {SAIDA_TIF}")
+    _exportar_tif(cube, grid, ANOS)
+
     print(f"\n=== série no cubo em {_time.perf_counter() - t0:.1f}s ===")
+    print(f"    {SAIDA_TIF} — {len(ANOS)} bandas, uma por ano, para abrir no QGIS")
     print(f"    Para carregar um ano num workspace do haloexec:")
     print(f"        tiles = cube.tile_layout({VARIAVEL!r}, {GRID_ID!r}, time={ANOS[0]})")
     print(f"        load_zarr_tiles_into_workspace(ws, tiles)")
