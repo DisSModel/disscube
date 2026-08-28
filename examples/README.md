@@ -26,6 +26,11 @@ Standalone — não depende dos scripts de `setup/`; registra a própria grade e
   a legenda de estados num raster de papéis, tile a tile, e escreve o GeoTIFF final.
 - `python examples/case_studies/brmangue_dominio/02_dominio_bdc.py` — o mesmo produto
   sobre a malha nacional **BDC_SM**, com a grade mestra em BDC Albers.
+- `python examples/case_studies/brmangue_dominio/03_carregar_no_haloexec.py` — carrega
+  as variáveis derivadas num `MemmapRasterWorkspace` do haloexec (par em disco do
+  `maranhao/03_brmangue_simulate.py`, que entrega em RAM). Requer `haloexec[zarr]`.
+- `python examples/case_studies/brmangue_dominio/04_serie_temporal_mangue.py` — série
+  **temporal** mangue/não-mangue: cada ano é uma fatia, `load()` devolve `(time, y, x)`.
 
 Demonstram três coisas de uso geral:
 - o operador genérico **`reclassify`** (tabela `{valor_origem: valor_destino}` como dado);
