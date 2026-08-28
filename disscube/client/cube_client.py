@@ -64,9 +64,7 @@ class CubeClient:
             raise ValueError(f"Grid not found: {derivation.grid_id}")
 
         if tile_id:
-            tile_source = self.catalog.get_spatial_source(f"{grid.id}_{tile_id}")
-            if not tile_source or not tile_source.bbox:
-                raise ValueError(f"Tile {tile_id} with valid bbox not found for grid {grid.id}")
+            tile_source = self._resolve_tile_source(grid.id, tile_id)
 
             grid = GridSpec(
                 id=grid.id,
@@ -93,6 +91,72 @@ class CubeClient:
             d for d in self.catalog.search_derived_variables(tile_id=tile_id)
             if d.spec_hash == spec_hash
         ]
+
+    # BDC tile levels, coarsest-last. Order is only used for reporting; an
+    # ambiguous id is always an error, never resolved by precedence.
+    _BDC_TILE_LEVELS = ("SM", "MD", "LG")
+
+    def _resolve_tile_source(self, grid_id: str, tile_id: str) -> SpatialSource:
+        """
+        Find the ``SpatialSource`` whose ``bbox`` defines ``tile_id``.
+
+        Two registration conventions are supported, tried in this order:
+
+        1. ``{grid_id}_{tile_id}`` — a tile mesh defined for one specific
+           grid (see ``docs/architecture/tiling.md``).
+        2. ``BDC_{LEVEL}_{tile_id}`` — the national BDC tile grids, as
+           registered by ``disscube.utils.bdc_importer``. These are
+           grid-independent: the same tile envelope serves every grid that
+           shares the BDC CRS, so they are not duplicated per grid.
+
+        A fully-qualified id (``"BDC_SM_027005"``) is also accepted directly,
+        which is the way to disambiguate a bare id that exists at more than
+        one BDC level.
+
+        Raises
+        ------
+        ValueError
+            If nothing matches, if the match has no ``bbox``, or if a bare
+            tile id exists at several BDC levels. The levels cover different
+            areas (SM ~1.5°, MD ~3°, LG ~6°) and share many ids, so guessing
+            a level would silently derive the wrong extent.
+        """
+        scoped = self.catalog.get_spatial_source(f"{grid_id}_{tile_id}")
+        if scoped is not None:
+            if not scoped.bbox:
+                raise ValueError(
+                    f"Tile source {scoped.id!r} has no bbox; a tile source must "
+                    "carry the bbox of the partition to process."
+                )
+            return scoped
+
+        qualified = self.catalog.get_spatial_source(tile_id)
+        if qualified is not None and qualified.bbox:
+            return qualified
+
+        matches = []
+        for level in self._BDC_TILE_LEVELS:
+            candidate = self.catalog.get_spatial_source(f"BDC_{level}_{tile_id}")
+            if candidate is not None and candidate.bbox:
+                matches.append((level, candidate))
+
+        if len(matches) == 1:
+            return matches[0][1]
+
+        if len(matches) > 1:
+            found = ", ".join(f"BDC_{lvl}_{tile_id}" for lvl, _ in matches)
+            raise ValueError(
+                f"Tile id {tile_id!r} is ambiguous: it exists at several BDC "
+                f"levels ({found}), which cover different areas. Pass the "
+                f"fully-qualified id instead, e.g. tile_id='BDC_"
+                f"{matches[0][0]}_{tile_id}'."
+            )
+
+        raise ValueError(
+            f"Tile {tile_id!r} with valid bbox not found for grid {grid_id!r}. "
+            f"Looked for {grid_id}_{tile_id}, {tile_id}, and BDC_"
+            f"{{{','.join(self._BDC_TILE_LEVELS)}}}_{tile_id}."
+        )
 
     def derive_declarative(
         self,
@@ -205,6 +269,148 @@ class CubeClient:
             raise ValueError(msg)
         derived = static[0]
         return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+
+    def tile_layout(
+        self,
+        variable_id: str,
+        grid_id: str,
+        time: Optional[int] = None,
+    ) -> List[dict]:
+        """
+        Onde cada pedaço de uma variável derivada cai na grade mestra.
+
+        Responde a pergunta que ``load()`` não responde: uma variável
+        derivada tile a tile existe como N stores Zarr, e ``load()`` recusa
+        o caso multi-tile porque não há mosaico automático (ver
+        ``docs/architecture/tiling.md``). Este método devolve a informação
+        necessária para montá-la — sem montar nada, e sem impor um destino.
+
+        O retorno é **dado puro**, não um objeto de outro pacote: uma lista
+        de dicionários com caminho e posição. Quem consome decide o que
+        fazer — carregar em memória, escrever num workspace em disco,
+        inspecionar a cobertura. É o mesmo arranjo que o ``geomosaic`` usa
+        ao devolver ``tile_offsets`` sem conhecer quem vai lê-los.
+
+        Uma variável derivada sem tiles (``tile_id`` nulo, partição
+        ``global``) devolve uma lista de UM elemento cobrindo a grade
+        inteira, para que quem consome trate os dois casos igual.
+
+        Parameters
+        ----------
+        variable_id : str
+            Nome da variável derivada (ex.: ``"papel"``).
+        grid_id : str
+            Grade mestra sobre a qual os pedaços se posicionam.
+        time : int, optional
+            Fatia temporal a devolver, para variáveis derivadas com janela
+            de validade (``valid_from``/``valid_until``). Uma variável
+            temporal tem um conjunto de pedaços POR ANO, todos nas mesmas
+            posições — devolvê-los juntos daria um layout em que cada
+            posição aparece várias vezes, e quem montasse a partir dele
+            sobrescreveria um ano com outro sem perceber. Por isso, se a
+            variável tiver mais de uma fatia e ``time`` não for informado,
+            o método falha em vez de escolher (mesma disciplina de
+            ``load()`` diante de multi-tile).
+
+        Returns
+        -------
+        list[dict]
+            Ordenada por ``(row_off, col_off)``. Cada item tem:
+
+            - ``tile_id``  — identificador do tile, ou ``None`` se global
+            - ``variable`` — nome da variável dentro do store Zarr
+            - ``url``      — caminho do store
+            - ``row_off``  — linha, em pixel, onde o pedaço começa na grade
+            - ``col_off``  — coluna, em pixel
+            - ``height``   — altura do pedaço, em pixel
+            - ``width``    — largura do pedaço, em pixel
+            - ``times``    — anos cobertos por este pedaço (lista, vazia
+              quando a variável é estática)
+
+            As dimensões vêm do ``bbox`` registrado, não do arquivo: é o
+            mesmo ``bbox`` que ``derive(tile_id=...)`` usou para recortar,
+            então descrevem a posição pretendida. Um store cujo conteúdo
+            divirja disso é inconsistência a detectar, não a mascarar.
+
+        Raises
+        ------
+        ValueError
+            Se a grade não existir, se a variável não tiver nenhum derivado
+            nela, ou se um tile não tiver ``SpatialSource`` com ``bbox`` —
+            sem o bbox não há como saber onde o pedaço cai.
+        """
+        grid = self.catalog.get_grid(grid_id)
+        if grid is None:
+            raise ValueError(f"Grid not found: {grid_id}")
+
+        derived = [
+            d for d in self.catalog.search_derived_variables(grid_id=grid_id)
+            if d.name == variable_id
+        ]
+        if not derived:
+            raise ValueError(
+                f"Derived variable not found: {variable_id} on grid {grid_id}"
+            )
+
+        # Uma variável temporal repete cada posição uma vez por fatia; sem
+        # escolher a fatia, o layout descreveria a mesma célula N vezes.
+        fatias = sorted({t for d in derived for t in (d.times or [])})
+        if time is not None:
+            derived = [d for d in derived if time in (d.times or [])]
+            if not derived:
+                raise ValueError(
+                    f"Derived variable {variable_id!r} on grid {grid_id!r} has no "
+                    f"slice for time {time}. Available: {fatias}"
+                )
+        elif len(fatias) > 1:
+            raise ValueError(
+                f"Derived variable {variable_id!r} on grid {grid_id!r} is temporal "
+                f"and spans several slices: {fatias}. Each slice repeats the same "
+                f"tile positions, so a combined layout would describe every cell "
+                f"more than once — pass time=<year> to pick one."
+            )
+
+        layout: List[dict] = []
+        for d in derived:
+            if not d.tile_id:
+                layout.append({
+                    "tile_id": None,
+                    "variable": d.name,
+                    "url": d.asset_url,
+                    "row_off": 0,
+                    "col_off": 0,
+                    "height": grid.rows,
+                    "width": grid.cols,
+                    "times": list(d.times or []),
+                })
+                continue
+
+            # Duas convenções de registro de tile, na mesma ordem que
+            # derive() usa para resolvê-las.
+            source = (
+                self.catalog.get_spatial_source(f"{grid_id}_{d.tile_id}")
+                or self.catalog.get_spatial_source(d.tile_id)
+            )
+            if source is None or not source.bbox:
+                raise ValueError(
+                    f"Tile {d.tile_id!r} of {variable_id!r} has no SpatialSource "
+                    f"with a bbox, so its position on grid {grid_id!r} is unknown. "
+                    f"Looked for {grid_id}_{d.tile_id} and {d.tile_id}."
+                )
+
+            minx, miny, maxx, maxy = source.bbox
+            layout.append({
+                "tile_id": d.tile_id,
+                "variable": d.name,
+                "url": d.asset_url,
+                "row_off": int(round((grid.bbox[3] - maxy) / grid.resolution)),
+                "col_off": int(round((minx - grid.bbox[0]) / grid.resolution)),
+                "height": int(round((maxy - miny) / grid.resolution)),
+                "width": int(round((maxx - minx) / grid.resolution)),
+                "times": list(d.times or []),
+            })
+
+        return sorted(layout, key=lambda t: (t["row_off"], t["col_off"]))
 
     def to_lucc_data(
         self,

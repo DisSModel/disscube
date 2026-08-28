@@ -23,7 +23,10 @@ cube.derive(derivation, tile_id="009002")
 
 Internamente:
 1. Busca `GridSpec` da master grid.
-2. Busca `SpatialSource` com id `{grid_id}_{tile_id}` para obter o `bbox` do tile.
+2. Busca o `SpatialSource` que carrega o `bbox` do tile, tentando nesta ordem:
+   `{grid_id}_{tile_id}` (malha própria da grade), o `tile_id` como id completo,
+   e `BDC_{SM,MD,LG}_{tile_id}` (grades nacionais BDC). Um id simples que exista
+   em mais de um nível BDC levanta `ValueError` — ver `docs/guides/bdc.md`.
 3. Cria um `GridSpec` temporário: mesmos CRS e resolução, bbox restrito ao tile.
 4. Executa o pipeline nessa grade temporária.
 5. Salva em `data/derived/{grid_id}/009002/{spec_hash}/{var}.zarr`.
@@ -73,10 +76,38 @@ da = cube.load("dist_road", tile_id="009002")
 da = cube.load("dist_road", grid_id="BR/5km")
 ```
 
-> **Limitação atual:** `load()` sem `tile_id` retorna silenciosamente o primeiro resultado
-> quando múltiplos tiles da mesma variável existem na mesma grade. A desambiguação
-> automática (mosaico ou erro explícito) está planejada mas não implementada.
-> Especifique sempre `tile_id` em workloads multi-tile.
+> **Limitação atual:** `load()` sem `tile_id` levanta `ValueError` quando múltiplos
+> tiles da mesma variável existem na mesma grade — remontá-los num array único não
+> está implementado.
+
+## Consumir uma variável multi-tile
+
+`tile_layout()` responde o que `load()` não responde: onde cada pedaço cai na grade
+mestra. Devolve dado puro — caminho e posição — sem montar nada e sem impor um
+destino.
+
+```python
+tiles = cube.tile_layout("dist_road", "BR/5km")
+# [{"tile_id": "009002", "variable": "dist_road", "url": ".../dist_road.zarr",
+#   "row_off": 0, "col_off": 3520, "height": 3520, "width": 3520, "times": []}, ...]
+```
+
+Uma variável **temporal** tem um conjunto de pedaços por fatia, todos nas mesmas
+posições; juntá-los descreveria cada célula várias vezes. Por isso `tile_layout()`
+exige a fatia nesse caso:
+
+```python
+tiles = cube.tile_layout("uso", "BR/5km", time=2015)
+```
+
+Sem `time`, uma variável com mais de uma fatia levanta `ValueError` nomeando as
+disponíveis — a mesma disciplina que `load()` aplica a multi-tile.
+
+Uma variável sem tiles (partição `global`) devolve um único item cobrindo a grade
+inteira, para que quem consome trate os dois casos igual.
+
+O destino fica a critério de quem chama. Para montar em disco, por exemplo,
+`haloexec.load_zarr_tiles_into_workspace()` aceita essa lista diretamente.
 
 ## Vantagens
 

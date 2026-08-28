@@ -42,6 +42,11 @@ class Derivation(BaseModel):
     class_code : int | None
         Target class code used by class-aware operators (e.g. ``"percentage"``).
         Required when the operator demands it; reserved but optional otherwise.
+    mapping : dict[int, int] | None
+        Source-value -> target-value lookup table used by value-remapping
+        operators (e.g. ``"reclassify"``).  Required when the operator demands
+        it.  Folded into ``spec_hash()`` via ``Variable``, so changing the
+        table always yields a distinct product.
     role : str
         Semantic role of the variable (e.g. ``"driver"``, ``"state"``).
         Defaults to ``"driver"``.
@@ -66,6 +71,7 @@ class Derivation(BaseModel):
     source_id: str
     operator: str
     class_code: int | None = None
+    mapping: dict[int, int] | None = None
     role: str = "driver"
     valid_from: str | None = None
     valid_until: str | None = None
@@ -85,6 +91,10 @@ class Derivation(BaseModel):
             raise ValueError(
                 f"Operator {self.operator!r} requires class_code to be set."
             )
+        if meta.requires_mapping and not self.mapping:
+            raise ValueError(
+                f"Operator {self.operator!r} requires mapping to be set."
+            )
         return self
 
     # ── Conversion helpers ────────────────────────────────────────────────────
@@ -103,6 +113,7 @@ class Derivation(BaseModel):
             name=self.target,
             operator=self.operator,
             class_code=self.class_code,
+            mapping=self.mapping,
         )
 
     def to_spatial_derivation(self, grid_id: str) -> SpatialDerivation:
