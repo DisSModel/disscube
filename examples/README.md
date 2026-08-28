@@ -76,10 +76,39 @@ apontando para o diretório com os tiles ANADEM v2. O `02_` também precisa de
 
 | Script | Uso |
 |---|---|
-| `tools/zarr_to_tif.py` | Converte Zarr derivado para GeoTIFF |
+| `tools/zarr_to_tif.py` | Converte **um** Zarr derivado para GeoTIFF |
+| `tools/tiles_to_tif.py` | Recorta **alguns tiles** de uma variável num GeoTIFF, para inspecionar a malha |
 | `tools/import_bdc_tiles.py` | Importa tiles BDC SM/MD/LG no catálogo (one-time, lento) |
 
 ```bash
 python tools/zarr_to_tif.py data/derived/.../var.zarr output.tif
 python tools/import_bdc_tiles.py
 ```
+
+### Inspecionar a malha de tiles
+
+Abrir o mosaico inteiro para conferir se os tiles estão no lugar certo é
+desconfortável e, quando os valores dos dois lados de uma fronteira coincidem,
+não mostra nada. `tools/tiles_to_tif.py` recorta só os tiles pedidos e
+acrescenta uma banda com o **índice do tile**, que torna as fronteiras visíveis
+mesmo aí:
+
+```bash
+# três tiles vizinhos, duas fatias temporais
+python tools/tiles_to_tif.py --grid brmangue/30m_bdc --variavel mangue \
+    --tiles 029006 030006 030007 --tempos 1985 2024
+
+# variável estática: basta omitir --tempos
+python tools/tiles_to_tif.py --grid BR/5km --variavel slope --tiles 009002
+```
+
+Saída: uma banda por fatia pedida, mais `indice_do_tile` (1, 2, 3… na ordem em
+que foram pedidos). No QGIS, estilize essa última como categórica e os limites
+aparecem. Um tile inexistente é recusado listando os disponíveis, e uma variável
+temporal sem `--tempos` avisa quais fatias existem.
+
+> **Por que ele monta por blocos, e não tile a tile:** quando o lado do tile não
+> é múltiplo do bloco do GeoTIFF (os tiles BDC são 3520, o bloco é 512), cada
+> borda de tile cai no meio de um bloco, e a parte não coberta fica com o
+> preenchimento padrão do GDAL — zero, não o nodata declarado. Onde zero é um
+> valor válido, isso vira dado inventado.
