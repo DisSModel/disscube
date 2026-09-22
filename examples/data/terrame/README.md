@@ -1,8 +1,10 @@
 # TerraME *Fill* datasets
 
 Input layers and reference outputs of the three *Fill* examples shipped with
-TerraME's `gis` package. They are used by
-[`examples/04_terrame_fill_itaituba.py`](../../04_terrame_fill_itaituba.py)
+TerraME's `gis` package. They are used by examples
+[`04_terrame_fill_itaituba.py`](../../04_terrame_fill_itaituba.py),
+[`05_terrame_fill_emas.py`](../../05_terrame_fill_emas.py) and
+[`06_terrame_fill_amazonia.py`](../../06_terrame_fill_amazonia.py),
 and by the parity tests (`tests/test_terrame_parity.py`), which compare
 DisSCube cell by cell with the cellular spaces TerraME itself produced.
 

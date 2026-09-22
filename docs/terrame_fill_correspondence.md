@@ -80,8 +80,9 @@ with DisSCube on the same grid and compared cell by cell.
 The data are bundled in `examples/data/terrame/` (provenance, license and
 checksums in its README). The comparison runs in CI in
 `tests/test_terrame_parity.py` — passing tests pin the parity below, strict
-`xfail` tests record the known gaps — and
-`examples/04_terrame_fill_itaituba.py` prints the Itaituba table.
+`xfail` tests record the known gaps — and examples
+`04_terrame_fill_itaituba.py`, `05_terrame_fill_emas.py` and
+`06_terrame_fill_amazonia.py` print the comparison for each dataset.
 
 ### Itaituba — 620 cells, 5 km
 

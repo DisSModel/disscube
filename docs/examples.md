@@ -1,0 +1,51 @@
+# Examples
+
+The [`examples/`](https://github.com/DisSModel/disscube/tree/main/examples)
+folder has runnable scripts that need nothing beyond `pip install -e .`: each
+one works in a temporary directory and finishes in a few seconds. Pass a
+directory to keep the catalog, the inputs and the derived Zarr stores for
+inspection (e.g. in QGIS):
+
+```bash
+python examples/01_quickstart.py            # temporary workspace
+python examples/01_quickstart.py ./scratch  # keep the outputs
+```
+
+All examples are executed by the test suite (`tests/test_examples.py`), so
+they stay in sync with the API.
+
+## Learning the API — synthetic data
+
+Examples 01–03 generate their own inputs, so every number they print can be
+checked by hand.
+
+| Example | What it shows |
+|---|---|
+| [`01_quickstart.py`](https://github.com/DisSModel/disscube/blob/main/examples/01_quickstart.py) | Grid, raster sources and declarative derivations: `percentage`, `majority`, `mean`; loading results; cache hits via `spec_hash` |
+| [`02_vector_drivers.py`](https://github.com/DisSModel/disscube/blob/main/examples/02_vector_drivers.py) | Drivers from points, lines and polygons: `min_distance`, `count`, `presence`, `attribute`; several variables per derivation |
+| [`03_time_series.py`](https://github.com/DisSModel/disscube/blob/main/examples/03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` (including `period`) |
+
+## Real data — TerraME's *Fill* examples
+
+Examples 04–06 use the three *Fill* examples shipped with TerraME's `gis`
+package, bundled in
+[`examples/data/terrame/`](https://github.com/DisSModel/disscube/tree/main/examples/data/terrame)
+together with the cellular spaces TerraME produced. Each derives the same
+attributes with DisSCube and prints a cell-by-cell comparison with TerraME's
+own output.
+
+| Example | Cells | What it shows | Result |
+|---|---|---|---|
+| [`04_terrame_fill_itaituba.py`](https://github.com/DisSModel/disscube/blob/main/examples/04_terrame_fill_itaituba.py) | 620 × 5 km | TerraME's [Fill tutorial](https://github.com/TerraME/terrame/wiki/Fill): `mean`, `percentage` × `coverage_purity`, `min_distance` | averages and class coverage reproduce TerraME |
+| [`05_terrame_fill_emas.py`](https://github.com/DisSModel/disscube/blob/main/examples/05_terrame_fill_emas.py) | 5 514 × 500 m | `presence` of lines, `max` / `min` of a raster; a study area defined by a limit polygon | 98.4–99.7 % of cells identical |
+| [`06_terrame_fill_amazonia.py`](https://github.com/DisSModel/disscube/blob/main/examples/06_terrame_fill_amazonia.py) | 2 229 × 50 km | PRODES coverage with a declared nodata, distances to roads and ports | coverage identical wherever PRODES has data |
+
+What the differences mean — and which TerraME operations DisSCube does not
+support yet — is discussed in
+[TerraME Fill Cells Correspondence](terrame_fill_correspondence.md).
+
+## Scope
+
+DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
+Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
+to the model repositories, where those dependencies live.

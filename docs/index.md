@@ -42,6 +42,7 @@ da = cube.load("forest_pct", grid_id="AC/5km")
 
 ## Navigation
 
+- [**Examples**](examples.md) — runnable scripts: the API on synthetic data, and TerraME's *Fill* examples reproduced on real data
 - [**Architecture**](architecture/overview.md) — conceptual model, pipeline and reproducibility hash
 - [**Operators**](architecture/operators.md) — plugin system, available operators, how to add new ones
 - [**Pipeline**](architecture/pipeline.md) — detailed stages: Normalizer → GridAligner → Aggregator → Writer

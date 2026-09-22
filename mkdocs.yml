@@ -24,6 +24,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Examples: examples.md
   - Architecture:
       - Overview: architecture/overview.md
       - Operator System: architecture/operators.md

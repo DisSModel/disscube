@@ -109,13 +109,24 @@ backend = cube.to_lucc_data(
 
 ## Examples
 
-[`examples/`](examples/) has self-contained scripts that generate their own
-synthetic data and run in seconds — a quickstart with raster operators,
-vector drivers, and time series handed off to DisSModel:
+[`examples/`](examples/) has runnable scripts that need no downloads and run
+in seconds:
+
+- **01–03, synthetic data** — a quickstart with raster operators, vector
+  drivers, and time series handed off to DisSModel.
+- **04–06, real data** — the three *Fill* examples shipped with TerraME
+  (Itaituba, Emas National Park, Brazilian Amazon), derived with DisSCube and
+  compared cell by cell with TerraME's own output. Data are bundled in
+  [`examples/data/terrame/`](examples/data/terrame/).
 
 ```bash
 python examples/01_quickstart.py
+python examples/04_terrame_fill_itaituba.py
 ```
+
+See [`examples/README.md`](examples/README.md) for the full list, and
+[`docs/terrame_fill_correspondence.md`](docs/terrame_fill_correspondence.md)
+for how DisSCube's operators relate to TerraME's *Fill*.
 
 ## Available operators
 
