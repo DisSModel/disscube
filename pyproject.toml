@@ -35,8 +35,6 @@ dependencies = [
     "toml",
     "rioxarray",
     "affine",
-    "fastapi",
-    "uvicorn",
     "dissmodel>=0.6.0,<0.7.0",
 ]
 
@@ -45,6 +43,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff>=0.16,<0.17",     # pinned minor: ruff's default rule set grows across versions
+    "httpx",                # required by fastapi.testclient in tests/test_api.py
     "ipykernel",
 ]
 bdc = [
@@ -53,7 +52,9 @@ bdc = [
 s3 = [
     "s3fs",
 ]
-api = [
+api = [                     # experimental HTTP API (disscube.api)
+    "fastapi",
+    "uvicorn",
     "python-multipart",
 ]
 

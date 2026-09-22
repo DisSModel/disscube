@@ -1,3 +1,5 @@
-from .app import app
+"""Experimental HTTP API — requires ``pip install "disscube[api]"``."""
 
-__all__ = ["app"]
+from .app import app, create_app
+
+__all__ = ["app", "create_app"]

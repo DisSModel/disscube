@@ -47,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,bdc]"
+          pip install -e ".[dev,bdc,api]"
 
       # Coverage XML is produced but not uploaded anywhere yet.
       - name: Run tests with coverage
@@ -55,7 +55,8 @@ jobs:
 
   test-minimal:
     # Core install without optional extras: checks that tests depending on
-    # optional packages (fiona, via disscube[bdc]) are skipped, not failed.
+    # optional packages (fiona via disscube[bdc], fastapi via disscube[api])
+    # are skipped, not failed.
     name: test (core install, no extras)
     runs-on: ubuntu-latest
     timeout-minutes: 20

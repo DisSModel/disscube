@@ -167,6 +167,7 @@ disscube/
 ├── pipeline/         Stages: Normalizer → GridAligner → Aggregator → Writer
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage/          AssetStore (fsspec — local and S3)
+├── api/              Experimental HTTP API (optional `api` extra)
 └── utils/grids.py    register_local_grid, register_simulation_grids
 ```
 
@@ -188,6 +189,25 @@ class WeightedMeanOperator(Operator):
 ```
 
 The operator is registered automatically and accepted by `Derivation` / `SpatialDerivation` with no other change.
+
+## Experimental: HTTP API
+
+`disscube.api` exposes the catalog over HTTP for **remote orchestration**: registering grids and sources, triggering derivations and querying what has been derived. It is experimental and ships as an optional extra:
+
+```bash
+pip install -e ".[api]"
+DISSCUBE_CATALOG=./catalog.db DISSCUBE_STORE=./data/ uvicorn disscube.api.app:app
+```
+
+| Endpoint | Purpose |
+|---|---|
+| `GET` / `POST /grids` | List / register `GridSpec`s |
+| `GET` / `POST /sources` | List / register `SpatialSource`s |
+| `POST /derive` | Run a `SpatialDerivation` (errors → HTTP 400) |
+| `GET /catalog?grid=&role=` | List derived variables |
+| `GET /variables/{id}` | Metadata of one derived variable, including its Zarr `asset_url` |
+
+The API does **not** serve raster data. Models load derived variables in-process with `CubeClient.load()` / `CubeClient.to_lucc_data()`, reading the same Zarr store (local, or S3 via fsspec) that the API writes to. Interactive docs are available at `/docs` once the server is running.
 
 ## Known limitations
 
