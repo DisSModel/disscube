@@ -23,7 +23,7 @@ jobs:
         run: pip install "ruff>=0.16,<0.17"
 
       - name: Run Ruff
-        run: ruff check disscube/
+        run: ruff check disscube/ examples/
 
   test:
     name: test (py${{ matrix.python-version }})

@@ -107,6 +107,16 @@ backend = cube.to_lucc_data(
 )
 ```
 
+## Examples
+
+[`examples/`](examples/) has self-contained scripts that generate their own
+synthetic data and run in seconds — a quickstart with raster operators,
+vector drivers, and time series handed off to DisSModel:
+
+```bash
+python examples/01_quickstart.py
+```
+
 ## Available operators
 
 | Operator | Type | Resampling | Requires `class_code` |

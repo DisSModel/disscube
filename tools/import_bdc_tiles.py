@@ -5,9 +5,6 @@ Imports the BDC tiles (SM / MD / LG) as SpatialSources in the catalog.
 One-time operation; may take a few minutes depending on the size of the
 shapefiles.
 
-Prerequisite:
-  - python examples/setup/01_init_catalog.py
-
 Usage:
     python tools/import_bdc_tiles.py
 """

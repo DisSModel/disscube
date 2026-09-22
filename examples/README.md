@@ -1,41 +1,39 @@
 # DisSCube — Examples
 
-A structured walkthrough of the DisSCube pipeline, from catalog bootstrap to
-complete case studies.
+Self-contained, runnable examples. Each one generates its own synthetic input
+data, works in a temporary directory and finishes in a few seconds — no
+downloads, no local data folders:
 
-## Execution order
+```bash
+pip install -e .
+python examples/01_quickstart.py
+```
 
-### 1. Setup (one-time)
-Catalog bootstrap and registration of the base data.
-- `python examples/setup/01_init_catalog.py` — registers national and local grids.
-- `python examples/setup/02_register_sources.py` — registers raw files as SpatialSources.
+Pass a directory to keep the catalog, the raw inputs and the derived Zarr
+stores for inspection (e.g. in QGIS):
 
-### 2. National drivers
-Derives variables on the national BR/5km grid.
-- `python examples/drivers/01_brazil_national.py` — slope, indigenous lands (TI), distance to cities/rivers.
+```bash
+python examples/01_quickstart.py ./scratch
+```
 
-### 3. Case study: Maranhão (Ilha do Maranhão, 100 m)
-Two studies over the same geographic area and grid.
-- `python examples/case_studies/maranhao/01_mapbiomas_temporal.py` — MapBiomas time series (`uso`, majority) + static `dist_sedes`.
-- `python examples/case_studies/maranhao/02_brmangue_derive.py` — derives `uso`, `alt`, `solo` for the BR-MANGUE model.
-- `python examples/case_studies/maranhao/03_brmangue_simulate.py` — runs BrmangueRasterExecutor.
+| Example | What it shows |
+|---|---|
+| [`01_quickstart.py`](01_quickstart.py) | Grid, raster sources and declarative derivations: `percentage`, `majority`, `mean`; loading results; cache hits via `spec_hash` |
+| [`02_vector_drivers.py`](02_vector_drivers.py) | Drivers from vector layers: `min_distance`, `count`, `presence`, `attribute`; several variables per derivation |
+| [`03_time_series.py`](03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` (including `period`) |
 
-### 4. Case study: Acre (AC/5km)
-- `python examples/drivers/02_acre_5km.py` — regional drivers for Acre at 5 km.
-- `python examples/case_studies/lucc_acre/01_derive.py` — land-use attributes from a vector source.
-- `python examples/case_studies/lucc_acre/02_simulate.py` — runs LUCCRasterExecutor.
-- `python examples/case_studies/lucc_acre/03_temporal_drivers.py` — simulation loop with temporal drivers.
+All examples are executed by the test suite (`tests/test_examples.py`), so
+they are kept in sync with the API.
 
----
+## Scope
+
+DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
+Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
+to the model repositories, where those dependencies live.
 
 ## Utilities (`tools/`)
 
 | Script | Purpose |
 |---|---|
 | `tools/zarr_to_tif.py` | Converts a derived Zarr to GeoTIFF |
-| `tools/import_bdc_tiles.py` | Imports BDC SM/MD/LG tiles into the catalog (one-time, slow) |
-
-```bash
-python tools/zarr_to_tif.py data/derived/.../var.zarr output.tif
-python tools/import_bdc_tiles.py
-```
+| `tools/import_bdc_tiles.py` | Registers the BDC tile grids in a catalog |
