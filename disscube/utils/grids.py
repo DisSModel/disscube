@@ -1,8 +1,10 @@
 import logging
 import math
+
 from pyproj import Transformer
-from disscube.models import GridSpec
+
 from disscube.client import CubeClient
+from disscube.models import GridSpec
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
-import zarr
-import xarray as xr
 from pathlib import Path
-from disscube.pipeline import PipelineStage, PipelineContext
+
 from disscube.models import DerivedVariable
+from disscube.pipeline import PipelineContext, PipelineStage
+
 
 class VariableWriter(PipelineStage):
     def __init__(self, storage, catalog):
@@ -91,7 +91,6 @@ class VariableWriter(PipelineStage):
         Calculates SHA-256 of a directory by hashing all file contents.
         """
         import hashlib
-        from pathlib import Path
         
         hasher = hashlib.sha256()
         root = Path(path)

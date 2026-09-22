@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
-from typing import List, Optional
-from disscube.models import GridSpec, SpatialSource, DerivedVariable, SpatialRelation
+
+from disscube.models import DerivedVariable, GridSpec, SpatialRelation, SpatialSource
+
 
 class JsonCatalogStore:
     def __init__(self, path: str | Path):
@@ -21,22 +22,22 @@ class JsonCatalogStore:
         self._data["grids"][grid.id] = grid.model_dump()
         self._save()
 
-    def get_grid(self, grid_id: str) -> Optional[GridSpec]:
+    def get_grid(self, grid_id: str) -> GridSpec | None:
         data = self._data["grids"].get(grid_id)
         return GridSpec(**data) if data else None
 
-    def list_grids(self) -> List[GridSpec]:
+    def list_grids(self) -> list[GridSpec]:
         return [GridSpec(**g) for g in self._data["grids"].values()]
 
     def save_spatial_source(self, source: SpatialSource) -> None:
         self._data["sources"][source.id] = source.model_dump()
         self._save()
 
-    def get_spatial_source(self, source_id: str) -> Optional[SpatialSource]:
+    def get_spatial_source(self, source_id: str) -> SpatialSource | None:
         data = self._data["sources"].get(source_id)
         return SpatialSource(**data) if data else None
 
-    def list_spatial_sources(self) -> List[SpatialSource]:
+    def list_spatial_sources(self) -> list[SpatialSource]:
         return [SpatialSource(**s) for s in self._data["sources"].values()]
 
     def save_derived(self, derived: DerivedVariable) -> None:
@@ -47,7 +48,7 @@ class JsonCatalogStore:
         self._data["derived"].pop(derived_id, None)
         self._save()
 
-    def search_derived_variables(self, grid_id: str | None = None, role: str | None = None, tile_id: str | None = None) -> List[DerivedVariable]:
+    def search_derived_variables(self, grid_id: str | None = None, role: str | None = None, tile_id: str | None = None) -> list[DerivedVariable]:
         results = []
         for d in self._data["derived"].values():
             if grid_id and d["grid_id"] != grid_id:
@@ -59,7 +60,7 @@ class JsonCatalogStore:
             results.append(DerivedVariable(**d))
         return results
 
-    def get_derived_by_hash(self, spec_hash: str) -> Optional[DerivedVariable]:
+    def get_derived_by_hash(self, spec_hash: str) -> DerivedVariable | None:
         for d in self._data["derived"].values():
             if d["spec_hash"] == spec_hash:
                 return DerivedVariable(**d)
@@ -78,14 +79,14 @@ class JsonCatalogStore:
             self._data["relations"].append(relation.model_dump())
         self._save()
 
-    def get_relations(self, grid_id: str) -> List[SpatialRelation]:
+    def get_relations(self, grid_id: str) -> list[SpatialRelation]:
         """Busca bidirecional: source_grid_id OU target_grid_id."""
         return [
             SpatialRelation(**r) for r in self._data["relations"]
             if r["source_grid_id"] == grid_id or r["target_grid_id"] == grid_id
         ]
 
-    def get_relation(self, source_id: str, target_id: str) -> Optional[SpatialRelation]:
+    def get_relation(self, source_id: str, target_id: str) -> SpatialRelation | None:
         for r in self._data["relations"]:
             if r["source_grid_id"] == source_id and r["target_grid_id"] == target_id:
                 return SpatialRelation(**r)

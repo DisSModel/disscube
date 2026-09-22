@@ -1,9 +1,9 @@
 import logging
 
-import rasterio
 import geopandas as gpd
+import rasterio
 
-from disscube.pipeline import PipelineStage, PipelineContext
+from disscube.pipeline import PipelineContext, PipelineStage
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class Normalizer(PipelineStage):
 
             if ctx.source.crs:
                 from pyproj import CRS as ProjCRS
+                from pyproj.exceptions import CRSError
                 declared = ctx.source.crs
                 file_crs = gdf.crs
                 try:
@@ -33,7 +34,7 @@ class Normalizer(PipelineStage):
                             ProjCRS.from_user_input(declared)
                         )
                     )
-                except Exception:
+                except CRSError:
                     crs_match = False
 
                 if not crs_match:

@@ -8,16 +8,16 @@ when a new operator is added here.
 
 from __future__ import annotations
 
-import numpy as np
-import xarray as xr
 import geopandas as gpd
+import numpy as np
 import rasterio.features
+import xarray as xr
 from rasterio.warp import Resampling
+from rioxarray.exceptions import RioXarrayError
 
-from disscube.operators.base import Operator
-from disscube.models.variable import Variable
 from disscube.models.grid import GridSpec
-
+from disscube.models.variable import Variable
+from disscube.operators.base import Operator
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -67,7 +67,7 @@ def _fine_array(data: xr.DataArray) -> tuple[np.ndarray, float | None]:
     if nodata is None:
         try:
             nodata = data.rio.nodata
-        except Exception:
+        except RioXarrayError:
             nodata = None
     return arr, nodata
 

@@ -13,12 +13,13 @@ Field names are chosen to be compatible with STAC conventions where natural:
 No STAC code, catalog, API, or export is implemented in this module.
 """
 
-import json
 import hashlib
+import json
+
 from pydantic import BaseModel, model_validator
 
+from disscube.models.variable import SpatialDerivation, Variable
 from disscube.operators.base import OPERATOR_REGISTRY
-from disscube.models.variable import Variable, SpatialDerivation
 
 
 class Derivation(BaseModel):

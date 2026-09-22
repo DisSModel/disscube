@@ -15,11 +15,11 @@ Adding a new operator never requires touching this file.
 
 from __future__ import annotations
 
-import xarray as xr
 import rioxarray  # noqa: F401 — registers the .rio accessor on Dataset/DataArray
+import xarray as xr
 
-from disscube.pipeline import PipelineStage, PipelineContext
 from disscube.operators.base import OPERATOR_REGISTRY
+from disscube.pipeline import PipelineContext, PipelineStage
 
 
 def _crs_to_named_wkt(crs_str: str) -> str:
@@ -81,9 +81,7 @@ class Aggregator(PipelineStage):
             # name (DataArrays may be at target-grid resolution for continuous
             # operators, or at a fine resolution for categorical ones). For
             # vector sources it returns a single GeoDataFrame.
-            if isinstance(source_data, dict):
-                var_data = source_data[var.name]
-            elif isinstance(source_data, xr.Dataset):
+            if isinstance(source_data, (dict, xr.Dataset)):
                 var_data = source_data[var.name]
             else:
                 var_data = source_data

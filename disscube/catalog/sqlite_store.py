@@ -1,8 +1,9 @@
-import sqlite3
 import json
+import sqlite3
 from pathlib import Path
-from typing import List, Optional, Any
-from disscube.models import GridSpec, SpatialSource, DerivedVariable, SpatialRelation
+
+from disscube.models import DerivedVariable, GridSpec, SpatialRelation, SpatialSource
+
 
 class SqliteCatalogStore:
     def __init__(self, path: str | Path):
@@ -58,12 +59,12 @@ class SqliteCatalogStore:
                 (grid.id, grid.model_dump_json())
             )
 
-    def get_grid(self, grid_id: str) -> Optional[GridSpec]:
+    def get_grid(self, grid_id: str) -> GridSpec | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT data FROM grids WHERE id = ?", (grid_id,)).fetchone()
             return GridSpec(**json.loads(row["data"])) if row else None
 
-    def list_grids(self) -> List[GridSpec]:
+    def list_grids(self) -> list[GridSpec]:
         with self._get_connection() as conn:
             rows = conn.execute("SELECT data FROM grids").fetchall()
             return [GridSpec(**json.loads(r["data"])) for r in rows]
@@ -75,12 +76,12 @@ class SqliteCatalogStore:
                 (source.id, source.model_dump_json())
             )
 
-    def get_spatial_source(self, source_id: str) -> Optional[SpatialSource]:
+    def get_spatial_source(self, source_id: str) -> SpatialSource | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT data FROM sources WHERE id = ?", (source_id,)).fetchone()
             return SpatialSource(**json.loads(row["data"])) if row else None
 
-    def list_spatial_sources(self) -> List[SpatialSource]:
+    def list_spatial_sources(self) -> list[SpatialSource]:
         with self._get_connection() as conn:
             rows = conn.execute("SELECT data FROM sources").fetchall()
             return [SpatialSource(**json.loads(r["data"])) for r in rows]
@@ -96,7 +97,7 @@ class SqliteCatalogStore:
         with self._get_connection() as conn:
             conn.execute("DELETE FROM derived WHERE id = ?", (derived_id,))
 
-    def search_derived_variables(self, grid_id: str | None = None, role: str | None = None, tile_id: str | None = None) -> List[DerivedVariable]:
+    def search_derived_variables(self, grid_id: str | None = None, role: str | None = None, tile_id: str | None = None) -> list[DerivedVariable]:
         query = "SELECT data FROM derived WHERE 1=1"
         params = []
         if grid_id:
@@ -113,7 +114,7 @@ class SqliteCatalogStore:
             rows = conn.execute(query, params).fetchall()
             return [DerivedVariable(**json.loads(r["data"])) for r in rows]
 
-    def get_derived_by_hash(self, spec_hash: str) -> Optional[DerivedVariable]:
+    def get_derived_by_hash(self, spec_hash: str) -> DerivedVariable | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT data FROM derived WHERE spec_hash = ?", (spec_hash,)).fetchone()
             return DerivedVariable(**json.loads(row["data"])) if row else None
@@ -125,7 +126,7 @@ class SqliteCatalogStore:
                 (relation.source_grid_id, relation.target_grid_id, relation.model_dump_json())
             )
 
-    def get_relations(self, grid_id: str) -> List[SpatialRelation]:
+    def get_relations(self, grid_id: str) -> list[SpatialRelation]:
         with self._get_connection() as conn:
             rows = conn.execute(
                 "SELECT data FROM relations WHERE source_grid_id = ? OR target_grid_id = ?",
@@ -133,7 +134,7 @@ class SqliteCatalogStore:
             )
             return [SpatialRelation(**json.loads(r["data"])) for r in rows]
 
-    def get_relation(self, source_id: str, target_id: str) -> Optional[SpatialRelation]:
+    def get_relation(self, source_id: str, target_id: str) -> SpatialRelation | None:
         with self._get_connection() as conn:
             row = conn.execute(
                 "SELECT data FROM relations WHERE source_grid_id = ? AND target_grid_id = ?",

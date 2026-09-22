@@ -1,8 +1,10 @@
 import logging
 
 from shapely.geometry import shape
-from disscube.models import SpatialSource
+
 from disscube.client import CubeClient
+from disscube.models import SpatialSource
+
 from .grids import BDC_CRS, register_simulation_grids
 
 log = logging.getLogger(__name__)

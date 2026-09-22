@@ -7,15 +7,14 @@ each submodule defines ``Operator`` subclasses that self-register via
 """
 
 # Import submodules to trigger auto-registration of all operator classes.
-from . import zonal, proximity  # noqa: F401
-
-from .zonal import ZonalAggregator
-from .proximity import ProximityAggregator
+from . import proximity, zonal  # noqa: F401
 from .base import OPERATOR_REGISTRY, Operator
+from .proximity import ProximityAggregator
+from .zonal import ZonalAggregator
 
 __all__ = [
-    "Operator",
     "OPERATOR_REGISTRY",
-    "ZonalAggregator",       # legacy shim
+    "Operator",
     "ProximityAggregator",   # legacy shim
+    "ZonalAggregator",       # legacy shim
 ]

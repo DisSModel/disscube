@@ -1,7 +1,9 @@
-import json
 import hashlib
+import json
 from typing import Literal
+
 from pydantic import BaseModel
+
 from .grid import SpatialRelation
 
 

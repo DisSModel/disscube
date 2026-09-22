@@ -15,12 +15,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
-import numpy as np
 import xarray as xr
 from rasterio.warp import Resampling
 
 if TYPE_CHECKING:
     import geopandas as gpd
+
     from disscube.models.grid import GridSpec
     from disscube.models.variable import Variable
 
@@ -76,9 +76,9 @@ class Operator:
 
     def compute(
         self,
-        data: "xr.DataArray | gpd.GeoDataFrame",
-        var: "Variable",
-        grid: "GridSpec",
+        data: xr.DataArray | gpd.GeoDataFrame,
+        var: Variable,
+        grid: GridSpec,
     ) -> xr.DataArray:
         """
         Derive a single variable from aligned source data.

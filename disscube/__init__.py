@@ -1,5 +1,5 @@
 from disscube.client import CubeClient
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable, DerivedVariable
 from disscube.derivation import Derivation
+from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialSource, Variable
 
-__all__ = ["CubeClient", "GridSpec", "SpatialSource", "SpatialDerivation", "Variable", "DerivedVariable", "Derivation"]
+__all__ = ["CubeClient", "Derivation", "DerivedVariable", "GridSpec", "SpatialDerivation", "SpatialSource", "Variable"]

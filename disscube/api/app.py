@@ -1,14 +1,16 @@
+
 from fastapi import FastAPI, HTTPException
-from typing import List, Optional
+
 from disscube.client import CubeClient
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, DerivedVariable
+from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialSource
+
 from .config import CATALOG_PATH, STORE_PATH
 
 app = FastAPI(title="DissCube API")
 
 cube = CubeClient(CATALOG_PATH, STORE_PATH)
 
-@app.get("/grids", response_model=List[GridSpec])
+@app.get("/grids", response_model=list[GridSpec])
 def list_grids():
     return cube.catalog.list_grids()
 
@@ -17,7 +19,7 @@ def register_grid(grid: GridSpec):
     cube.register_grid(grid)
     return {"status": "ok"}
 
-@app.get("/sources", response_model=List[SpatialSource])
+@app.get("/sources", response_model=list[SpatialSource])
 def list_spatial_sources():
     return cube.catalog.list_spatial_sources()
 
@@ -26,15 +28,15 @@ def register_spatial_source(source: SpatialSource):
     cube.register_spatial_source(source)
     return {"status": "ok"}
 
-@app.post("/derive", response_model=List[DerivedVariable])
+@app.post("/derive", response_model=list[DerivedVariable])
 def derive(derivation: SpatialDerivation):
     try:
         return cube.derive(derivation)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
-@app.get("/catalog", response_model=List[DerivedVariable])
-def get_catalog(grid: Optional[str] = None, role: Optional[str] = None):
+@app.get("/catalog", response_model=list[DerivedVariable])
+def get_catalog(grid: str | None = None, role: str | None = None):
     return cube.search(grid=grid, role=role)
 
 @app.get("/variables/{variable_id}")

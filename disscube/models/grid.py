@@ -1,9 +1,11 @@
-from typing import Literal, Tuple
-from pydantic import BaseModel
-import numpy as np
 import re
 import warnings
+from typing import Literal
+
+import numpy as np
 from affine import Affine
+from pydantic import BaseModel
+
 
 class GridAnchor(BaseModel):
     """
@@ -40,11 +42,11 @@ class GridSpec(BaseModel):
 
     @property
     def rows(self) -> int:
-        return int(round((self.bbox[3] - self.bbox[1]) / self.resolution))
+        return round((self.bbox[3] - self.bbox[1]) / self.resolution)
 
     @property
     def cols(self) -> int:
-        return int(round((self.bbox[2] - self.bbox[0]) / self.resolution))
+        return round((self.bbox[2] - self.bbox[0]) / self.resolution)
 
     @property
     def transform(self) -> Affine:
@@ -98,7 +100,7 @@ class GridSpec(BaseModel):
         if grid_id != self.id:
             raise ValueError(f"Cell ID {cell_id} does not match grid ID {self.id}")
         
-        minx, miny, maxx, maxy = self.bbox
+        minx, _miny, _maxx, maxy = self.bbox
         x = minx + (col + 0.5) * self.resolution
         y = maxy - (row + 0.5) * self.resolution
         return (x, y)

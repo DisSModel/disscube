@@ -1,5 +1,5 @@
 from .json_store import JsonCatalogStore
-from .sqlite_store import SqliteCatalogStore
 from .protocol import CatalogStore
+from .sqlite_store import SqliteCatalogStore
 
-__all__ = ["JsonCatalogStore", "SqliteCatalogStore", "CatalogStore"]
+__all__ = ["CatalogStore", "JsonCatalogStore", "SqliteCatalogStore"]

@@ -1,20 +1,30 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, List, Any
 import os
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray as xr
+from rioxarray.exceptions import RioXarrayError
+
 from disscube.catalog.sqlite_store import SqliteCatalogStore
+from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialRelation, SpatialSource
+from disscube.pipeline import PipelineContext
+from disscube.pipeline.aggregator import Aggregator
+from disscube.pipeline.aligner import GridAligner
+from disscube.pipeline.normalizer import Normalizer
+from disscube.pipeline.writer import VariableWriter
+from disscube.storage import AssetStore
+
+if TYPE_CHECKING:
+    # Type-only imports: Derivation is imported lazily at runtime to avoid a
+    # circular import; dissmodel is only needed by to_lucc_data().
+    from dissmodel.geo.raster.backend import RasterBackend
+
+    from disscube.derivation import Derivation
 
 log = logging.getLogger(__name__)
-from disscube.storage import AssetStore
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, DerivedVariable, SpatialRelation
-from disscube.pipeline import PipelineContext
-from disscube.pipeline.normalizer import Normalizer
-from disscube.pipeline.aligner import GridAligner
-from disscube.pipeline.aggregator import Aggregator
-from disscube.pipeline.writer import VariableWriter
 
 
 class CubeClient:
@@ -31,13 +41,13 @@ class CubeClient:
     def register_relation(self, relation: SpatialRelation):
         self.catalog.save_relation(relation)
 
-    def get_relations(self, grid_id: str) -> List[SpatialRelation]:
+    def get_relations(self, grid_id: str) -> list[SpatialRelation]:
         return self.catalog.get_relations(grid_id)
 
-    def search(self, grid: Optional[str] = None, role: Optional[str] = None) -> List[DerivedVariable]:
+    def search(self, grid: str | None = None, role: str | None = None) -> list[DerivedVariable]:
         return self.catalog.search_derived_variables(grid_id=grid, role=role)
 
-    def derive(self, derivation: SpatialDerivation, tile_id: Optional[str] = None) -> List[DerivedVariable]:
+    def derive(self, derivation: SpatialDerivation, tile_id: str | None = None) -> list[DerivedVariable]:
         derivation = derivation.model_copy(deep=True)
         if not derivation.relations:
             derivation.relations = self.get_relations(derivation.grid_id)
@@ -96,10 +106,10 @@ class CubeClient:
 
     def derive_declarative(
         self,
-        derivation: "Derivation",  # noqa: F821 — imported lazily to avoid circular refs
+        derivation: Derivation,
         grid_id: str,
-        tile_id: Optional[str] = None,
-    ) -> List[DerivedVariable]:
+        tile_id: str | None = None,
+    ) -> list[DerivedVariable]:
         """
         Thin convenience wrapper: build a ``SpatialDerivation`` from a
         declarative ``Derivation`` and call the existing ``derive()`` pipeline.
@@ -138,8 +148,8 @@ class CubeClient:
     def load(
         self,
         variable_id: str,
-        tile_id: Optional[str] = None,
-        grid_id: Optional[str] = None,
+        tile_id: str | None = None,
+        grid_id: str | None = None,
     ) -> xr.DataArray:
         """
         Load a derived variable as an xr.DataArray.
@@ -159,7 +169,7 @@ class CubeClient:
             raise ValueError(msg)
 
         if len(matches) > 1 and tile_id is None and not grid_id:
-            grid_ids = list(set(m.grid_id for m in matches))
+            grid_ids = list({m.grid_id for m in matches})
             if len(grid_ids) > 1:
                 raise ValueError(
                     f"Multiple grids found for {variable_id}: {grid_ids}. "
@@ -167,7 +177,7 @@ class CubeClient:
                 )
 
         if tile_id is None and len(matches) > 1:
-            candidate_tiles = sorted(set(m.tile_id for m in matches if m.tile_id))
+            candidate_tiles = sorted({m.tile_id for m in matches if m.tile_id})
             if len(candidate_tiles) > 1:
                 raise ValueError(
                     f"Variable '{variable_id}' exists across multiple tiles: {candidate_tiles}. "
@@ -208,10 +218,10 @@ class CubeClient:
 
     def to_lucc_data(
         self,
-        variables: List[str],
-        grid_id: Optional[str] = None,
-        period: Optional[tuple[str, str]] = None,
-    ) -> "RasterBackend":
+        variables: list[str],
+        grid_id: str | None = None,
+        period: tuple[str, str] | None = None,
+    ) -> RasterBackend:
         """
         Standard integration point for the DisSModel ecosystem.
         Returns a RasterBackend containing all requested variables.
@@ -271,8 +281,8 @@ class CubeClient:
                 if not detected_crs and "spatial_ref" in da.coords:
                     try:
                         detected_crs = da.rio.crs
-                    except Exception:
-                        pass
+                    except RioXarrayError:
+                        log.debug("Could not read CRS from %s spatial_ref", var_name)
 
             if backend is None:
                 rows, cols = da.sizes["y"], da.sizes["x"]

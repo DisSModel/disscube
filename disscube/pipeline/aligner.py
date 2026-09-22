@@ -24,18 +24,20 @@ from __future__ import annotations
 
 import logging
 
-import rioxarray  # noqa: F401 — registers the .rio accessor
-import numpy as np
-import xarray as xr
 import geopandas as gpd
+import numpy as np
+import rioxarray  # registers the .rio accessor
+import xarray as xr
 from pyproj import CRS as ProjCRS
+from pyproj.exceptions import CRSError
 from rasterio.warp import Resampling
+from rioxarray.exceptions import RioXarrayError
 from shapely.geometry import box
 
-from disscube.operators.base import OPERATOR_REGISTRY
-from disscube.pipeline import PipelineStage, PipelineContext
 from disscube.models.grid import GridSpec
 from disscube.models.variable import Variable
+from disscube.operators.base import OPERATOR_REGISTRY
+from disscube.pipeline import PipelineContext, PipelineStage
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ class GridAligner(PipelineStage):
                 needs_reproject = not ProjCRS.from_user_input(gdf.crs).equals(
                     ProjCRS.from_user_input(grid.crs)
                 )
-            except Exception:
+            except CRSError:
                 needs_reproject = str(gdf.crs) != str(grid.crs)
             if needs_reproject:
                 gdf = gdf.to_crs(grid.crs)
@@ -208,7 +210,7 @@ class GridAligner(PipelineStage):
         src = band.rio.reproject(grid.crs, resampling=Resampling.nearest)
         try:
             src_res = abs(float(src.rio.resolution()[0]))
-        except Exception:
+        except RioXarrayError:
             src_res = grid.resolution
 
         target_res = grid.resolution
@@ -232,7 +234,7 @@ class GridAligner(PipelineStage):
         nodata = None
         try:
             nodata = band.rio.nodata
-        except Exception:
+        except RioXarrayError:
             nodata = None
 
         aligned = band.rio.reproject(

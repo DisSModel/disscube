@@ -44,6 +44,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-cov",
+    "ruff>=0.16,<0.17",     # pinned minor: ruff's default rule set grows across versions
     "ipykernel",
 ]
 bdc = [
@@ -59,3 +60,14 @@ api = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["disscube*"]
+
+[tool.ruff]
+# Same policy as DisSModel/dissmodel: no explicit `select`, lint with ruff's
+# own default rule set for the pinned minor version (see the `ruff` pin in
+# the `dev` extra). If bumping that pin changes CI results, reconcile by
+# fixing the code or, for a rule that is a bad fit, adding it to an explicit
+# `ignore` here — not by re-pinning silently.
+# line-length is informational: E501 is not in the default rules.
+line-length = 120
+target-version = "py311"
+exclude = ["docs", "site", "build"]

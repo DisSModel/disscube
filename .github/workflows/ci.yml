@@ -8,6 +8,23 @@ on:
   workflow_dispatch:  # allows running the workflow manually
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ruff
+        # keep in sync with the `ruff` pin in pyproject.toml's `dev` extra
+        run: pip install "ruff>=0.16,<0.17"
+
+      - name: Run Ruff
+        run: ruff check disscube/
+
   test:
     name: test (py${{ matrix.python-version }})
     runs-on: ubuntu-latest

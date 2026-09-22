@@ -4,15 +4,15 @@ Proximity operators — Euclidean distance and feature-count over vector sources
 
 from __future__ import annotations
 
-import numpy as np
-import xarray as xr
 import geopandas as gpd
+import numpy as np
 import rasterio.features
+import xarray as xr
 from rasterio.warp import Resampling
 
-from disscube.operators.base import Operator
-from disscube.models.variable import Variable
 from disscube.models.grid import GridSpec
+from disscube.models.variable import Variable
+from disscube.operators.base import Operator
 
 
 class MinDistanceOperator(Operator):
@@ -58,7 +58,7 @@ class CountOperator(Operator):
             if valid.empty:
                 counts = np.zeros((grid.rows, grid.cols), dtype=np.float64)
             else:
-                minx, miny, maxx, maxy = grid.bbox
+                minx, _miny, _maxx, maxy = grid.bbox
                 res = grid.resolution
                 centroids = valid.geometry.centroid
                 cols_idx = ((centroids.x - minx) / res).astype(int)
