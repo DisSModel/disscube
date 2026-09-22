@@ -9,23 +9,26 @@ The Brazil Data Cube (BDC) partitions Brazil into hierarchical tiles. DisSCube r
 
 ## Registering BDC grids and tiles
 
-The `bdc_importer` utility indexes the master grids and registers each tile as a `SpatialSource` in the catalog:
+The `bdc_importer` utility registers the national simulation grids (`BR/5km`, `BR/1km`) and each BDC tile as a `SpatialSource` in the catalog. The BDC Grid V2 shapefiles are bundled with DisSCube (`disscube/data/bdc_grids/`), so no download is needed:
 
 ```python
 from disscube.utils.bdc_importer import import_bdc_grids
 
-import_bdc_grids(
-    cube,
-    sm_path="data/bdc_grids/BDC_SM_V2.shp",
-    md_path="data/bdc_grids/BDC_MD_V2.shp",
-    lg_path="data/bdc_grids/BDC_LG_V2.shp",
-)
+import_bdc_grids(cube)   # bundled BDC_SM_V2, BDC_MD_V2, BDC_LG_V2
 ```
 
-This registers the master grids and each tile as a `SpatialSource` with its `bbox` filled in.
+To use another copy of the grids, pass `sm_path`, `md_path` and/or `lg_path` (any path or `zip://` URL fiona can open).
+
+| Level | Tiles | Tile size | Source ID |
+|---|---|---|---|
+| SM | 871 | 105.6 km (~1°) | `BDC_SM_<tile>` |
+| MD | 242 | 211.2 km (~2°) | `BDC_MD_<tile>` |
+| LG | 75 | 422.4 km (~4°) | `BDC_LG_<tile>` |
+
+Tile IDs repeat across levels (e.g. `005004` exists in both SM and MD), so a tile is identified by level and ID. Provenance, checksums and licensing of the bundled files are documented in `disscube/data/bdc_grids/README.md`; the files are © INPE and are not covered by DisSCube's MIT license.
 
 !!! warning "STAC data ingestion — planned"
-    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata), but **does not ingest data via STAC**. The registered `SpatialSource`s have a placeholder `asset_url` (`"planned"`) and cannot be loaded directly as raster data. Integration with the BDC STAC catalog is planned but not yet implemented. To use real BDC data, provide the files locally through a `SpatialSource` whose `asset_url` points to the correct file.
+    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata), but **does not ingest data via STAC**. The registered `SpatialSource`s have a placeholder `asset_url` (`data/bdc/<LEVEL>/<tile>.tif`) that is not populated, so they cannot be loaded directly as raster data. Integration with the BDC STAC catalog is planned but not yet implemented. To use real BDC data, provide the files locally through a `SpatialSource` whose `asset_url` points to the correct file.
 
 ## Per-tile derivation
 

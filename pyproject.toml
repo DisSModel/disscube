@@ -62,6 +62,9 @@ api = [                     # experimental HTTP API (disscube.api)
 where = ["."]
 include = ["disscube*"]
 
+[tool.setuptools.package-data]
+disscube = ["data/bdc_grids/*.zip", "data/bdc_grids/README.md"]
+
 [tool.ruff]
 # Same policy as DisSModel/dissmodel: no explicit `select`, lint with ruff's
 # own default rule set for the pinned minor version (see the `ruff` pin in

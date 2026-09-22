@@ -23,7 +23,8 @@ htmlcov/
 disscube.egg-info/
 catalog.json
 test_catalog.json
-data
+# local data store at the repository root (disscube/data/ holds bundled package data)
+/data/
 outputs/
 
 # Build and Distribution

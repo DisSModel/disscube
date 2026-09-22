@@ -1,4 +1,5 @@
 import logging
+from importlib.resources import files
 
 from shapely.geometry import shape
 
@@ -13,20 +14,56 @@ log = logging.getLogger(__name__)
 # BDC Specific Constants
 # ---------------------------------------------------------------------------
 
+# Tile sizes of BDC Grid V2 (Albers equal-area, metres); ~1°, ~2° and ~4°.
 BDC_TILE_LEVELS = [
-    ("SM", "sm_path",  "BDC Small tile grid  (~1.5° × 1.5°)"),
-    ("MD", "md_path",  "BDC Medium tile grid (~3° × 3°)"),
-    ("LG", "lg_path",  "BDC Large tile grid  (~6° × 6°)"),
+    ("SM", "sm_path",  "BDC Small tile grid  (105.6 km × 105.6 km, ~1°)"),
+    ("MD", "md_path",  "BDC Medium tile grid (211.2 km × 211.2 km, ~2°)"),
+    ("LG", "lg_path",  "BDC Large tile grid  (422.4 km × 422.4 km, ~4°)"),
 ]
+
+
+def bundled_bdc_grid(level: str) -> str:
+    """
+    Path to the BDC Grid V2 shapefile bundled with DisSCube, as a GDAL
+    ``zip://`` URL readable by fiona.
+
+    ``level`` is one of ``"SM"``, ``"MD"`` or ``"LG"``. Provenance, checksums
+    and licensing notes are in ``disscube/data/bdc_grids/README.md``.
+
+    Note: the bundled ``.prj`` files carry a non-existent authority code
+    (``EPSG:200000``, emitted by the BDC GeoServer), so readers that resolve
+    the CRS from the file — e.g. ``geopandas.read_file`` — fail on them. The
+    importer does not read the file CRS; it uses :data:`BDC_CRS`, which is the
+    same projection.
+    """
+    level = level.upper()
+    if level not in {lvl for lvl, _, _ in BDC_TILE_LEVELS}:
+        raise ValueError(f"Unknown BDC grid level {level!r}; expected SM, MD or LG")
+    path = files("disscube") / "data" / "bdc_grids" / f"BDC_{level}_V2.zip"
+    return f"zip://{path}"
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def import_bdc_grids(cube: CubeClient, sm_path: str, md_path: str, lg_path: str):
-    """Import BDC tiles and national simulation grids into the catalog."""
+def import_bdc_grids(
+    cube: CubeClient,
+    sm_path: str | None = None,
+    md_path: str | None = None,
+    lg_path: str | None = None,
+):
+    """
+    Import BDC tiles and national simulation grids into the catalog.
+
+    Each path defaults to the BDC Grid V2 shapefile bundled with DisSCube
+    (see :func:`bundled_bdc_grid`); pass a path to use another copy.
+    """
     register_simulation_grids(cube)
-    paths = {"sm_path": sm_path, "md_path": md_path, "lg_path": lg_path}
+    paths = {
+        "sm_path": sm_path or bundled_bdc_grid("SM"),
+        "md_path": md_path or bundled_bdc_grid("MD"),
+        "lg_path": lg_path or bundled_bdc_grid("LG"),
+    }
     _register_tile_sources(cube, paths)
 
 

@@ -20,12 +20,7 @@ def main():
     cube = CubeClient(catalog="catalog.db", store="./data/")
 
     print("=== Importing BDC tiles (one-time, may be slow) ===")
-    import_bdc_grids(
-        cube,
-        sm_path="zip://data/bdc_grids/BDC_SM_V2.zip",
-        md_path="zip://data/bdc_grids/BDC_MD_V2.zip",
-        lg_path="zip://data/bdc_grids/BDC_LG_V2.zip",
-    )
+    import_bdc_grids(cube)  # uses the BDC Grid V2 files bundled with DisSCube
     print("=== Tiles BDC registrados ===")
 
 
