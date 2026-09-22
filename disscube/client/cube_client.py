@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr
-from rioxarray.exceptions import RioXarrayError
 
 from disscube.catalog.sqlite_store import SqliteCatalogStore
 from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialRelation, SpatialSource
@@ -281,7 +280,7 @@ class CubeClient:
                 if not detected_crs and "spatial_ref" in da.coords:
                     try:
                         detected_crs = da.rio.crs
-                    except RioXarrayError:
+                    except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
                         log.debug("Could not read CRS from %s spatial_ref", var_name)
 
             if backend is None:

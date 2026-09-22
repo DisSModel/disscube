@@ -13,7 +13,6 @@ import numpy as np
 import rasterio.features
 import xarray as xr
 from rasterio.warp import Resampling
-from rioxarray.exceptions import RioXarrayError
 
 from disscube.models.grid import GridSpec
 from disscube.models.variable import Variable
@@ -67,7 +66,7 @@ def _fine_array(data: xr.DataArray) -> tuple[np.ndarray, float | None]:
     if nodata is None:
         try:
             nodata = data.rio.nodata
-        except RioXarrayError:
+        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
             nodata = None
     return arr, nodata
 

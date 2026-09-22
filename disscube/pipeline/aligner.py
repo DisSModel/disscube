@@ -31,7 +31,6 @@ import xarray as xr
 from pyproj import CRS as ProjCRS
 from pyproj.exceptions import CRSError
 from rasterio.warp import Resampling
-from rioxarray.exceptions import RioXarrayError
 from shapely.geometry import box
 
 from disscube.models.grid import GridSpec
@@ -210,7 +209,7 @@ class GridAligner(PipelineStage):
         src = band.rio.reproject(grid.crs, resampling=Resampling.nearest)
         try:
             src_res = abs(float(src.rio.resolution()[0]))
-        except RioXarrayError:
+        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
             src_res = grid.resolution
 
         target_res = grid.resolution
@@ -234,7 +233,7 @@ class GridAligner(PipelineStage):
         nodata = None
         try:
             nodata = band.rio.nodata
-        except RioXarrayError:
+        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
             nodata = None
 
         aligned = band.rio.reproject(
