@@ -14,8 +14,8 @@ expresses each strategy as a typed, auto-registered `Operator` that runs over a
 catalogued data cube rather than over an in-memory cellular space.
 
 The advance is not the set of operations — those are meant to be faithful to
-TerraME, and the [Itaituba benchmark](#parity-with-terrame-the-itaituba-benchmark)
-below measures how faithful they are — but the engineering around them:
+TerraME, and the [parity benchmarks](#parity-with-terrame) below measure
+how faithful they are — but the engineering around them:
 
 - **Reproducibility.** Every derived product carries a deterministic
   `spec_hash`; identical specifications always produce the same catalogued
@@ -38,23 +38,25 @@ below measures how faithful they are — but the engineering around them:
 
 | TerraME fill strategy | DisSCube operator (`name`) | Status | Notes |
 |---|---|---|---|
-| `presence` | `presence` | implemented | Binary mask: 1 where any feature is present. |
-| `area` / `coverage` / `percentage` | `percentage` | implemented (window-based); **parity verified** | Fraction (0..1) of the target class per cell, **over valid pixels**. TerraME divides by the whole cell instead; `percentage × coverage_purity` reproduces TerraME's value (see the benchmark). Requires `class_code`. |
+| `presence` | `presence` | implemented; parity measured (Emas) | Binary mask: 1 where any feature is present. Matches TerraME in 98.4–99.7 % of cells: lines are rasterized through cell centres, while TerraME marks every cell a line touches. |
+| `coverage` / `percentage` (raster) | `percentage` | implemented (window-based); **parity verified** (Itaituba, Amazônia) | Fraction (0..1) of the target class per cell, **over valid pixels**. TerraME divides by the whole cell instead; `percentage × coverage_purity` reproduces TerraME's value (see the benchmarks). Requires `class_code`. |
+| `area` (polygons) | — | **not implemented** | Fraction of each cell covered by polygons (e.g. protected areas). Semantics confirmed on Amazônia: intersection area / cell area reproduces TerraME in every cell. |
 | `majority` / `mode` | `majority` | implemented (window-based) | Dominant class per cell; ties resolve to the smallest class value. |
 | `minority` | `minority` | implemented (window-based) | Least-frequent class per cell. |
 | `count` | `count` | implemented | Count of features per cell (proximity operator). |
-| `distance` | `min_distance` | **approximation — semantics differ** | Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the exact distance from each cell polygon to the nearest feature, so `min_distance` overestimates it by up to about one cell (see the benchmark). |
+| `distance` | `min_distance` | **approximation — semantics differ** | Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so `min_distance` overestimates it by up to about one cell (see the benchmarks). |
 | `average` / `mean` | `mean` | implemented; **parity verified** | Mean value per cell (continuous, area-weighted resampling). |
 | `sum` (raster) | `sum` | implemented | Sum per cell (continuous). |
 | `sum` with `area = true` (polygons) | — | **not implemented** | Distributes a polygon attribute (e.g. census population) over cells in proportion to the intersected area. `sum` accepts raster sources only. |
-| `minimum` | `min` | implemented | Minimum per cell. |
-| `maximum` | `max` | implemented | Maximum per cell. |
+| `minimum` | `min` | implemented; parity measured (Emas) | Minimum per cell. Matches TerraME in 99.0 % of cells: pixels that straddle a cell border count for both cells, while TerraME assigns each pixel to the cell containing its centre. |
+| `maximum` | `max` | implemented; parity measured (Emas) | Maximum per cell. Matches TerraME in 98.7 % of cells, for the same reason as `min`. |
 | `stdev` / `standardDeviation` | `std` | implemented (window-based) | True per-cell standard deviation over valid pixels. |
 | `attribute` (value copy) | `attribute` | implemented (vector) | Rasterize a numeric vector column whose name matches the variable. |
 
-"Parity verified" means the operator was compared cell by cell with TerraME's
-own output in the Itaituba benchmark below; the other rows are correspondences
-by design that have not yet been measured against TerraME.
+"Parity verified" means the operator reproduces TerraME's own output cell by
+cell in the benchmarks below; "parity measured" means it was compared and
+the residual difference is explained; the other rows are correspondences by
+design that have not yet been measured against TerraME.
 
 ## Aggregation path by operator type
 
@@ -67,14 +69,25 @@ by design that have not yet been measured against TerraME.
 - **Vector** (`presence`, `attribute`, and the vector branch of the categorical
   operators): reprojected and clipped to the grid bounding box, then rasterized.
 
-## Parity with TerraME: the Itaituba benchmark
+## Parity with TerraME
 
-TerraME's `gis` package ships the data of its *Fill* tutorial
-([wiki](https://github.com/TerraME/terrame/wiki/Fill)) together with the
-script `itaituba.lua` and its output, `itaituba.shp`: a 5 km cellular space
-(31 × 20 = 620 cells, SAD69 / UTM 21S, EPSG:29191) already filled by TerraME.
-That output is used here as the reference: the same inputs are derived with
-DisSCube on the same grid and compared cell by cell.
+TerraME's `gis` package ships three *Fill* examples — Itaituba (the
+[Fill tutorial](https://github.com/TerraME/terrame/wiki/Fill)), Emas and
+Amazônia — each with its input layers, the Lua script and the cellular space
+TerraME produced. Those outputs are the reference: the same inputs are derived
+with DisSCube on the same grid and compared cell by cell.
+
+The data are bundled in `examples/data/terrame/` (provenance, license and
+checksums in its README). The comparison runs in CI in
+`tests/test_terrame_parity.py` — passing tests pin the parity below, strict
+`xfail` tests record the known gaps — and
+`examples/04_terrame_fill_itaituba.py` prints the Itaituba table.
+
+### Itaituba — 620 cells, 5 km
+
+A 31 × 20 cellular space in SAD69 / UTM 21S (EPSG:29191), filled from a
+923 m elevation raster, a 60 m land-cover raster, roads, localities and census
+tracts.
 
 **Setup.** Grid `bbox = [547177.35, 9485214.19, 702177.35, 9585214.19]`,
 resolution 5000 m, taken from `itaituba.shp` (whose `.prj` is wrong —
@@ -121,14 +134,47 @@ compared in percent (DisSCube fraction × 100).
   fix, the fill value can no longer collide with the data, and `defor_255`
   agrees with TerraME in every cell.
 
+### Emas — 5 514 cells, 500 m
+
+Cells of the Emas National Park (EPSG:29192) that touch the park limit,
+filled from firebreak and river lines and a 30 m fire-accumulation raster.
+
+| TerraME fill | DisSCube | Cells identical | Cause of the residual |
+|---|---|---|---|
+| `firebreak` — `presence` (lines) | `presence` | 98.4 % | TerraME marks every cell a line touches (polygon ∩ line reproduces it in 100 % of cells); DisSCube rasterizes through cell centres |
+| `river` — `presence` (lines) | `presence` | 99.7 % | same |
+| `maxcover` — `maximum` | `max` | 98.7 % | TerraME takes the pixels whose centre falls in the cell (this rule reproduces it in 100 % of cells); resampling also counts pixels straddling the border (500 m / 30 m is not an integer) |
+| `mincover` — `minimum` | `min` | 99.0 % | same |
+
+### Amazônia — 2 229 cells, 50 km
+
+Cells of the Brazilian Amazon (EPSG:29191) that touch its limit, filled from
+the 5 km PRODES raster, roads, ports and indigenous lands.
+
+| TerraME fill | DisSCube | Result |
+|---|---|---|
+| `prodes_10`, `prodes_208` — `coverage` | `percentage × coverage_purity` | **identical** in every cell with PRODES data; in the 55 cells without any, DisSCube reports NaN (purity 0) where TerraME reports 0 |
+| `distroads` — `distance` (lines) | `min_distance` | mean error 17 km; the exact polygon distance matches TerraME in 73 % of cells (83 % within 100 m) |
+| `distports` — `distance` (points) | `min_distance` | mean error 28 km; the exact polygon distance matches in 89 % of cells (91 % within 100 m) |
+| `protected` — `area` (polygons) | — | no operator; intersection area / cell area reproduces TerraME in every cell (within 0.01) |
+
+The exact polygon distance explains most but not all of TerraME's `distance`
+values on Amazônia (the largest residuals reach 13–16 km), so TerraME's rule
+needs to be pinned down before an exact operator is implemented.
+
 ## Known gaps relative to TerraME
 
 - **Exact vector distance.** TerraME's `distance` is measured from the cell
   polygon to the nearest feature; `min_distance` is a raster approximation
-  between cell centres (see the benchmark). An exact vector operator is needed
-  for parity.
-- **Area-weighted vector aggregation.** TerraME's `sum` with `area = true` (and,
-  more generally, fractional-coverage strategies on polygons) has no DisSCube
+  between cell centres (see the benchmarks). An exact vector operator is
+  needed for parity; the Amazônia residuals show TerraME's rule is not only
+  the plain geometric distance.
+- **Cell assignment of pixels and lines.** `min`/`max` count pixels that
+  straddle a cell border, and `presence` rasterizes lines through cell
+  centres; TerraME assigns each pixel to the cell containing its centre and
+  marks every cell a line touches (Emas).
+- **Area-weighted vector aggregation.** TerraME's `sum` with `area = true` and
+  `area` (fraction of the cell covered by polygons) have no DisSCube
   equivalent yet: vector sources are rasterized rather than area-weighted, and
   `sum` accepts raster sources only. The raster-fine path remains the
   recommended route for fractional drivers.
@@ -143,7 +189,8 @@ compared in percent (DisSCube fraction × 100).
 > operation of TerraME's `fillCellularSpace` — is reformulated in DisSCube as a
 > reproducible spatial-derivation layer: fill strategies become typed operators
 > over a catalogued data cube, with aggregation on windows aligned to the target
-> grid and explicit control of cell purity. On TerraME's own Itaituba tutorial
-> data, raster averages and class coverage reproduce TerraME's output cell by
-> cell (every class within 0.64 pp in all 620 cells once cell purity is applied);
-> exact vector distance and area-weighted polygon sums are the remaining gaps.
+> grid and explicit control of cell purity. On the three Fill examples shipped
+> with TerraME (Itaituba, Emas, Amazônia), raster averages and class coverage
+> reproduce TerraME's output cell by cell once cell purity is applied, and
+> `presence`, `min` and `max` agree in 98–99.7 % of cells; exact vector
+> distance and area-weighted polygon operations are the remaining gaps.
