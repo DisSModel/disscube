@@ -1,8 +1,8 @@
-# Visão Geral da Arquitetura
+# Architecture Overview
 
-DisSCube implementa uma abstração de alto nível para construção de cubos de dados espaciais derivados de múltiplas fontes geoespaciais. Ao contrário de um conjunto de scripts GIS, o sistema trata **derivações como objetos declarativos** com identidade, rastreabilidade e reprodutibilidade garantidas.
+DisSCube provides a high-level abstraction for building spatial data cubes derived from multiple geospatial sources. Unlike a collection of GIS scripts, the system treats **derivations as declarative objects** with guaranteed identity, traceability and reproducibility.
 
-## Modelo conceitual
+## Conceptual model
 
 ```
 SpatialSource ──► SpatialDerivation ──► Variable ──► DerivedVariable
@@ -12,21 +12,21 @@ SpatialSource ──► SpatialDerivation ──► Variable ──► DerivedVa
   crs                  valid_from / valid_until
 ```
 
-### Entidades principais
+### Main entities
 
-| Entidade | Papel |
+| Entity | Role |
 |---|---|
-| `GridSpec` | Definição matemática do espaço: CRS + resolução + bbox |
-| `SpatialSource` | Ponteiro para dado bruto: raster (GeoTIFF) ou vetor (GPKG/SHP) |
-| `SpatialDerivation` | Intenção de derivação: fonte + grade + operadores + janela temporal |
-| `Derivation` | Front-end declarativo sobre `SpatialDerivation` com validação em construção |
-| `Variable` | Nome + operador + class_code para uma variável derivada |
-| `DerivedVariable` | Produto materializado: path Zarr + `spec_hash` + `content_hash` |
-| `SpatialRelation` | Relação pai-filho entre grades (reservado para futuro uso no pipeline) |
+| `GridSpec` | Mathematical definition of the space: CRS + resolution + bbox |
+| `SpatialSource` | Pointer to raw data: raster (GeoTIFF) or vector (GPKG/SHP) |
+| `SpatialDerivation` | Derivation intent: source + grid + operators + time window |
+| `Derivation` | Declarative front end over `SpatialDerivation`, validated at construction |
+| `Variable` | Name + operator + class_code for a derived variable |
+| `DerivedVariable` | Materialized product: Zarr path + `spec_hash` + `content_hash` |
+| `SpatialRelation` | Parent–child relation between grids (reserved for future use in the pipeline) |
 
-### Dois modos de uso
+### Two usage modes
 
-**Declarativo (recomendado):**
+**Declarative (recommended):**
 ```python
 from disscube.derivation import Derivation
 
@@ -39,9 +39,9 @@ d = Derivation(
 )
 cube.derive_declarative(d, grid_id="AC/5km")
 ```
-Valida o operador e `class_code` na construção (fail-fast), antes de qualquer I/O.
+Validates the operator and `class_code` at construction (fail-fast), before any I/O.
 
-**Direto:**
+**Direct:**
 ```python
 from disscube.models import SpatialDerivation, Variable
 
@@ -51,52 +51,52 @@ cube.derive(SpatialDerivation(
     valid_from="2020", valid_until="2020",
 ))
 ```
-Ambos os modos chegam ao mesmo pipeline — `Derivation` é um front-end, não um caminho alternativo.
+Both modes reach the same pipeline — `Derivation` is a front end, not an alternative path.
 
-## Pipeline de execução
+## Execution pipeline
 
 ```
 SpatialSource
     │
     ▼ Normalizer
-    │  • raster: valida abertura do arquivo
-    │  • vetor: carrega GeoDataFrame, corrige CRS se necessário
+    │  • raster: checks that the file can be opened
+    │  • vector: loads the GeoDataFrame, fixes the CRS if needed
     │
     ▼ GridAligner
-    │  • raster: reproject por variável com Resampling do operador
-    │           → retorna xr.Dataset {var_name: DataArray}
-    │  • vetor:  reprojeta GDF + clip ao bbox da grade
-    │  • invariante: verifica shape == (grid.rows, grid.cols)
+    │  • raster: per-variable reprojection using the operator's Resampling
+    │           → returns xr.Dataset {var_name: DataArray}
+    │  • vector: reprojects the GDF + clips to the grid bbox
+    │  • invariant: checks shape == (grid.rows, grid.cols)
     │
     ▼ Aggregator
-    │  • delega a operator.compute(data, var, grid) → DataArray
-    │  • monta xr.Dataset final com CRS e transform
+    │  • delegates to operator.compute(data, var, grid) → DataArray
+    │  • builds the final xr.Dataset with CRS and transform
     │
     ▼ VariableWriter
-       • salva cada variável como Zarr
-       • calcula content_hash (SHA-256 dos bytes)
-       • registra DerivedVariable no catálogo SQLite
+       • writes each variable as Zarr
+       • computes content_hash (SHA-256 of the bytes)
+       • registers the DerivedVariable in the SQLite catalog
 ```
 
-## Reprodutibilidade: `spec_hash`
+## Reproducibility: `spec_hash`
 
-Cada `SpatialDerivation` tem um `spec_hash` — SHA-256 determinístico de:
+Every `SpatialDerivation` has a `spec_hash` — a deterministic SHA-256 of:
 
 - `source_id`
 - `grid_id`
 - `role`
-- variáveis (nome + operador + class_code, ordenadas por nome)
+- variables (name + operator + class_code, sorted by name)
 - `valid_from` / `valid_until`
 
-`SpatialRelation` é excluída do hash: nenhum estágio do pipeline a usa durante a computação, então incluí-la tornaria o cache sensível a metadados sem efeito no resultado.
+`SpatialRelation` is excluded from the hash: no pipeline stage uses it during computation, so including it would make the cache sensitive to metadata that has no effect on the result.
 
-Se qualquer parâmetro mudar, o hash muda. O pipeline verifica o cache antes de processar: se todos os `DerivedVariable` com o mesmo `spec_hash` já existem no disco, a derivação é pulada.
+If any parameter changes, the hash changes. The pipeline checks the cache before processing: if every `DerivedVariable` with the same `spec_hash` already exists on disk, the derivation is skipped.
 
-`Derivation.spec_hash()` delega a `SpatialDerivation.spec_hash()` e adiciona `purity_threshold` quando definido. `bbox` é excluído — é metadado descritivo, não parâmetro de derivação.
+`Derivation.spec_hash()` delegates to `SpatialDerivation.spec_hash()` and adds `purity_threshold` when set. `bbox` is excluded — it is descriptive metadata, not a derivation parameter.
 
-## Sistema de operadores (plugin)
+## Operator system (plugins)
 
-Cada operador é uma subclasse de `Operator` que se auto-registra no `OPERATOR_REGISTRY`:
+Each operator is a subclass of `Operator` that registers itself in `OPERATOR_REGISTRY`:
 
 ```python
 class MajorityOperator(Operator):
@@ -107,16 +107,16 @@ class MajorityOperator(Operator):
         ...
 ```
 
-`OPERATOR_REGISTRY["majority"]` → `MajorityOperator`. O `GridAligner` usa `op_cls.resampling()` para escolher o método de reamostragem por variável. O `Aggregator` usa `op_cls().compute()` para calcular o resultado. Adicionar um operador = criar um arquivo; zero mudança no pipeline.
+`OPERATOR_REGISTRY["majority"]` → `MajorityOperator`. `GridAligner` uses `op_cls.resampling()` to choose the resampling method per variable. `Aggregator` uses `op_cls().compute()` to compute the result. Adding an operator = creating one file; zero changes to the pipeline.
 
-Ver [Operadores](operators.md) para a lista completa e guia de extensão.
+See [Operators](operators.md) for the full list and the extension guide.
 
-## Armazenamento
+## Storage
 
 ```
 data/derived/{grid_id}/{partition}/{spec_hash}/{variable_name}.zarr
 ```
 
-- `partition` = `tile_id` ou `global`.
-- Cada variável é um dataset Zarr independente com `spatial_ref` e metadados CRS.
-- `content_hash` (SHA-256 dos bytes do Zarr) garante integridade do dado materializado.
+- `partition` = `tile_id` or `global`.
+- Each variable is an independent Zarr dataset with `spatial_ref` and CRS metadata.
+- `content_hash` (SHA-256 of the Zarr bytes) guarantees the integrity of the materialized data.

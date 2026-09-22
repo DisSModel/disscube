@@ -30,6 +30,7 @@ nav:
       - Catalog & Persistence: architecture/catalog.md
       - Pipeline Stages: architecture/pipeline.md
       - Master Grids & Tiling: architecture/tiling.md
+      - TerraME Fill Cells Correspondence: terrame_fill_correspondence.md
   - Guides:
       - BDC Integration: guides/bdc.md
       - Custom Grids: guides/grids.md

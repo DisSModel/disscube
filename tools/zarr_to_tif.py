@@ -13,7 +13,7 @@ def convert_zarr_to_tif(zarr_path, output_tif):
         # Abre o dataset Zarr
         ds = xr.open_zarr(zarr_path)
         
-        # O Zarr salvo pelo DissCube é um Dataset. Pegamos a primeira variável de dado.
+        # The Zarr written by DisSCube is a Dataset; take its first data variable.
         var_names = list(ds.data_vars)
         if not var_names:
             print("Error: No data variables found in Zarr.")
@@ -21,7 +21,7 @@ def convert_zarr_to_tif(zarr_path, output_tif):
             
         da = ds[var_names[0]]
         
-        # Garante que as coordenadas espaciais estão setadas corretamente para o rioxarray
+        # Make sure the spatial dims are set correctly for rioxarray
         if 'x' not in da.coords or 'y' not in da.coords:
             print("Error: Spatial coordinates (x, y) not found in DataArray.")
             return

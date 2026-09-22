@@ -28,15 +28,15 @@ cube.derive(SpatialDerivation(
     variables=[Variable(name="slope", operator="mean")]
 ))
 
-# 2. Terras Indígenas
-print("\n--- 2. Terras Indígenas ---")
+# 2. Indigenous lands
+print("\n--- 2. Indigenous lands ---")
 cube.derive(SpatialDerivation(
     source_id="terras_indigenas", grid_id=GRID_ID, role="driver",
     variables=[Variable(name="presenca_ti", operator="presence")]
 ))
 
-# 3. Distância a cidades (Temporal)
-print("\n--- 3. Distância a cidades ---")
+# 3. Distance to cities (temporal)
+print("\n--- 3. Distance to cities ---")
 for start, end in [("2000", "2014"), ("2015", "2025")]:
     cube.derive(SpatialDerivation(
         source_id="urban_centers", grid_id=GRID_ID, role="driver",
@@ -44,8 +44,8 @@ for start, end in [("2000", "2014"), ("2015", "2025")]:
         valid_from=start, valid_until=end
     ))
 
-# 4. Distância a rios
-print("\n--- 4. Distância a rios ---")
+# 4. Distance to rivers
+print("\n--- 4. Distance to rivers ---")
 cube.derive(SpatialDerivation(
     source_id="rios_pnlt", grid_id=GRID_ID, role="driver",
     variables=[Variable(name="dist_rios", operator="min_distance")]

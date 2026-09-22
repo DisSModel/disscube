@@ -1,63 +1,63 @@
-# Grades e Interoperabilidade Espacial
+# Grids and Spatial Interoperability
 
-## O problema que as grades snappadas resolvem
+## The problem snapped grids solve
 
-Em workflows GIS tradicionais, criar uma grade para o Acre e outra para o Brasil frequentemente produz pixels desalinhados — o canto de um pixel de 5km do Acre não coincide com o canto de um pixel de 5km do Brasil. Agregar de uma grade para outra gera erros por pixels parciais nas bordas.
+In traditional GIS workflows, creating one grid for Acre and another for Brazil often produces misaligned pixels — the corner of a 5 km Acre pixel does not coincide with the corner of a 5 km Brazil pixel. Aggregating from one grid to the other then introduces errors from partial pixels at the edges.
 
-DisSCube resolve isso com **snap ao mesh virtual**: toda grade local é ancorada à mesma origem do CRS, garantindo que pixels de resoluções múltiplas sempre se alinhem perfeitamente.
+DisSCube solves this by **snapping to a virtual mesh**: every local grid is anchored to the same CRS origin, guaranteeing that pixels at multiple resolutions always line up exactly.
 
-## Grades de referência nacionais
+## National reference grids
 
 ```python
 from disscube.utils.grids import register_simulation_grids
 
 register_simulation_grids(cube)
-# Registra:
-#   BR/5km  — 5000 m, BDC Albers, bbox nacional
-#   BR/1km  — 1000 m, BDC Albers, bbox nacional
+# Registers:
+#   BR/5km  — 5000 m, BDC Albers, national bbox
+#   BR/1km  — 1000 m, BDC Albers, national bbox
 ```
 
-## Grades locais com snap
+## Snapped local grids
 
 ```python
 from disscube.utils.grids import register_local_grid
 
 grid = register_local_grid(
     cube,
-    name="AC",                            # ou state="AC"
+    name="AC",                            # or state="AC"
     bbox_geo=(-73.99, -11.15, -66.62, -7.11),  # lon_min, lat_min, lon_max, lat_max
     resolution=5_000.0,
-    snap=True,                            # padrão
+    snap=True,                            # default
 )
-# Produz grade "AC/5km" em BDC Albers
+# Produces grid "AC/5km" in BDC Albers
 ```
 
-**O que `snap=True` faz:**
+**What `snap=True` does:**
 
-A bbox geográfica é convertida para BDC Albers e os limites são arredondados para o múltiplo mais próximo da resolução:
+The geographic bbox is converted to BDC Albers and its bounds are rounded to the nearest multiple of the resolution:
 
 ```python
 minx = math.floor(minx / resolution) * resolution
 maxx = math.ceil(maxx  / resolution) * resolution
 ```
 
-Resultado: `AC/5km` e `BR/5km` têm pixels idênticos na área de sobreposição — um pixel de 5km do Acre é o mesmo quadrado geográfico que o pixel de 5km do Brasil.
+Result: `AC/5km` and `BR/5km` have identical pixels over the overlapping area — a 5 km Acre pixel is the same geographic square as the 5 km Brazil pixel.
 
-## Hierarquia de resoluções
+## Resolution hierarchy
 
-Resoluções múltiplas dentro do mesmo CRS formam uma hierarquia perfeita:
+Multiple resolutions within the same CRS form a perfect hierarchy:
 
 ```
-1 pixel de 5km
-├── 25 pixels de 1km (5×5)
-└── 2500 pixels de 100m (50×50)
+1 pixel at 5km
+├── 25 pixels at 1km (5×5)
+└── 2500 pixels at 100m (50×50)
 ```
 
-Isso permite **agregação zero-erro**: ao calcular `percentage` de floresta (100m) dentro de uma célula de modelo (5km), todos os pixels de 100m que compõem a célula de 5km são conhecidos exatamente.
+This enables **zero-error aggregation**: when computing the forest `percentage` (100 m) inside a model cell (5 km), every 100 m pixel that makes up the 5 km cell is known exactly.
 
-## Relações espaciais
+## Spatial relations
 
-`SpatialRelation` registra a relação pai-filho entre grades:
+`SpatialRelation` records the parent–child relation between grids:
 
 ```python
 from disscube.models import SpatialRelation
@@ -69,50 +69,50 @@ cube.register_relation(SpatialRelation(
 ))
 ```
 
-**Estratégias disponíveis** (reservadas para uso futuro no pipeline):
+**Available strategies** (reserved for future use in the pipeline):
 
-| Estratégia | Uso pretendido |
+| Strategy | Intended use |
 |---|---|
-| `simple` | Grades nested — sem ambiguidade na agregação |
-| `chooseone` | Células que pertencem a apenas uma grade-alvo |
-| `keepinboth` | Células mantidas em ambas as grades (sobreposição) |
+| `simple` | Nested grids — no ambiguity in aggregation |
+| `chooseone` | Cells that belong to only one target grid |
+| `keepinboth` | Cells kept in both grids (overlap) |
 
-!!! note "Status das estratégias"
-    As estratégias estão modeladas no schema mas ainda não são aplicadas pelo pipeline de derivação. São reservadas para o mecanismo de cross-scale do DisSModel.
+!!! note "Strategy status"
+    The strategies are modeled in the schema but are not yet applied by the derivation pipeline. They are reserved for DisSModel's cross-scale mechanism.
 
-## Criação manual de grade
+## Creating a grid manually
 
-Quando o snap ao mesh BDC não é necessário (ex: projeto com CRS local):
+When snapping to the BDC mesh is not needed (e.g. a project with a local CRS):
 
 ```python
 from disscube.models import GridSpec
 
 grid = GridSpec(
-    id="projeto_local/30m",
+    id="local_project/30m",
     type="local",
     crs="EPSG:31983",
     resolution=30.0,
     bbox=[580000.0, 9700000.0, 600000.0, 9720000.0],
-    description="Grade manual sem snap ao mesh nacional",
+    description="Manual grid, not snapped to the national mesh",
 )
 cube.register_grid(grid)
 ```
 
 !!! warning
-    Grades sem snap podem não alinhar com grades nacionais. A agregação cruzada entre grades não-alinhadas introduz erros por pixels parciais.
+    Unsnapped grids may not align with the national grids. Cross-grid aggregation between misaligned grids introduces partial-pixel errors.
 
-## Propriedades derivadas de `GridSpec`
+## Derived properties of `GridSpec`
 
 ```python
 grid = GridSpec(id="G", type="local", crs="EPSG:31982", resolution=100, bbox=[0,0,1000,1000])
 
 grid.rows        # 10
 grid.cols        # 10
-grid.transform   # Affine (North-up, origem no canto superior esquerdo)
-grid.xs          # array de centróides X de cada coluna
-grid.ys          # array de centróides Y de cada linha
+grid.transform   # Affine (north-up, origin at the upper-left corner)
+grid.xs          # array of X centroids, one per column
+grid.ys          # array of Y centroids, one per row
 
-# Identificação de células
+# Cell identification
 cell = grid.cell_id(row=3, col=7)          # "G:R0003C0007"
-x, y = grid.coords_from_cell_id(cell)     # centróide em coordenadas do CRS
+x, y = grid.coords_from_cell_id(cell)     # centroid in CRS coordinates
 ```

@@ -28,7 +28,7 @@ def test_cell_id_coords_round_trip():
         bbox=[500000, 7000000, 600000, 7100000]
     )
     
-    # Coordenada no centro da célula (0,0)
+    # Coordinate at the center of cell (0,0)
     # Row 0 is at maxy = 7100000
     # Col 0 is at minx = 500000
     x0, y0 = 500050, 7099950 
@@ -40,7 +40,7 @@ def test_cell_id_coords_round_trip():
     assert abs(cx - x0) < 1e-6
     assert abs(cy - y0) < 1e-6
 
-    # Teste com row 1, col 1
+    # Test with row 1, col 1
     x1, y1 = 500150, 7099850
     cell1 = grid.cell_id_from_coords(x1, y1)
     assert cell1 == "bdc_sm:R0001C0001"

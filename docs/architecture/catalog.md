@@ -1,39 +1,39 @@
-# Catálogo e Persistência
+# Catalog and Persistence
 
-O catálogo é o registro de tudo que o sistema conhece. Ele não armazena pixels — apenas metadados, ponteiros e hashes.
+The catalog is the registry of everything the system knows about. It stores no pixels — only metadata, pointers and hashes.
 
-## Implementações
+## Implementations
 
-A interface é definida pelo `CatalogStore` Protocol (`disscube/catalog/protocol.py`):
+The interface is defined by the `CatalogStore` Protocol (`disscube/catalog/protocol.py`):
 
-| Implementação | Arquivo | Uso |
+| Implementation | File | Use |
 |---|---|---|
-| `SqliteCatalogStore` | `catalog/sqlite_store.py` | Padrão — usado por `CubeClient` |
-| `JsonCatalogStore` | `catalog/json_store.py` | Legado / testes simples |
+| `SqliteCatalogStore` | `catalog/sqlite_store.py` | Default — used by `CubeClient` |
+| `JsonCatalogStore` | `catalog/json_store.py` | Legacy / simple tests |
 
-## Schema SQLite
+## SQLite schema
 
 ```sql
-grids    (id TEXT PRIMARY KEY, data TEXT)          -- GridSpec como JSON
-sources  (id TEXT PRIMARY KEY, data TEXT)          -- SpatialSource como JSON
+grids    (id TEXT PRIMARY KEY, data TEXT)          -- GridSpec as JSON
+sources  (id TEXT PRIMARY KEY, data TEXT)          -- SpatialSource as JSON
 derived  (id, grid_id, spec_hash, tile_id, role, data TEXT)
 relations (source_grid_id, target_grid_id, data TEXT)
 ```
 
-Índices: `idx_derived_grid`, `idx_derived_hash`, `idx_derived_tile`.
+Indexes: `idx_derived_grid`, `idx_derived_hash`, `idx_derived_tile`.
 
-Todos os objetos são serializados como JSON no campo `data`. As colunas extraídas (`grid_id`, `spec_hash`, `tile_id`) existem para indexação e busca eficiente — os dados completos estão sempre no JSON.
+All objects are serialized as JSON in the `data` field. The extracted columns (`grid_id`, `spec_hash`, `tile_id`) exist for indexing and efficient lookup — the complete data always lives in the JSON.
 
-## Hash de especificação (`spec_hash`)
+## Specification hash (`spec_hash`)
 
-SHA-256 determinístico da `SpatialDerivation`:
+A deterministic SHA-256 of the `SpatialDerivation`:
 
 ```python
 relevant_data = {
     "source_id":   ...,
     "grid_id":     ...,
     "role":        ...,
-    "variables":   [...],   # ordenados por nome
+    "variables":   [...],   # sorted by name
     "valid_from":  ...,
     "valid_until": ...,
 }
@@ -41,62 +41,62 @@ encoded = json.dumps(relevant_data, sort_keys=True).encode("utf-8")
 return hashlib.sha256(encoded).hexdigest()
 ```
 
-**O que muda o hash:**
+**What changes the hash:**
 
-- Trocar a fonte (`source_id`)
-- Trocar a grade (`grid_id`)
-- Adicionar/remover/renomear variáveis
-- Mudar o operador ou `class_code`
-- Mudar `valid_from` / `valid_until`
+- Changing the source (`source_id`)
+- Changing the grid (`grid_id`)
+- Adding/removing/renaming variables
+- Changing the operator or `class_code`
+- Changing `valid_from` / `valid_until`
 
-**O que não muda o hash:**
+**What does not change the hash:**
 
-- A ordem das variáveis na lista (são ordenadas por nome)
-- `bbox` de `Derivation` (metadado descritivo, não parâmetro)
-- `SpatialRelation` — relações são persistidas no catálogo mas excluídas do hash porque nenhum estágio do pipeline as usa durante a computação. Incluí-las tornaria a chave de cache sensível a metadados que não afetam o resultado.
+- The order of the variables in the list (they are sorted by name)
+- The `bbox` of a `Derivation` (descriptive metadata, not a parameter)
+- `SpatialRelation` — relations are persisted in the catalog but excluded from the hash because no pipeline stage uses them during computation. Including them would make the cache key sensitive to metadata that does not affect the result.
 
-## Hash de conteúdo (`content_hash`)
+## Content hash (`content_hash`)
 
-SHA-256 de todos os bytes dos arquivos do diretório Zarr, em ordem determinística (`sorted(root.rglob("*"))`). Garante integridade do dado materializado independente do `spec_hash`.
+SHA-256 of all the bytes of the files in the Zarr directory, in deterministic order (`sorted(root.rglob("*"))`). It guarantees the integrity of the materialized data independently of `spec_hash`.
 
-## Séries temporais
+## Time series
 
-O campo `times` em `DerivedVariable` é uma lista de inteiros (anos):
+The `times` field of `DerivedVariable` is a list of integers (years):
 
-- `times = []` → variável estática
-- `times = [2020]` → fatia temporal de 2020
+- `times = []` → static variable
+- `times = [2020]` → 2020 time slice
 
-`CubeClient.load()` detecta automaticamente se há múltiplas fatias e as empilha em `(time, y, x)` ordenadas pelo primeiro valor de `times`.
+`CubeClient.load()` automatically detects whether there are multiple slices and stacks them into `(time, y, x)`, ordered by the first value of `times`.
 
-`CubeClient.to_lucc_data()` aceita `period=("2000", "2020")` para filtrar apenas as fatias dentro do intervalo.
+`CubeClient.to_lucc_data()` accepts `period=("2000", "2020")` to keep only the slices within the interval.
 
-## Busca no catálogo
+## Querying the catalog
 
 ```python
-# Por grade e role
+# By grid and role
 cube.catalog.search_derived_variables(grid_id="AC/5km", role="driver")
 
-# Por tile
+# By tile
 cube.catalog.search_derived_variables(tile_id="009002")
 
-# Por spec_hash (exato)
+# By spec_hash (exact)
 cube.catalog.get_derived_by_hash("a3f9...")
 
-# Remover entrada por ID
+# Delete an entry by ID
 cube.catalog.delete_derived("a3f9..._slope")
 ```
 
-## Limpeza de entradas órfãs
+## Cleaning up orphan entries
 
-O catálogo acumula entradas cujos arquivos Zarr foram deletados (comum ao apagar o store para re-testar). `purge_stale()` remove essas entradas:
+The catalog accumulates entries whose Zarr files were deleted (common when wiping the store to re-test). `purge_stale()` removes those entries:
 
 ```python
-n = cube.purge_stale()   # retorna o número de entradas removidas
-print(f"Removidas {n} entradas órfãs")
+n = cube.purge_stale()   # returns the number of entries removed
+print(f"Removed {n} orphan entries")
 ```
 
-`load()` já ignora silenciosamente entradas sem arquivo no disco — `purge_stale()` é uma limpeza explícita para manter o catálogo enxuto.
+`load()` already silently ignores entries with no file on disk — `purge_stale()` is an explicit cleanup to keep the catalog lean.
 
-## Evolução do schema
+## Schema evolution
 
-O schema usa `CREATE TABLE IF NOT EXISTS` — seguro para idempotência. Novas colunas exigem `ALTER TABLE` ou migração manual. Os campos descritivos extras de modelos (como `purity_threshold` de `Derivation`) vivem apenas no modelo Python, não no banco — isso protege a compatibilidade retroativa para campos reservados.
+The schema uses `CREATE TABLE IF NOT EXISTS` — safe for idempotence. New columns require `ALTER TABLE` or a manual migration. Extra descriptive model fields (such as `purity_threshold` on `Derivation`) live only in the Python model, not in the database — this protects backward compatibility for reserved fields.

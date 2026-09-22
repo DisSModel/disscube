@@ -1,18 +1,18 @@
 # DisSCube
 
-> **Status: Alpha — APIs estáveis para o pipeline principal; modelos declarativos em evolução.**
+> **Status: Alpha — stable APIs for the core pipeline; declarative models still evolving.**
 
-DisSCube é o motor de cubos de dados espaciais do ecossistema **DisSModel**. Ele converte fontes geoespaciais brutas (rasters, vetores) em variáveis derivadas alinhadas a grades de modelagem LUCC (Land Use and Cover Change), prontas para modelos de Autômatos Celulares e análises espacio-temporais.
+DisSCube is the spatial data cube engine of the **DisSModel** ecosystem. It converts raw geospatial sources (rasters, vectors) into derived variables aligned to LUCC (Land Use and Cover Change) modeling grids, ready for Cellular Automata models and spatio-temporal analysis.
 
-## Conceito central
+## Core concept
 
 ```
 SpatialSource  →  Derivation  →  Variable  →  DerivedVariable (Zarr)
 ```
 
-Uma **fonte** (`SpatialSource`) passa por uma **derivação** (`SpatialDerivation` ou `Derivation`) que aplica um **operador** a uma **grade** (`GridSpec`), produzindo uma **variável derivada** registrada no catálogo SQLite e armazenada em Zarr.
+A **source** (`SpatialSource`) goes through a **derivation** (`SpatialDerivation` or `Derivation`) that applies an **operator** on a **grid** (`GridSpec`), producing a **derived variable** registered in the SQLite catalog and stored in Zarr.
 
-## Instalação
+## Installation
 
 ```bash
 git clone https://github.com/DisSModel/disscube.git
@@ -21,9 +21,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
 
-## Uso básico
+## Basic usage
 
-### 1. Inicializar catálogo e registrar grade
+### 1. Initialize the catalog and register a grid
 
 ```python
 from disscube.client import CubeClient
@@ -39,7 +39,7 @@ grid = register_local_grid(
 )
 ```
 
-### 2. Registrar fonte
+### 2. Register a source
 
 ```python
 from disscube.models import SpatialSource
@@ -54,7 +54,7 @@ cube.register_spatial_source(SpatialSource(
 ))
 ```
 
-### 3. Derivar — modo declarativo (recomendado)
+### 3. Derive — declarative mode (recommended)
 
 ```python
 from disscube.derivation import Derivation
@@ -72,7 +72,7 @@ d = Derivation(
 cube.derive_declarative(d, grid_id="AC/5km")
 ```
 
-### 4. Derivar — modo direto
+### 4. Derive — direct mode
 
 ```python
 from disscube.models import SpatialDerivation, Variable
@@ -87,14 +87,14 @@ cube.derive(SpatialDerivation(
 ))
 ```
 
-### 5. Carregar resultado
+### 5. Load the result
 
 ```python
 da = cube.load("forest_pct", grid_id="AC/5km")
 print(da.shape)   # (rows, cols)
 ```
 
-### 6. Integrar ao DisSModel
+### 6. Hand off to DisSModel
 
 ```python
 backend = cube.to_lucc_data(
@@ -104,24 +104,24 @@ backend = cube.to_lucc_data(
 )
 ```
 
-## Operadores disponíveis
+## Available operators
 
-| Operador | Tipo | Resampling | Requer `class_code` |
+| Operator | Type | Resampling | Requires `class_code` |
 |---|---|---|---|
-| `mean` | zonal | average | não |
-| `sum` | zonal | sum | não |
-| `std` | zonal | nearest | não |
-| `min` | zonal | min | não |
-| `max` | zonal | max | não |
-| `majority` | zonal | nearest¹ | não |
-| `minority` | zonal | nearest¹ | não |
-| `percentage` | zonal | nearest¹ | **sim** |
-| `attribute` | zonal | nearest | não |
-| `presence` | zonal | nearest | não |
-| `min_distance` | proximity | nearest | não |
-| `count` | proximity | nearest | não |
+| `mean` | zonal | average | no |
+| `sum` | zonal | sum | no |
+| `std` | zonal | nearest | no |
+| `min` | zonal | min | no |
+| `max` | zonal | max | no |
+| `majority` | zonal | nearest¹ | no |
+| `minority` | zonal | nearest¹ | no |
+| `percentage` | zonal | nearest¹ | **yes** |
+| `attribute` | zonal | nearest | no |
+| `presence` | zonal | nearest | no |
+| `min_distance` | proximity | nearest | no |
+| `count` | proximity | nearest | no |
 
-> ¹ Usam `needs_fine_alignment=True`: o GridAligner reamosttrea com `nearest` em alta resolução; a redução real (contagem por janela) é feita pelo operador.
+> ¹ These use `needs_fine_alignment=True`: GridAligner resamples with `nearest` at high resolution; the actual reduction (per-window counting) is done by the operator.
 
 ## Pipeline
 
@@ -129,47 +129,47 @@ backend = cube.to_lucc_data(
 SpatialSource
     │
     ▼
-Normalizer        — valida / carrega GeoDataFrame (vetor) ou abre raster
+Normalizer        — validates / loads a GeoDataFrame (vector) or opens the raster
     │
     ▼
-GridAligner       — reprojeta por variável com o Resampling correto do operador
+GridAligner       — reprojects per variable with the operator's Resampling
     │
     ▼
-Aggregator        — delega a operator.compute() → xr.DataArray por variável
+Aggregator        — delegates to operator.compute() → one xr.DataArray per variable
     │
     ▼
-VariableWriter    — persiste Zarr + registra DerivedVariable no catálogo
+VariableWriter    — writes Zarr + registers the DerivedVariable in the catalog
 ```
 
-## Estrutura de armazenamento
+## Storage layout
 
 ```
 data/derived/{grid_id}/{partition}/{spec_hash}/{variable_name}.zarr
 ```
 
-- `partition` = `tile_id` ou `global` para derivações sem tile.
-- `spec_hash` = SHA-256 da derivação (fonte + grade + variáveis + janela temporal).
+- `partition` = `tile_id`, or `global` for untiled derivations.
+- `spec_hash` = SHA-256 of the derivation (source + grid + variables + time window).
 
-## Estrutura do projeto
+## Project structure
 
 ```
 disscube/
-├── client/           CubeClient — ponto de entrada público
+├── client/           CubeClient — public entry point
 ├── models/           GridSpec, SpatialSource, SpatialDerivation, Variable…
-├── derivation.py     Derivation declarativa (front-end sobre SpatialDerivation)
-├── operators/        Operadores como classes (auto-registro via __init_subclass__)
+├── derivation.py     Declarative Derivation (front end over SpatialDerivation)
+├── operators/        Operators as classes (self-registered via __init_subclass__)
 │   ├── base.py       Operator ABC + OPERATOR_REGISTRY
 │   ├── zonal.py      mean, sum, majority, percentage, attribute, presence…
 │   └── proximity.py  min_distance, count
 ├── pipeline/         Stages: Normalizer → GridAligner → Aggregator → Writer
-├── catalog/          CatalogStore (Protocol) + SQLite e JSON implementations
-├── storage/          AssetStore (fsspec — local e S3)
+├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
+├── storage/          AssetStore (fsspec — local and S3)
 └── utils/grids.py    register_local_grid, register_simulation_grids
 ```
 
-## Adicionar um operador novo
+## Adding a new operator
 
-Crie uma subclasse de `Operator` em qualquer arquivo importado na inicialização:
+Create a subclass of `Operator` in any module imported at startup:
 
 ```python
 from rasterio.warp import Resampling
@@ -180,34 +180,34 @@ class WeightedMeanOperator(Operator):
     _resampling = Resampling.average
 
     def compute(self, data, var, grid):
-        # data é xr.DataArray (raster) ou GeoDataFrame (vetor)
+        # data is an xr.DataArray (raster) or a GeoDataFrame (vector)
         ...
 ```
 
-O operador é registrado automaticamente e aceito em `Derivation` / `SpatialDerivation` sem nenhuma outra mudança.
+The operator is registered automatically and accepted by `Derivation` / `SpatialDerivation` with no other change.
 
-## Limitações conhecidas
+## Known limitations
 
-As limitações abaixo são decisões de escopo da versão atual, não bugs. Estão documentadas para que usuários e revisores entendam o que está implementado versus o que está planejado.
+The limitations below are scope decisions for the current version, not bugs. They are documented so that users and reviewers understand what is implemented versus what is planned.
 
-**Processamento em memória, single-tile**
-Cada chamada a `derive()` carrega o dado completo de um tile em memória. Não há processamento lazy (Dask) nem distribuído. Para grades de escala continental (ex: `BR/1km`), use o loop de tiles — cada tile é processado e salvo independentemente.
+**In-memory, single-tile processing**
+Each call to `derive()` loads a tile's full data into memory. There is no lazy (Dask) or distributed processing. For continental-scale grids (e.g. `BR/1km`), use the tile loop — each tile is processed and saved independently.
 
-**Agregação vetorial por rasterização (não área-ponderada)**
-Operadores sobre fontes vetoriais (`majority`, `percentage`, `attribute`, `presence`, `minority`) convertem geometrias em raster antes de agregar pixels. A fração de cobertura de cada célula é estimada por contagem de pixels, não por cálculo de área de interseção. Para cobertura proporcional mais precisa, use uma fonte raster em resolução substancialmente maior que a célula-alvo.
+**Vector aggregation by rasterization (not area-weighted)**
+Operators over vector sources (`majority`, `percentage`, `attribute`, `presence`, `minority`) convert geometries to raster before aggregating pixels. Each cell's coverage fraction is estimated by pixel counting, not by computing intersection areas. For more accurate proportional coverage, use a raster source at a resolution substantially finer than the target cell.
 
-**Desambiguação de tiles em `load()`**
-`CubeClient.load(name)` sem `tile_id` retorna silenciosamente o primeiro resultado quando múltiplos tiles da mesma variável existem na mesma grade. Erro explícito ou mosaico automático estão planejados. **Especifique sempre `tile_id` em workloads multi-tile.**
+**Tile disambiguation in `load()`**
+`CubeClient.load(name)` without `tile_id` raises `ValueError` when multiple tiles of the same variable exist on the same grid. Automatic mosaicking is not implemented. **Always pass `tile_id` in multi-tile workloads.**
 
-**`SpatialRelation` não atua no pipeline**
-O modelo `SpatialRelation` é persistido no catálogo, mas nenhum estágio do pipeline usa as relações durante a derivação — e por isso elas são **excluídas do `spec_hash`**. Incluí-las tornaria a chave de cache sensível a metadados que não afetam o resultado, quebrando a garantia de reprodutibilidade. A integração com estratégias hierárquicas de grades está reservada para versão futura.
+**`SpatialRelation` does not act in the pipeline**
+The `SpatialRelation` model is persisted in the catalog, but no pipeline stage uses relations during derivation — which is why they are **excluded from `spec_hash`**. Including them would make the cache key sensitive to metadata that does not affect the result, breaking the reproducibility guarantee. Integration with hierarchical grid strategies is reserved for a future version.
 
-**`purity_threshold` reservado**
-O campo `purity_threshold` em `Derivation` é incluído no `spec_hash`, mas não é aplicado à saída — a máscara por pureza não está implementada. Definir `purity_threshold` muda o cache key sem mudar o resultado.
+**`purity_threshold` reserved**
+The `purity_threshold` field on `Derivation` is included in `spec_hash` but is not applied to the output — purity masking is not implemented. Setting `purity_threshold` changes the cache key without changing the result.
 
-**Sem integração STAC**
-Os campos `valid_from`/`valid_until` e `bbox` em `Derivation` seguem a convenção de nomenclatura STAC, mas nenhuma lógica de cliente, catálogo ou exportação STAC está implementada neste módulo.
+**No STAC integration**
+The `valid_from`/`valid_until` and `bbox` fields on `Derivation` follow STAC naming conventions, but no STAC client, catalog or export logic is implemented in this module.
 
-## Licença
+## License
 
-Parte do ecossistema DisSModel. Ver `LICENSE` para detalhes.
+Part of the DisSModel ecosystem. See `LICENSE` for details.

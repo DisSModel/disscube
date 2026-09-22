@@ -1,10 +1,10 @@
-# Sistema de Operadores
+# Operator System
 
-DisSCube implementa operadores como classes Python auto-registradas. Adicionar um novo operador não requer nenhuma mudança no pipeline.
+DisSCube implements operators as self-registering Python classes. Adding a new operator requires no change to the pipeline.
 
-## Como funciona
+## How it works
 
-Toda subclasse de `Operator` que define `name` é inserida automaticamente no `OPERATOR_REGISTRY` via `__init_subclass__`:
+Every subclass of `Operator` that defines `name` is automatically inserted into `OPERATOR_REGISTRY` via `__init_subclass__`:
 
 ```python
 # operators/base.py
@@ -16,7 +16,7 @@ class Operator:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "name"):
-            OPERATOR_REGISTRY[cls.name] = cls   # auto-registro
+            OPERATOR_REGISTRY[cls.name] = cls   # self-registration
 
     @classmethod
     def resampling(cls) -> Resampling:
@@ -26,44 +26,44 @@ class Operator:
         raise NotImplementedError
 ```
 
-O `GridAligner` consulta `op_cls.resampling()` para escolher o método de reamostragem antes de reprojetar o raster. O `Aggregator` chama `op_cls().compute(data, var, grid)` para calcular o resultado. Nenhum dos dois contém listas de operadores.
+`GridAligner` queries `op_cls.resampling()` to choose the resampling method before reprojecting the raster. `Aggregator` calls `op_cls().compute(data, var, grid)` to compute the result. Neither of them contains a list of operators.
 
-## Operadores disponíveis
+## Available operators
 
-### Zonais com reamostragem direta
+### Zonal, with direct resampling
 
-Estes operadores recebem do `GridAligner` um `DataArray` já reprojetado na resolução alvo. O `_resampling` determina o método de reprojeção.
+These operators receive from `GridAligner` a `DataArray` already reprojected to the target resolution. `_resampling` determines the reprojection method.
 
-| Operador | `_resampling` | Raster | Vetor | `requires_class_code` |
+| Operator | `_resampling` | Raster | Vector | `requires_class_code` |
 |---|---|---|---|---|
-| `mean` | `average` | média dos pixels no upscale | — | não |
-| `sum` | `sum` | soma dos pixels no upscale | — | não |
-| `min` | `min` | mínimo no upscale | — | não |
-| `max` | `max` | máximo no upscale | — | não |
-| `attribute` | `nearest` | passthrough | rasteriza com valor da coluna `var.name` | não |
-| `presence` | `nearest` | passthrough | rasteriza com `class_code` (ou 1) binário | não |
+| `mean` | `average` | mean of the pixels on upscale | — | no |
+| `sum` | `sum` | sum of the pixels on upscale | — | no |
+| `min` | `min` | minimum on upscale | — | no |
+| `max` | `max` | maximum on upscale | — | no |
+| `attribute` | `nearest` | passthrough | rasterizes with the value of column `var.name` | no |
+| `presence` | `nearest` | passthrough | rasterizes binary with `class_code` (or 1) | no |
 
-### Zonais com alinhamento fino (`needs_fine_alignment = True`)
+### Zonal, with fine alignment (`needs_fine_alignment = True`)
 
-Estes operadores recebem um array de alta resolução snappado na origem do grid alvo. O `GridAligner` reprojeita com `Resampling.nearest` em resolução fina (sub-múltiplo inteiro do tamanho da célula); o operador reduz por janelas reais sobre os pixels brutos.
+These operators receive a high-resolution array snapped to the target grid origin. `GridAligner` reprojects with `Resampling.nearest` at a fine resolution (an integer sub-multiple of the cell size); the operator then reduces over real windows of the raw pixels.
 
-| Operador | Raster | Vetor | `requires_class_code` |
+| Operator | Raster | Vector | `requires_class_code` |
 |---|---|---|---|
-| `std` | desvio padrão real por célula | — | não |
-| `majority` | classe dominante por contagem | rasteriza com `class_code` (ou 1) | não |
-| `minority` | classe menos frequente por contagem | rasteriza com `class_code` (ou 1) | não |
-| `percentage` | fração de pixels da classe-alvo | rasteriza com `class_code` | **sim** |
+| `std` | true per-cell standard deviation | — | no |
+| `majority` | dominant class by count | rasterizes with `class_code` (or 1) | no |
+| `minority` | least-frequent class by count | rasterizes with `class_code` (or 1) | no |
+| `percentage` | fraction of pixels of the target class | rasterizes with `class_code` | **yes** |
 
-Os três últimos produzem também `coverage_purity` e `dominance_purity` como coordenadas do `DataArray` de saída (persistem no Zarr junto à variável).
+The last three also produce `coverage_purity` and `dominance_purity` as coordinates of the output `DataArray` (persisted in the Zarr alongside the variable).
 
-### Proximidade — vetor (e passthrough para raster)
+### Proximity — vector (and passthrough for raster)
 
-| Operador | Descrição | `requires_class_code` |
+| Operator | Description | `requires_class_code` |
 |---|---|---|
-| `min_distance` | Distância euclidiana (em unidades do CRS) até a feature mais próxima | não |
-| `count` | Contagem de features cujo centroide cai em cada célula | não |
+| `min_distance` | Euclidean distance (in CRS units) to the nearest feature | no |
+| `count` | Number of features whose centroid falls in each cell | no |
 
-## Contrato de `compute()`
+## The `compute()` contract
 
 ```python
 def compute(
@@ -74,12 +74,12 @@ def compute(
 ) -> xr.DataArray:
 ```
 
-- `data`: para fontes raster, é o `DataArray` já reprojetado e reamostrado pelo `GridAligner`; para vetores, é o `GeoDataFrame` reprojetado e clipado ao bbox.
-- Retorno: `xr.DataArray` com `dims=("y", "x")` e `coords` alinhados a `grid.ys` / `grid.xs`.
+- `data`: for raster sources, the `DataArray` already reprojected and resampled by `GridAligner`; for vectors, the `GeoDataFrame` reprojected and clipped to the bbox.
+- Return value: an `xr.DataArray` with `dims=("y", "x")` and `coords` aligned to `grid.ys` / `grid.xs`.
 
-## Adicionar um operador novo
+## Adding a new operator
 
-Crie o arquivo `disscube/operators/meu_operador.py`:
+Create the file `disscube/operators/my_operator.py`:
 
 ```python
 from rasterio.warp import Resampling
@@ -88,50 +88,50 @@ import numpy as np
 from disscube.operators.base import Operator
 
 class WeightedMeanOperator(Operator):
-    """Média ponderada pela área de interseção (exemplo ilustrativo)."""
+    """Mean weighted by intersection area (illustrative example)."""
     name = "weighted_mean"
-    _resampling = Resampling.average  # usado pelo GridAligner
+    _resampling = Resampling.average  # used by GridAligner
 
     def compute(self, data, var, grid) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             if "band" in data.dims:
                 data = data.isel(band=0)
             return data.transpose("y", "x")
-        raise TypeError(f"'weighted_mean' requer fonte raster")
+        raise TypeError(f"'weighted_mean' requires a raster source")
 ```
 
-Importe o módulo para que o `__init_subclass__` seja executado — basta adicionar ao `disscube/operators/__init__.py`:
+Import the module so that `__init_subclass__` runs — just add it to `disscube/operators/__init__.py`:
 
 ```python
-from . import meu_operador  # noqa: F401
+from . import my_operator  # noqa: F401
 ```
 
-Pronto. O operador aparece em `OPERATOR_REGISTRY["weighted_mean"]` e é aceito em `Derivation(operator="weighted_mean")` e em `Variable(operator="weighted_mean")`.
+Done. The operator shows up in `OPERATOR_REGISTRY["weighted_mean"]` and is accepted by `Derivation(operator="weighted_mean")` and by `Variable(operator="weighted_mean")`.
 
-## `attribute` — contrato implícito
+## `attribute` — implicit contract
 
-O operador `attribute` rasteriza um vetor usando o valor de uma coluna numérica como pixel value. **A coluna deve ter o mesmo nome que a variável (`Variable.name`)**:
+The `attribute` operator rasterizes a vector using the value of a numeric column as the pixel value. **The column must have the same name as the variable (`Variable.name`)**:
 
 ```python
-# Fonte vetor com coluna "f" e coluna "d"
-Variable(name="f", operator="attribute")   # usa gdf["f"]
-Variable(name="d", operator="attribute")   # usa gdf["d"]
+# Vector source with columns "f" and "d"
+Variable(name="f", operator="attribute")   # uses gdf["f"]
+Variable(name="d", operator="attribute")   # uses gdf["d"]
 ```
 
-Se a coluna não existir no GeoDataFrame, o resultado é um raster de zeros sem erro explícito. Garanta que o nome da variável corresponda ao nome da coluna na fonte.
+If the column does not exist in the GeoDataFrame, the result is a raster of zeros with no explicit error. Make sure the variable name matches the column name in the source.
 
-## Validação em construção (`Derivation`)
+## Construction-time validation (`Derivation`)
 
-`Derivation` valida o nome do operador e os campos obrigatórios no momento da criação:
+`Derivation` validates the operator name and required fields at creation time:
 
 ```python
-# Erro imediato — operador inexistente
+# Immediate error — unknown operator
 Derivation(target="x", source_id="s", operator="bogus")
 # ValueError: Unknown operator 'bogus'. Available: ['attribute', 'count', ...]
 
-# Erro imediato — percentage sem class_code
+# Immediate error — percentage without class_code
 Derivation(target="x", source_id="s", operator="percentage")
 # ValueError: Operator 'percentage' requires class_code to be set.
 ```
 
-`SpatialDerivation` e `Variable` não validam — o erro aparece no `Aggregator` em tempo de execução. Use `Derivation` para validação antecipada.
+`SpatialDerivation` and `Variable` do not validate — the error surfaces in `Aggregator` at run time. Use `Derivation` for early validation.

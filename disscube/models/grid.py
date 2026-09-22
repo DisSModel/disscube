@@ -27,8 +27,8 @@ class SpatialRelation(BaseModel):
     source_grid_id: str
     target_grid_id: str
     strategy: Literal["simple", "chooseone", "keepinboth"]
-    params: dict = {}     # ex: {"min_intersection": 0.01} para keepinboth
-    metadata: dict = {}   # descrição, referência bibliográfica, etc.
+    params: dict = {}     # e.g. {"min_intersection": 0.01} for keepinboth
+    metadata: dict = {}   # description, bibliographic reference, etc.
 
 class GridSpec(BaseModel):
     id: str
@@ -64,15 +64,15 @@ class GridSpec(BaseModel):
         return toml.dumps(self.model_dump())
 
     def cell_id(self, row: int, col: int) -> str:
-        """Retorna identificador estável: 'grid_id:R0991C0047'"""
+        """Return a stable identifier: 'grid_id:R0991C0047'"""
         return f"{self.id}:R{row:04d}C{col:04d}"
 
     def cell_id_from_coords(self, x: float, y: float) -> str:
         """
-        Dado um ponto (x, y) no CRS da grade, retorna o cell_id.
+        Given a point (x, y) in the grid CRS, return its cell_id.
 
-        ATENÇÃO CRÍTICA — origem North-Up:
-        Se a bbox usa canto superior esquerdo (north-up), o cálculo de row é:
+        CRITICAL — North-Up origin:
+        If the bbox uses the upper-left corner (north-up), row/col are computed as:
             row = int((origin_y - y) / resolution)
             col = int((x - origin_x) / resolution)
         """
@@ -93,7 +93,7 @@ class GridSpec(BaseModel):
         return self.cell_id(row, col)
 
     def coords_from_cell_id(self, cell_id: str) -> tuple[float, float]:
-        """Retorna centroide (x, y) da célula no CRS da grade."""
+        """Return the cell centroid (x, y) in the grid CRS."""
         grid_id, row, col = self.parse_cell_id(cell_id)
         if grid_id != self.id:
             raise ValueError(f"Cell ID {cell_id} does not match grid ID {self.id}")
@@ -105,7 +105,7 @@ class GridSpec(BaseModel):
 
     @staticmethod
     def parse_cell_id(cell_id: str) -> tuple[str, int, int]:
-        """Retorna (grid_id, row, col) a partir de um cell_id."""
+        """Return (grid_id, row, col) parsed from a cell_id."""
         try:
             grid_id, coords = cell_id.split(":")
             # Robust parsing using regex to support any number of digits

@@ -1,9 +1,9 @@
 """
 examples/case_studies/maranhao/03_brmangue_simulate.py
 
-BR-MANGUE — executa o BrmangueRasterExecutor com as variáveis derivadas.
+BR-MANGUE — runs BrmangueRasterExecutor on the derived variables.
 
-Pré-requisito:
+Prerequisite:
   - python examples/case_studies/maranhao/02_brmangue_derive.py
 
 Usage:
@@ -48,4 +48,4 @@ if BrmangueRasterExecutor and ExperimentRecord:
 
     print(f"Simulation done. Output: {record.output_path}")
 else:
-    print("\nBrmangueRasterExecutor não disponível — simulation skipped.")
+    print("\nBrmangueRasterExecutor not available — simulation skipped.")

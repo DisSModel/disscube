@@ -1,10 +1,10 @@
-# Tiling e Processamento Particionado
+# Tiling and Partitioned Processing
 
-Para processar dados em escala continental (ex: Brasil a 100m) sem carregar o país inteiro em memória, DisSCube usa um modelo de particionamento baseado em tiles.
+To process data at continental scale (e.g. Brazil at 100 m) without loading the whole country into memory, DisSCube uses a tile-based partitioning model.
 
-## Conceito
+## Concept
 
-Uma **Master Grid** define a resolução e o CRS para todo o país. **Tiles** são recortes com o mesmo CRS e resolução — apenas o bbox muda. O pipeline executa um tile por vez, gerando Zarr isolados que podem ser paralelizados.
+A **Master Grid** defines the resolution and CRS for the whole country. **Tiles** are subsets with the same CRS and resolution — only the bbox changes. The pipeline runs one tile at a time, producing isolated Zarr stores that can be processed in parallel.
 
 ```mermaid
 graph TD
@@ -15,39 +15,39 @@ graph TD
     T2 --> Z2[zarr: .../BR_5km/002/{hash}/var.zarr]
 ```
 
-## Como o CubeClient usa tiles
+## How CubeClient uses tiles
 
 ```python
 cube.derive(derivation, tile_id="009002")
 ```
 
-Internamente:
-1. Busca `GridSpec` da master grid.
-2. Busca `SpatialSource` com id `{grid_id}_{tile_id}` para obter o `bbox` do tile.
-3. Cria um `GridSpec` temporário: mesmos CRS e resolução, bbox restrito ao tile.
-4. Executa o pipeline nessa grade temporária.
-5. Salva em `data/derived/{grid_id}/009002/{spec_hash}/{var}.zarr`.
+Internally:
+1. Fetches the master grid's `GridSpec`.
+2. Fetches the `SpatialSource` with id `{grid_id}_{tile_id}` to get the tile `bbox`.
+3. Creates a temporary `GridSpec`: same CRS and resolution, bbox restricted to the tile.
+4. Runs the pipeline on that temporary grid.
+5. Writes to `data/derived/{grid_id}/009002/{spec_hash}/{var}.zarr`.
 
-## Registrar tiles
+## Registering tiles
 
-Cada tile é registrado como um `SpatialSource` especial com o bbox do tile:
+Each tile is registered as a special `SpatialSource` carrying the tile bbox:
 
 ```python
 from disscube.models import SpatialSource
 
 cube.register_spatial_source(SpatialSource(
-    id="BDC_SM_009002",          # convenção: {grid_id}_{tile_id}
+    id="BDC_SM_009002",          # convention: {grid_id}_{tile_id}
     name="BDC SM Tile 009002",
     format="raster",
     asset_url="data/raw/tile_009002.tif",
     crs="EPSG:...",
-    bbox=[-70.0, -10.0, -65.0, -5.0],   # bbox do tile em coordenadas geográficas
+    bbox=[-70.0, -10.0, -65.0, -5.0],   # tile bbox in geographic coordinates
 ))
 ```
 
-O utilitário `disscube.utils.bdc_importer` automatiza esse processo para tiles BDC.
+The `disscube.utils.bdc_importer` utility automates this process for BDC tiles.
 
-## Processamento em loop
+## Processing in a loop
 
 ```python
 tiles = cube.catalog.list_spatial_sources()
@@ -57,30 +57,29 @@ for tile_id in tile_ids:
     cube.derive(derivation, tile_id=tile_id)
 ```
 
-> **Nota:** o `bdc_importer` registra tiles BDC como `SpatialSource` com IDs no formato
-> `BDC_SM_<tile>`. A grade de simulação permanece `BR/5km` ou `BR/1km` — os tiles BDC
-> definem apenas o bbox do recorte a processar.
+> **Note:** `bdc_importer` registers BDC tiles as `SpatialSource`s with IDs in the format
+> `BDC_SM_<tile>`. The simulation grid remains `BR/5km` or `BR/1km` — the BDC tiles
+> only define the bbox of the subset to process.
 
-Cada iteração é independente. Workers paralelos podem processar tiles diferentes sem conflitos (caminhos Zarr únicos por tile + spec_hash).
+Each iteration is independent. Parallel workers can process different tiles without conflicts (Zarr paths are unique per tile + spec_hash).
 
-## Carregar dados tileados
+## Loading tiled data
 
 ```python
-# Carga de um tile específico (tile_id sempre funciona)
+# Load a specific tile (tile_id always works)
 da = cube.load("dist_road", tile_id="009002")
 
-# Carga por grade — funciona quando há apenas um tile
+# Load by grid — works when there is only one tile
 da = cube.load("dist_road", grid_id="BR/5km")
 ```
 
-> **Limitação atual:** `load()` sem `tile_id` retorna silenciosamente o primeiro resultado
-> quando múltiplos tiles da mesma variável existem na mesma grade. A desambiguação
-> automática (mosaico ou erro explícito) está planejada mas não implementada.
-> Especifique sempre `tile_id` em workloads multi-tile.
+> **Current limitation:** `load()` without `tile_id` raises `ValueError` when multiple
+> tiles of the same variable exist on the same grid. Automatic mosaicking is not
+> implemented. Always pass `tile_id` in multi-tile workloads.
 
-## Vantagens
+## Advantages
 
-- **Memória controlada:** processa um tile de cada vez.
-- **Paralelismo trivial:** workers independentes, sem race conditions.
-- **Consistência garantida:** todos os tiles derivam da mesma `GridSpec` — pixels sempre alinhados.
-- **Cache por tile:** re-executar um tile com o mesmo `spec_hash` é no-op.
+- **Bounded memory:** processes one tile at a time.
+- **Trivial parallelism:** independent workers, no race conditions.
+- **Guaranteed consistency:** all tiles derive from the same `GridSpec` — pixels are always aligned.
+- **Per-tile caching:** re-running a tile with the same `spec_hash` is a no-op.

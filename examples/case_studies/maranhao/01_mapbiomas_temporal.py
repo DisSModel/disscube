@@ -1,14 +1,14 @@
 """
 examples/case_studies/maranhao/01_mapbiomas_temporal.py
 
-Deriva série temporal MapBiomas para a Ilha do Maranhão (100 m):
+Derives a MapBiomas time series for Ilha do Maranhão (100 m):
   - uso       (majority, temporal 2010-2022)
-  - dist_sedes (min_distance, estática)
+  - dist_sedes (min_distance, static)
 
-Pré-requisitos:
+Prerequisites:
   - python examples/setup/01_init_catalog.py
   - python examples/setup/02_register_sources.py
-  - Arquivos data/raw/ilha_maranhao_mapbiomas_{2010,2022}.tif presentes
+  - Files data/raw/ilha_maranhao_mapbiomas_{2010,2022}.tif present
 
 Usage:
     python examples/case_studies/maranhao/01_mapbiomas_temporal.py
@@ -21,10 +21,10 @@ from disscube.utils.grids import register_local_grid
 
 
 def main():
-    # ── 1. Cliente ───────────────────────────────────────────────────────────
+    # ── 1. Client ────────────────────────────────────────────────────────────
     cube = CubeClient(catalog="catalog.db", store="data/")
 
-    # ── 2. Grade local ───────────────────────────────────────────────────────
+    # ── 2. Local grid ────────────────────────────────────────────────────────
     register_local_grid(
         cube,
         name="ilha_maranhao",
@@ -33,7 +33,7 @@ def main():
         snap=True,
     )
 
-    # ── 3. Derivação temporal (MapBiomas 2010, 2022) ─────────────────────────
+    # ── 3. Temporal derivation (MapBiomas 2010, 2022) ────────────────────────
     for year in [2010, 2022]:
         cube.register_spatial_source(SpatialSource(
             id=f"mapbiomas_ilha_ma_{year}",
@@ -51,8 +51,8 @@ def main():
             variables=[Variable(name="uso", operator="majority")],
         ))
 
-    # ── 4. Variável estática ─────────────────────────────────────────────────
-    print("\n[pipeline] Processando distância a sedes...")
+    # ── 4. Static variable ───────────────────────────────────────────────────
+    print("\n[pipeline] Processing distance to municipal seats...")
     cube.derive(SpatialDerivation(
         source_id="urban_centers",
         grid_id="ilha_maranhao/100m",
@@ -60,15 +60,15 @@ def main():
         variables=[Variable(name="dist_sedes", operator="min_distance")],
     ))
 
-    # ── 5. Verificação ───────────────────────────────────────────────────────
-    # "uso" retorna (time, y, x) por ser temporal; "dist_sedes" retorna (y, x)
+    # ── 5. Verification ──────────────────────────────────────────────────────
+    # "uso" returns (time, y, x) because it is temporal; "dist_sedes" returns (y, x)
     da_uso = cube.load("uso", grid_id="ilha_maranhao/100m")
     print(f"\nuso:       {da_uso.dims}  anos={list(da_uso.coords['time'].values)}")
 
     da_sedes = cube.load("dist_sedes", grid_id="ilha_maranhao/100m")
     print(f"dist_sedes:{da_sedes.dims}  shape={da_sedes.shape}")
 
-    # ── 6. Integração DisSModel ──────────────────────────────────────────────
+    # ── 6. DisSModel integration ─────────────────────────────────────────────
     backend = cube.to_lucc_data(["uso", "dist_sedes"], grid_id="ilha_maranhao/100m")
     print(f"\nBackend pronto: {backend}")
 

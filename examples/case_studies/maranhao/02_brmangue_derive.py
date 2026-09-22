@@ -1,10 +1,10 @@
 """
 examples/case_studies/maranhao/02_brmangue_derive.py
 
-BR-MANGUE — deriva variáveis de uso do solo para a Ilha do Maranhão (100 m):
-  - uso, alt, solo  (majority / mean sobre maranhao_base)
+BR-MANGUE — derives land-use variables for Ilha do Maranhão (100 m):
+  - uso, alt, solo  (majority / mean over maranhao_base)
 
-Pré-requisitos:
+Prerequisites:
   - python examples/setup/01_init_catalog.py
   - python examples/setup/02_register_sources.py
 
@@ -20,9 +20,9 @@ SOURCE_ID = "maranhao_base"
 cube = CubeClient(catalog="catalog.db", store="./data/")
 
 if not cube.catalog.get_grid(GRID_ID):
-    raise RuntimeError(f"Grade {GRID_ID!r} não encontrada. Execute examples/setup/01_init_catalog.py primeiro.")
+    raise RuntimeError(f"Grid {GRID_ID!r} not found. Run examples/setup/01_init_catalog.py first.")
 if not cube.catalog.get_spatial_source(SOURCE_ID):
-    raise RuntimeError(f"Fonte {SOURCE_ID!r} não encontrada. Execute examples/setup/02_register_sources.py primeiro.")
+    raise RuntimeError(f"Source {SOURCE_ID!r} not found. Run examples/setup/02_register_sources.py first.")
 
 print(f"\n[derive] {SOURCE_ID} @ {GRID_ID}...")
 cube.derive(SpatialDerivation(

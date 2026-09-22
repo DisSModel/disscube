@@ -1,15 +1,15 @@
-# Integração com Brazil Data Cube
+# Brazil Data Cube Integration
 
-## Grades BDC e tiles
+## BDC grids and tiles
 
-O Brazil Data Cube (BDC) particionam o Brasil em tiles hierárquicos. DisSCube representa isso com:
+The Brazil Data Cube (BDC) partitions Brazil into hierarchical tiles. DisSCube represents this with:
 
-- **Master Grid**: definição de resolução e CRS para todo o país.
-- **Tiles**: `SpatialSource` com o `bbox` de cada partição.
+- **Master Grid**: definition of the resolution and CRS for the whole country.
+- **Tiles**: a `SpatialSource` carrying the `bbox` of each partition.
 
-## Registrar grades e tiles BDC
+## Registering BDC grids and tiles
 
-O utilitário `bdc_importer` indexa as master grids e registra cada tile como `SpatialSource` no catálogo:
+The `bdc_importer` utility indexes the master grids and registers each tile as a `SpatialSource` in the catalog:
 
 ```python
 from disscube.utils.bdc_importer import import_bdc_grids
@@ -22,12 +22,12 @@ import_bdc_grids(
 )
 ```
 
-Isso registra as master grids e cada tile como `SpatialSource` com `bbox` preenchido.
+This registers the master grids and each tile as a `SpatialSource` with its `bbox` filled in.
 
-!!! warning "Ingestão de dados STAC — planejada"
-    `bdc_importer` indexa a grade BDC e os tiles (geometria e metadados), mas **não realiza ingestão de dados via STAC**. Os `SpatialSource` registrados têm `asset_url` como placeholder (`"planned"`) e não são diretamente carregáveis como dados raster. A integração com o catálogo STAC do BDC está planejada e ainda não implementada. Para usar dados BDC reais, forneça os arquivos localmente via um `SpatialSource` com `asset_url` apontando para o arquivo correto.
+!!! warning "STAC data ingestion — planned"
+    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata), but **does not ingest data via STAC**. The registered `SpatialSource`s have a placeholder `asset_url` (`"planned"`) and cannot be loaded directly as raster data. Integration with the BDC STAC catalog is planned but not yet implemented. To use real BDC data, provide the files locally through a `SpatialSource` whose `asset_url` points to the correct file.
 
-## Derivação por tile
+## Per-tile derivation
 
 ```python
 from disscube.models import SpatialDerivation, Variable
@@ -39,35 +39,35 @@ derivation = SpatialDerivation(
     variables=[Variable(name="slope", operator="mean")],
 )
 
-# Processar um tile
+# Process one tile
 cube.derive(derivation, tile_id="009002")
 
-# Processar todos os tiles SM em loop
-# Tiles são registrados com IDs no formato BDC_SM_<tile> (ex: BDC_SM_009002)
+# Process all SM tiles in a loop
+# Tiles are registered with IDs in the format BDC_SM_<tile> (e.g. BDC_SM_009002)
 tiles = [s for s in cube.catalog.list_spatial_sources() if s.id.startswith("BDC_SM_")]
 for tile_source in tiles:
     tile_id = tile_source.id.split("_")[-1]
     cube.derive(derivation, tile_id=tile_id)
 ```
 
-Cada tile é processado de forma independente e pode ser paralelizado.
+Each tile is processed independently and can be parallelized.
 
-## Carregar resultado tileado
+## Loading a tiled result
 
 ```python
-# Tile específico — sempre funciona
+# A specific tile — always works
 da = cube.load("slope", tile_id="009002")
 
-# Por grade — funciona apenas quando há um único tile no resultado
+# By grid — works only when the result has a single tile
 da = cube.load("slope", grid_id="BR/5km")
 ```
 
-!!! warning "Carga multi-tile"
-    `load()` sem `tile_id` levanta `ValueError` quando múltiplos tiles da mesma variável existem na mesma grade. Mosaico automático não está implementado. **Sempre especifique `tile_id` em workloads multi-tile.**
+!!! warning "Multi-tile loading"
+    `load()` without `tile_id` raises `ValueError` when multiple tiles of the same variable exist on the same grid. Automatic mosaicking is not implemented. **Always pass `tile_id` in multi-tile workloads.**
 
-## Grade 100m nacional
+## National 100 m grid
 
-Para projetos que precisam de resolução mais alta que BDC_SM (10m), DisSCube suporta uma grade de 100m customizada:
+For projects that need a finer resolution than the `BR/1km` simulation grid, DisSCube supports a custom national 100 m grid. BDC tiles can still be used to partition the processing, since they only define the bbox of each subset:
 
 ```python
 from disscube.utils.grids import register_local_grid
@@ -75,13 +75,13 @@ from disscube.utils.grids import register_local_grid
 grid_100m = register_local_grid(
     cube,
     name="BR",
-    bbox_geo=(-73.98, -33.75, -28.65, 5.27),  # bbox do Brasil em WGS84
+    bbox_geo=(-73.98, -33.75, -28.65, 5.27),  # Brazil bbox in WGS84
     resolution=100.0,
     snap=True,
 )
 ```
 
-## Fluxo completo: setup → derivação → carregamento
+## Full workflow: setup → derivation → loading
 
 ```python
 from disscube.client import CubeClient
@@ -89,7 +89,7 @@ from disscube.models import SpatialSource, SpatialDerivation, Variable
 
 cube = CubeClient(catalog="catalog.db", store="./data/")
 
-# 1. Fonte
+# 1. Source
 cube.register_spatial_source(SpatialSource(
     id="urban_centers",
     name="Centros Urbanos PNLT",
@@ -98,7 +98,7 @@ cube.register_spatial_source(SpatialSource(
     crs="EPSG:5880",
 ))
 
-# 2. Derivação — distância a centros urbanos em BR/5km
+# 2. Derivation — distance to urban centers on BR/5km
 derivation = SpatialDerivation(
     source_id="urban_centers",
     grid_id="BR/5km",
@@ -108,17 +108,17 @@ derivation = SpatialDerivation(
     valid_until="2014",
 )
 
-# 3. Executar para um tile
+# 3. Run for one tile
 cube.derive(derivation, tile_id="009002")
 
-# 4. Carregar
+# 4. Load
 da = cube.load("dist_cidades", tile_id="009002")
 print(da.shape)   # (rows, cols)
 ```
 
-## Variáveis temporais com tiles
+## Temporal variables with tiles
 
-Para drivers com variação temporal, derive múltiplos períodos e carregue como série:
+For time-varying drivers, derive multiple periods and load them as a series:
 
 ```python
 for start, end in [("2000", "2014"), ("2015", "2025")]:
@@ -130,7 +130,7 @@ for start, end in [("2000", "2014"), ("2015", "2025")]:
         valid_from=start, valid_until=end,
     ))
 
-# Carrega série temporal (time, y, x)
+# Load the time series (time, y, x)
 da = cube.load("dist_cidades", grid_id="BR/5km")
 print(da.dims)   # ('time', 'y', 'x')
 ```

@@ -1,39 +1,39 @@
-# DisSCube — Exemplos
+# DisSCube — Examples
 
-Demonstração estruturada do pipeline DisSCube, do bootstrap do catálogo até
-estudos de caso completos.
+A structured walkthrough of the DisSCube pipeline, from catalog bootstrap to
+complete case studies.
 
-## Ordem de execução
+## Execution order
 
 ### 1. Setup (one-time)
-Bootstrap do catálogo e registro dos dados base.
-- `python examples/setup/01_init_catalog.py` — registra grades nacionais e locais.
-- `python examples/setup/02_register_sources.py` — registra arquivos brutos como SpatialSources.
+Catalog bootstrap and registration of the base data.
+- `python examples/setup/01_init_catalog.py` — registers national and local grids.
+- `python examples/setup/02_register_sources.py` — registers raw files as SpatialSources.
 
-### 2. Drivers nacionais
-Deriva variáveis na grade nacional BR/5km.
-- `python examples/drivers/01_brazil_national.py` — slope, TI, distância a cidades/rios.
+### 2. National drivers
+Derives variables on the national BR/5km grid.
+- `python examples/drivers/01_brazil_national.py` — slope, indigenous lands (TI), distance to cities/rivers.
 
-### 3. Estudo de caso: Maranhão (Ilha do Maranhão, 100 m)
-Dois estudos sobre a mesma área geográfica e grade.
-- `python examples/case_studies/maranhao/01_mapbiomas_temporal.py` — série temporal MapBiomas (uso majority) + dist_sedes estática.
-- `python examples/case_studies/maranhao/02_brmangue_derive.py` — deriva uso, alt, solo para o modelo BR-MANGUE.
-- `python examples/case_studies/maranhao/03_brmangue_simulate.py` — executa BrmangueRasterExecutor.
+### 3. Case study: Maranhão (Ilha do Maranhão, 100 m)
+Two studies over the same geographic area and grid.
+- `python examples/case_studies/maranhao/01_mapbiomas_temporal.py` — MapBiomas time series (`uso`, majority) + static `dist_sedes`.
+- `python examples/case_studies/maranhao/02_brmangue_derive.py` — derives `uso`, `alt`, `solo` for the BR-MANGUE model.
+- `python examples/case_studies/maranhao/03_brmangue_simulate.py` — runs BrmangueRasterExecutor.
 
-### 4. Estudo de caso: Acre (AC/5km)
-- `python examples/drivers/02_acre_5km.py` — drivers regionais Acre 5 km.
-- `python examples/case_studies/lucc_acre/01_derive.py` — atributos de uso do solo de fonte vetorial.
-- `python examples/case_studies/lucc_acre/02_simulate.py` — executa LUCCRasterExecutor.
-- `python examples/case_studies/lucc_acre/03_temporal_drivers.py` — loop de simulação com drivers temporais.
+### 4. Case study: Acre (AC/5km)
+- `python examples/drivers/02_acre_5km.py` — regional drivers for Acre at 5 km.
+- `python examples/case_studies/lucc_acre/01_derive.py` — land-use attributes from a vector source.
+- `python examples/case_studies/lucc_acre/02_simulate.py` — runs LUCCRasterExecutor.
+- `python examples/case_studies/lucc_acre/03_temporal_drivers.py` — simulation loop with temporal drivers.
 
 ---
 
-## Utilitários (`tools/`)
+## Utilities (`tools/`)
 
-| Script | Uso |
+| Script | Purpose |
 |---|---|
-| `tools/zarr_to_tif.py` | Converte Zarr derivado para GeoTIFF |
-| `tools/import_bdc_tiles.py` | Importa tiles BDC SM/MD/LG no catálogo (one-time, lento) |
+| `tools/zarr_to_tif.py` | Converts a derived Zarr to GeoTIFF |
+| `tools/import_bdc_tiles.py` | Imports BDC SM/MD/LG tiles into the catalog (one-time, slow) |
 
 ```bash
 python tools/zarr_to_tif.py data/derived/.../var.zarr output.tif

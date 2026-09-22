@@ -19,9 +19,9 @@ grid = cube.catalog.get_grid(GRID_ID)
 if grid is None:
     raise RuntimeError(f"Grid {GRID_ID!r} not found. Run examples/setup/01_init_catalog.py first.")
 
-# Distância a cidades (Temporal)
+# Distance to cities (temporal)
 for start, end in [("2000", "2014"), ("2015", "2025")]:
-    print(f"\n--- Distância a cidades ({start}-{end}) @ 1km ---")
+    print(f"\n--- Distance to cities ({start}-{end}) @ 1km ---")
     cube.derive(SpatialDerivation(
         source_id="urban_centers", grid_id=GRID_ID, role="driver",
         variables=[Variable(name="dist_cidades", operator="min_distance")],

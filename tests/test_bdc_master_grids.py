@@ -5,12 +5,14 @@ What is actually implemented (and tested here):
   - import_bdc_grids() registers BR/5km and BR/1km simulation grids plus
     BDC_SM/MD/LG tile sources in the catalog.
   - load(name, tile_id=...) correctly filters to a specific tile.
-
-What is planned but not yet implemented (marked xfail):
-  - load(name) without tile_id raising when multiple tiles of the same
+  - load(name) without tile_id raises when multiple tiles of the same
     variable exist on the same grid (tile disambiguation).
+
+The importer tests need the optional ``fiona`` dependency
+(``pip install disscube[bdc]``) and are skipped when it is not installed.
 """
 
+import importlib.util
 import os
 import shutil
 import tempfile
@@ -19,6 +21,9 @@ from unittest.mock import MagicMock, patch
 
 from disscube.client import CubeClient
 from disscube.utils.bdc_importer import import_bdc_grids
+
+HAS_FIONA = importlib.util.find_spec("fiona") is not None
+requires_fiona = unittest.skipUnless(HAS_FIONA, "fiona not installed (install disscube[bdc])")
 
 
 class TestBDCMasterGrids(unittest.TestCase):
@@ -35,6 +40,7 @@ class TestBDCMasterGrids(unittest.TestCase):
     # BDC importer
     # ------------------------------------------------------------------
 
+    @requires_fiona
     @patch('fiona.open')
     def test_importer_registers_simulation_grids(self, mock_fiona):
         """import_bdc_grids() creates the BR/5km and BR/1km simulation grids."""
@@ -59,6 +65,7 @@ class TestBDCMasterGrids(unittest.TestCase):
         self.assertIn("BR/5km", grid_ids)
         self.assertIn("BR/1km", grid_ids)
 
+    @requires_fiona
     @patch('fiona.open')
     def test_importer_registers_bdc_tile_sources(self, mock_fiona):
         """import_bdc_grids() registers 2 tiles × 3 BDC levels = 6 SpatialSources."""

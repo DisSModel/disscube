@@ -1,6 +1,6 @@
-# Estágios do Pipeline
+# Pipeline Stages
 
-O pipeline é uma sequência de `PipelineStage`, cada um recebendo e retornando um `PipelineContext`. O contexto carrega fonte, grade, derivação e o dado em transformação.
+The pipeline is a sequence of `PipelineStage`s, each receiving and returning a `PipelineContext`. The context carries the source, grid, derivation and the data being transformed.
 
 ```python
 class PipelineStage:
@@ -17,7 +17,7 @@ class PipelineContext(BaseModel):
     data: Any = None
 ```
 
-A sequência executada por `CubeClient.derive()`:
+The sequence executed by `CubeClient.derive()`:
 
 ```python
 pipeline = [Normalizer(), GridAligner(), Aggregator(), VariableWriter(store, catalog)]
@@ -29,48 +29,48 @@ for stage in pipeline:
 
 ## 1. Normalizer
 
-**Arquivo:** `disscube/pipeline/normalizer.py`
+**File:** `disscube/pipeline/normalizer.py`
 
-**Responsabilidade:** ponto de entrada da fonte de dados.
+**Responsibility:** entry point for the data source.
 
 ### Raster
-Abre o arquivo com `rasterio` para validar que é legível. Não carrega dados — a leitura real é lazy em `GridAligner`.
+Opens the file with `rasterio` to check that it is readable. It does not load data — the actual read is lazy, in `GridAligner`.
 
-### Vetor
-Carrega o `GeoDataFrame` completo com `geopandas.read_file()`. Se o CRS declarado na fonte (`SpatialSource.crs`) difere do CRS no arquivo, aplica `set_crs(..., allow_override=True)` com `log.warning` explícito.
+### Vector
+Loads the full `GeoDataFrame` with `geopandas.read_file()`. If the CRS declared in the source (`SpatialSource.crs`) differs from the CRS in the file, it applies `set_crs(..., allow_override=True)` with an explicit `log.warning`.
 
-!!! warning "Override de CRS"
-    O `Normalizer` **não reprojeta** — ele apenas corrige metadados. Isso é intencional para fontes com `.prj` malformado ou ausente. Se a intenção é reprojetar, use `SpatialSource.crs` com o CRS real do dado e deixe o `GridAligner` fazer a reprojection.
+!!! warning "CRS override"
+    `Normalizer` **does not reproject** — it only fixes metadata. This is intentional, for sources with a malformed or missing `.prj`. If the intent is to reproject, set `SpatialSource.crs` to the data's real CRS and let `GridAligner` do the reprojection.
 
 ---
 
 ## 2. GridAligner
 
-**Arquivo:** `disscube/pipeline/aligner.py`
+**File:** `disscube/pipeline/aligner.py`
 
-**Responsabilidade:** alinhar a fonte ao `GridSpec` alvo.
+**Responsibility:** align the source to the target `GridSpec`.
 
-### Raster — por variável
+### Raster — per variable
 
-Para cada variável na derivação:
+For each variable in the derivation:
 
-1. **Seleção de banda:** por `band_map` (1-based) ou por índice posicional.
-2. **Resampling por operador:** consulta `OPERATOR_REGISTRY[var.operator].resampling()`. Cada variável usa o método correto para sua semântica (`Resampling.mode` para `majority`, `Resampling.average` para `mean`).
-3. **Reprojeção:** `band.rio.reproject(grid.crs, shape=(rows, cols), transform=grid.transform, resampling=...)`.
-4. **Invariante de alinhamento:** verifica `aligned.rio.shape == (grid.rows, grid.cols)`. Mismatch → `ValueError` explícito.
+1. **Band selection:** via `band_map` (1-based) or by positional index.
+2. **Per-operator resampling:** queries `OPERATOR_REGISTRY[var.operator].resampling()`. Each variable uses the method appropriate to its semantics (`Resampling.mode` for `majority`, `Resampling.average` for `mean`).
+3. **Reprojection:** `band.rio.reproject(grid.crs, shape=(rows, cols), transform=grid.transform, resampling=...)`.
+4. **Alignment invariant:** checks `aligned.rio.shape == (grid.rows, grid.cols)`. A mismatch → explicit `ValueError`.
 
-Retorna `xr.Dataset` com uma `DataArray` por variável, já com `dims=("y", "x")`.
+Returns an `xr.Dataset` with one `DataArray` per variable, already with `dims=("y", "x")`.
 
-### Vetor
+### Vector
 
-1. Reprojeta o GeoDataFrame para o CRS da grade usando `pyproj.CRS.equals()` para comparação robusta.
-2. Clipa ao bbox da grade com `shapely.geometry.box`.
+1. Reprojects the GeoDataFrame to the grid CRS, using `pyproj.CRS.equals()` for robust comparison.
+2. Clips to the grid bbox with `shapely.geometry.box`.
 
-Retorna o GeoDataFrame processado em `ctx.data`.
+Returns the processed GeoDataFrame in `ctx.data`.
 
-### Por que por variável?
+### Why per variable?
 
-Derivações multi-variável de fontes multi-banda frequentemente usam operadores diferentes:
+Multi-variable derivations from multi-band sources often use different operators:
 
 ```python
 variables=[
@@ -80,61 +80,61 @@ variables=[
 ]
 ```
 
-Com a abordagem por variável, cada banda é reprojetada com o método semanticamente correto. A versão anterior usava apenas `variables[0].operator` para todo o raster.
+With the per-variable approach, each band is reprojected with the semantically correct method. The previous version used only `variables[0].operator` for the whole raster.
 
 ---
 
 ## 3. Aggregator
 
-**Arquivo:** `disscube/pipeline/aggregator.py`
+**File:** `disscube/pipeline/aggregator.py`
 
-**Responsabilidade:** derivar cada variável chamando seu operador.
+**Responsibility:** derive each variable by calling its operator.
 
-Para cada variável na derivação:
+For each variable in the derivation:
 
 ```python
 op_cls = OPERATOR_REGISTRY[var.operator]
 
-# Raster: ctx.data é Dataset → seleciona DataArray pré-alinhado
-# Vetor:  ctx.data é GeoDataFrame → operador faz a rasterização
+# Raster: ctx.data is a Dataset → select the pre-aligned DataArray
+# Vector: ctx.data is a GeoDataFrame → the operator does the rasterization
 var_data = ctx.data[var.name] if isinstance(ctx.data, xr.Dataset) else ctx.data
 
 result = op_cls().compute(var_data, var, grid)
 final_ds[var.name] = result
 ```
 
-Não contém nenhuma lógica de operador — é puro despacho. O `if/elif` histórico foi eliminado.
+It contains no operator logic — it is pure dispatch. The historical `if/elif` chain was removed.
 
-Monta o `xr.Dataset` final. `write_crs()` e `write_transform()` são chamados **depois** do loop de variáveis — rioxarray propaga `grid_mapping="spatial_ref"` apenas para as data variables já presentes no Dataset no momento da chamada. Chamar antes do loop resultaria em nenhuma variável recebendo o atributo, impedindo que leitores CF (QGIS, GDAL) detectem a projeção automaticamente. O CRS é nomeado explicitamente para evitar `PROJCS["unknown"]` em CRSs sem código EPSG registrado (ex: BDC Albers).
+It builds the final `xr.Dataset`. `write_crs()` and `write_transform()` are called **after** the variable loop — rioxarray propagates `grid_mapping="spatial_ref"` only to the data variables already present in the Dataset at the time of the call. Calling them before the loop would leave no variable with the attribute, preventing CF readers (QGIS, GDAL) from detecting the projection automatically. The CRS is named explicitly to avoid `PROJCS["unknown"]` for CRSs without a registered EPSG code (e.g. BDC Albers).
 
 ---
 
 ## 4. VariableWriter
 
-**Arquivo:** `disscube/pipeline/writer.py`
+**File:** `disscube/pipeline/writer.py`
 
-**Responsabilidade:** persistir e registrar.
+**Responsibility:** persist and register.
 
-Para cada variável no Dataset:
+For each variable in the Dataset:
 
-1. Adiciona atributos: `grid_id`, `role`, `spec_hash`, `crs`, `tile_id`.
-2. Salva como Zarr em `data/derived/{grid_id}/{partition}/{spec_hash}/{var}.zarr`.
-3. Calcula `content_hash` (SHA-256 de todos os bytes do Zarr, em ordem determinística).
-4. Determina `times`:
-   - Se `source.time` está definido → `[source.time]` (ex: MapBiomas 2020)
-   - Caso contrário, se `valid_from` é um ano → `[int(valid_from)]`
-   - Sem informação temporal → `[]` (variável estática)
-5. Registra `DerivedVariable` no catálogo SQLite.
+1. Adds attributes: `grid_id`, `role`, `spec_hash`, `crs`, `tile_id`.
+2. Writes it as Zarr to `data/derived/{grid_id}/{partition}/{spec_hash}/{var}.zarr`.
+3. Computes `content_hash` (SHA-256 of all the Zarr bytes, in deterministic order).
+4. Determines `times`:
+   - If `source.time` is set → `[source.time]` (e.g. MapBiomas 2020)
+   - Otherwise, if `valid_from` is a year → `[int(valid_from)]`
+   - No temporal information → `[]` (static variable)
+5. Registers the `DerivedVariable` in the SQLite catalog.
 
 ### Tile detection
 
-Se `tile_id` não é passado explicitamente e `grid.id` começa com `BDC_`, tenta extrair o tile do `source.id` (convenção `BDC_LG_009002`). Isso é um fallback para compatibilidade com o workflow BDC.
+If `tile_id` is not passed explicitly and `grid.id` starts with `BDC_`, it tries to extract the tile from `source.id` (convention `BDC_LG_009002`). This is a fallback for compatibility with the BDC workflow.
 
 ---
 
-## Idempotência e cache
+## Idempotence and caching
 
-`CubeClient.derive()` verifica o cache antes de executar:
+`CubeClient.derive()` checks the cache before running:
 
 ```python
 spec_hash = derivation.spec_hash()
@@ -143,7 +143,7 @@ cached_vars = [
     if d.spec_hash == spec_hash and self.store.fs.exists(d.asset_url)
 ]
 if expected == cached_names:
-    return cached_vars   # retorna sem executar o pipeline
+    return cached_vars   # return without running the pipeline
 ```
 
-Reexecutar a mesma derivação é seguro e rápido.
+Re-running the same derivation is safe and fast.
