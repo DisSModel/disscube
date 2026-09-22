@@ -9,7 +9,16 @@ description = "Declarative Spatial Layer for Dynamic Models"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "Sergio" }
+    { name = "Sérgio Costa" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: GIS",
 ]
 dependencies = [
     "pydantic>=2.0",

@@ -1,5 +1,8 @@
 # DisSCube
 
+[![CI](https://github.com/DisSModel/disscube/actions/workflows/ci.yml/badge.svg)](https://github.com/DisSModel/disscube/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > **Status: Alpha — stable APIs for the core pipeline; declarative models still evolving.**
 
 DisSCube is the spatial data cube engine of the **DisSModel** ecosystem. It converts raw geospatial sources (rasters, vectors) into derived variables aligned to LUCC (Land Use and Cover Change) modeling grids, ready for Cellular Automata models and spatio-temporal analysis.
@@ -210,4 +213,4 @@ The `valid_from`/`valid_until` and `bbox` fields on `Derivation` follow STAC nam
 
 ## License
 
-Part of the DisSModel ecosystem. See `LICENSE` for details.
+DisSCube is part of the DisSModel ecosystem and is released under the MIT License. See [LICENSE](LICENSE) for details.
