@@ -1,4 +1,9 @@
 site_name: DisSCube Documentation
+site_description: Spatial data cube engine of the DisSModel ecosystem
+site_url: https://dissmodel.github.io/disscube/
+repo_url: https://github.com/DisSModel/disscube
+repo_name: DisSModel/disscube
+edit_uri: edit/main/docs/
 theme:
   name: material
   palette:
@@ -8,6 +13,7 @@ theme:
   features:
     - navigation.tabs
     - content.code.copy
+    - content.action.edit
 
 markdown_extensions:
   - pymdownx.highlight:

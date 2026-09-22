@@ -52,6 +52,10 @@ bdc = [
 s3 = [
     "s3fs",
 ]
+docs = [                    # documentation site (mkdocs.yml, .github/workflows/docs.yml)
+    "mkdocs>=1.6,<2",       # MkDocs 2.0 drops the plugin/theme system Material relies on
+    "mkdocs-material>=9.5",
+]
 api = [                     # experimental HTTP API (disscube.api)
     "fastapi",
     "uvicorn",
