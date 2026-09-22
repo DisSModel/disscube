@@ -85,12 +85,12 @@ compared in percent (DisSCube fraction × 100).
 
 | TerraME fill | DisSCube | Mean abs. error | Max abs. error | Cells within tolerance |
 |---|---|---|---|---|
-| `elevation` — `average` (923 m raster) | `mean` | 0.93 m | 9.96 m | 67 % within 1 m (r = 0.9995) |
-| `defor_7` — `coverage` (60 m raster) | `percentage` | 2.30 pp | 53.57 pp | 92 % within 1 pp |
+| `elevation` — `average` (923 m raster) | `mean` | 0.89 m | 10.13 m | 72 % within 1 m (r = 0.9995) |
+| `defor_7` — `coverage` (60 m raster) | `percentage` | 2.17 pp | 50.13 pp | 92 % within 1 pp |
 | `defor_7` | `percentage × coverage_purity` | 0.09 pp | 0.64 pp | **100 %** within 1 pp |
 | `defor_87` | `percentage × coverage_purity` | 0.06 pp | 0.64 pp | **100 %** within 1 pp |
 | `defor_167` | `percentage × coverage_purity` | 0.01 pp | 0.39 pp | **100 %** within 1 pp |
-| `defor_255` | `percentage × coverage_purity` | 0.10 pp | 2.42 pp | 94 % within 1 pp — see nodata issue below |
+| `defor_255` | `percentage × coverage_purity` | 0.001 pp | 0.02 pp | **100 %** within 1 pp |
 | `distroad` — `distance` (lines) | `min_distance` | 1 782 m | 5 891 m | biased +1 782 m (r = 0.983) |
 | `distlocal` — `distance` (points) | `min_distance` | 2 499 m | 6 871 m | biased +2 497 m (r = 0.986) |
 | `population` — `sum`, `area = true` | — | — | — | not supported |
@@ -114,12 +114,12 @@ compared in percent (DisSCube fraction × 100).
   in 80 % of the cells (mean error 52 m), which identifies TerraME's semantics.
   `min_distance` instead measures between rasterized cell centres, so at 5 km
   it overestimates by about a third to a half of a cell on average.
-- **Nodata collision (bug).** The deforestation raster declares no nodata.
-  When such a `uint8` source is reprojected, the out-of-extent fill value is
-  255 and is then treated as nodata, so the legitimate class 255 is dropped
-  (94 % of cells within 1 pp instead of 100 %). With a nodata value declared
-  on the source (e.g. 0, unused here), `defor_255` also reaches 100 % within
-  1 pp (max 0.02 pp).
+- **Rasters without a declared nodata.** The deforestation raster declares
+  none, and its classes include 255. Earlier versions reprojected it with the
+  `uint8` default fill value (255) and then treated that value as nodata,
+  dropping the legitimate class 255 (94 % of cells within 1 pp). Since the
+  fix, the fill value can no longer collide with the data, and `defor_255`
+  agrees with TerraME in every cell.
 
 ## Known gaps relative to TerraME
 
@@ -132,10 +132,6 @@ compared in percent (DisSCube fraction × 100).
   equivalent yet: vector sources are rasterized rather than area-weighted, and
   `sum` accepts raster sources only. The raster-fine path remains the
   recommended route for fractional drivers.
-- **Nodata on sources without a declared nodata value.** As shown above, the
-  reprojection fill value can collide with a real class (255 for `uint8`).
-  Until this is fixed, declare the nodata value of categorical rasters
-  explicitly.
 - **In-memory, single-tile by design.** The fine-alignment path materializes a
   fine array in memory; very large tiles at a high fine/target ratio are bounded
   by available memory. Distributed/lazy execution is a roadmap item, not a
@@ -149,5 +145,5 @@ compared in percent (DisSCube fraction × 100).
 > over a catalogued data cube, with aggregation on windows aligned to the target
 > grid and explicit control of cell purity. On TerraME's own Itaituba tutorial
 > data, raster averages and class coverage reproduce TerraME's output cell by
-> cell (coverage within 0.64 pp in all 620 cells once cell purity is applied);
+> cell (every class within 0.64 pp in all 620 cells once cell purity is applied);
 > exact vector distance and area-weighted polygon sums are the remaining gaps.

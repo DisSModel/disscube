@@ -40,6 +40,66 @@ from disscube.pipeline import PipelineContext, PipelineStage
 
 log = logging.getLogger(__name__)
 
+# Integer dtype -> next wider dtype, used to give sources without a declared
+# nodata a fill value they cannot contain (the maximum of the wider dtype).
+_WIDER_INT = {
+    np.dtype("uint8"): np.dtype("uint16"),
+    np.dtype("int8"): np.dtype("int16"),
+    np.dtype("uint16"): np.dtype("uint32"),
+    np.dtype("int16"): np.dtype("int32"),
+    np.dtype("uint32"): np.dtype("uint64"),
+    np.dtype("int32"): np.dtype("int64"),
+}
+
+
+def _source_nodata(band: xr.DataArray) -> float | None:
+    try:
+        return band.rio.nodata
+    except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
+        return None
+
+
+def _as_float_with_nan_nodata(band: xr.DataArray) -> xr.DataArray:
+    """
+    Continuous path: cast to float64 and represent nodata as NaN.
+
+    Reprojecting in the source dtype is unsafe for two reasons: GDAL computes
+    ``sum`` (and ``average``) in that dtype, so integer sums saturate (e.g. at
+    255 for uint8); and when the source declares no nodata, the destination
+    fill value defaults to the dtype's own sentinel (255 for uint8), which
+    collides with real data — GDAL then nudges valid 255 values to 254.
+    """
+    nodata = _source_nodata(band)
+    crs = band.rio.crs
+    out = band.astype("float64")
+    if nodata is not None and not np.isnan(nodata):
+        out = out.where(band != nodata)
+    out = out.rio.write_crs(crs).rio.write_nodata(np.nan, encoded=False)
+    return out
+
+
+def _with_non_colliding_nodata(band: xr.DataArray) -> xr.DataArray:
+    """
+    Categorical path: make sure the reprojection fill value cannot be a class.
+
+    When the source declares a nodata value it is kept (it is meant to be
+    excluded). When it declares none, reprojection would fill the area outside
+    the source with the dtype default (255 for uint8), and that value would be
+    treated as nodata — silently dropping a legitimate class 255. Integer
+    sources are therefore widened to the next dtype and filled with its
+    maximum, which the original data cannot contain; class codes stay exact.
+    """
+    if _source_nodata(band) is not None:
+        return band
+    crs = band.rio.crs
+    if np.issubdtype(band.dtype, np.floating):
+        return band.rio.write_nodata(np.nan, encoded=False)
+    wider = _WIDER_INT.get(band.dtype)
+    if wider is None:  # 64-bit integers: fall back to float64 with NaN
+        return _as_float_with_nan_nodata(band)
+    out = band.astype(wider).rio.write_crs(crs)
+    return out.rio.write_nodata(np.iinfo(wider).max, encoded=False)
+
 
 class GridAligner(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
@@ -150,6 +210,9 @@ class GridAligner(PipelineStage):
             )
 
             # ── Reproject to target grid ───────────────────────────────
+            # Continuous operators work in float64 with NaN as nodata (see
+            # _as_float_with_nan_nodata for why the source dtype is unsafe).
+            band = _as_float_with_nan_nodata(band)
             aligned = band.rio.reproject(
                 grid.crs,
                 shape=(grid.rows, grid.cols),
@@ -187,7 +250,9 @@ class GridAligner(PipelineStage):
         cell size that is not coarser than the source resolution, so each
         target cell maps onto a whole number of fine pixels along each axis.
         Resampling is NEAREST to preserve class codes. The source nodata is
-        carried on the result as ``_disscube_nodata`` for the operator.
+        carried on the result as ``_disscube_nodata`` for the operator; a
+        source without one gets a fill value that cannot collide with a class
+        (see _with_non_colliding_nodata).
 
         Parameters
         ----------
@@ -206,6 +271,7 @@ class GridAligner(PipelineStage):
 
         # Estimate source resolution in target CRS units by reprojecting first
         # to the target CRS at native resolution, then deriving a sub-multiple.
+        band = _with_non_colliding_nodata(band)
         src = band.rio.reproject(grid.crs, resampling=Resampling.nearest)
         try:
             src_res = abs(float(src.rio.resolution()[0]))
@@ -230,11 +296,7 @@ class GridAligner(PipelineStage):
             * Affine.scale(fine_res, -fine_res)
         )
 
-        nodata = None
-        try:
-            nodata = band.rio.nodata
-        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
-            nodata = None
+        nodata = _source_nodata(band)
 
         aligned = band.rio.reproject(
             grid.crs,

@@ -190,46 +190,23 @@ def test_non_multiple_coords_match_gridspec(tmp_path):
 def test_alignment_invariant_raises_on_shape_mismatch(tmp_path, monkeypatch):
     """If reprojection yields the wrong shape, the invariant must raise ValueError.
 
-    We force the failure by monkeypatching the .rio.reproject result to a wrong
-    shape, isolating the invariant check itself.
+    We force the failure by making rioxarray's reproject return a wrongly
+    shaped array (5x5 instead of 10x10), isolating the invariant check itself.
     """
+    from rioxarray.raster_array import RasterArray
+
     src = np.zeros((10, 10), dtype=np.float32)
     url = _write_raster(tmp_path / "z.tif", src)
 
     grid = _grid(resolution=10)  # expects 10x10
     ctx = _ctx(grid, [Variable(name="v", operator="mean")], _raster_source(url))
 
-    real_open = rioxarray.open_rasterio
+    real_reproject = RasterArray.reproject
 
-    def _fake_open(u, *a, **k):
-        da = real_open(u, *a, **k)
+    def _wrong_shape(self, *a, **k):
+        return real_reproject(self, *a, **k)[..., :5, :5]
 
-        class _Reproj:
-            def __init__(self, inner):
-                self._inner = inner
-
-            def reproject(self, *a, **k):
-                # Return a deliberately wrong shape (5x5) to trip the invariant.
-                bad = self._inner.isel(band=0)[:5, :5]
-                return bad
-
-        # attach a fake .rio with a reproject that returns wrong shape
-        band0 = da.isel(band=0) if "band" in da.dims else da
-
-        class _Band:
-            dims = band0.dims
-            sizes = band0.sizes
-
-            @property
-            def rio(self):
-                return _Reproj(da)
-
-            def isel(self, *a, **k):
-                return self
-
-        return _Band()
-
-    monkeypatch.setattr(rioxarray, "open_rasterio", _fake_open)
+    monkeypatch.setattr(RasterArray, "reproject", _wrong_shape)
 
     with pytest.raises(ValueError, match="alignment produced shape"):
         GridAligner().execute(ctx)
