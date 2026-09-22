@@ -6,7 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Spatial data cube engine of the DisSModel ecosystem">
       
+      
+      
+        <link rel="canonical" href="https://dissmodel.github.io/disscube/architecture/pipeline/">
       
       
         <link rel="prev" href="../catalog/">
@@ -19,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -159,6 +163,18 @@
       
     
     
+      <div class="md-header__source">
+        <a href="https://github.com/DisSModel/disscube" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DisSModel/disscube
+  </div>
+</a>
+      </div>
+    
   </nav>
   
 </header>
@@ -186,6 +202,25 @@
     
   
   Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
 
       </a>
     </li>
@@ -265,6 +300,18 @@
     DisSCube Documentation
   </label>
   
+    <div class="md-nav__source">
+      <a href="https://github.com/DisSModel/disscube" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DisSModel/disscube
+  </div>
+</a>
+    </div>
+  
   <ul class="md-nav__list" data-md-scrollfix>
     
       
@@ -282,6 +329,33 @@
     
   
     Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -317,10 +391,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -338,8 +412,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -364,6 +438,34 @@
     
   
     Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operator System
   
 
     
@@ -480,6 +582,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="1. Normalizer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raster
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -490,6 +620,45 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="2. GridAligner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raster-per-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raster — per variable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vector_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-per-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why per variable?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -509,6 +678,34 @@
     <span class="md-ellipsis">
       
         4. VariableWriter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. VariableWriter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tile-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tile detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#idempotence-and-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Idempotence and caching
       
     </span>
   </a>
@@ -552,6 +749,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../terrame_fill_correspondence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraME Fill Cells Correspondence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -577,10 +802,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -598,8 +823,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -707,6 +932,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="1. Normalizer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raster
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -717,6 +970,45 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="2. GridAligner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raster-per-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raster — per variable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vector_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-per-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why per variable?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -740,6 +1032,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="4. VariableWriter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tile-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tile detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#idempotence-and-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Idempotence and caching
+      
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -758,27 +1078,118 @@
                   
 
 
+  
+    <a href="https://github.com/DisSModel/disscube/edit/main/docs/architecture/pipeline.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
 
 <h1 id="pipeline-stages">Pipeline Stages</h1>
-<p>The DisSCube pipeline is a sequence of idempotent stages. Each stage receives a <code>PipelineContext</code> and returns an updated one.</p>
+<p>The pipeline is a sequence of <code>PipelineStage</code>s, each receiving and returning a <code>PipelineContext</code>. The context carries the source, grid, derivation and the data being transformed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PipelineStage</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">PipelineContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineContext</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PipelineContext</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">source</span><span class="p">:</span> <span class="n">SpatialSource</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">grid</span><span class="p">:</span> <span class="n">GridSpec</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">derivation</span><span class="p">:</span> <span class="n">SpatialDerivation</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">tile_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">data</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+<p>The sequence executed by <code>CubeClient.derive()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="p">[</span><span class="n">Normalizer</span><span class="p">(),</span> <span class="n">GridAligner</span><span class="p">(),</span> <span class="n">Aggregator</span><span class="p">(),</span> <span class="n">VariableWriter</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">catalog</span><span class="p">)]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">pipeline</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">ctx</span> <span class="o">=</span> <span class="n">stage</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+</code></pre></div>
+<hr />
 <h2 id="1-normalizer">1. Normalizer</h2>
-<p>Handles the entry point of the data.
-- <strong>Vector</strong>: Loads the shapefile/GPKG into a GeoDataFrame.
-- <strong>Raster</strong>: Prepares lazy-loading parameters and validates coordinates.</p>
+<p><strong>File:</strong> <code>disscube/pipeline/normalizer.py</code></p>
+<p><strong>Responsibility:</strong> entry point for the data source.</p>
+<h3 id="raster">Raster</h3>
+<p>Opens the file with <code>rasterio</code> to check that it is readable. It does not load data — the actual read is lazy, in <code>GridAligner</code>.</p>
+<h3 id="vector">Vector</h3>
+<p>Loads the full <code>GeoDataFrame</code> with <code>geopandas.read_file()</code>. If the CRS declared in the source (<code>SpatialSource.crs</code>) differs from the CRS in the file, it applies <code>set_crs(..., allow_override=True)</code> with an explicit <code>log.warning</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">CRS override</p>
+<p><code>Normalizer</code> <strong>does not reproject</strong> — it only fixes metadata. This is intentional, for sources with a malformed or missing <code>.prj</code>. If the intent is to reproject, set <code>SpatialSource.crs</code> to the data's real CRS and let <code>GridAligner</code> do the reprojection.</p>
+</div>
+<hr />
 <h2 id="2-gridaligner">2. GridAligner</h2>
-<p>The most critical spatial stage. It ensures the source data matches the <code>GridSpec</code> exactly.
-- <strong>Reprojection</strong>: Uses <code>rioxarray</code> and <code>rasterio</code> to transform the source CRS to the target Grid CRS.
-- <strong>Resampling</strong>: Applies the selected operator logic (Nearest, Bilinear, etc.) to match the grid resolution.
-- <strong>Cropping</strong>: Clips the data to the grid's Bounding Box (BBOX).</p>
+<p><strong>File:</strong> <code>disscube/pipeline/aligner.py</code></p>
+<p><strong>Responsibility:</strong> align the source to the target <code>GridSpec</code>.</p>
+<h3 id="raster-per-variable">Raster — per variable</h3>
+<p>For each variable in the derivation:</p>
+<ol>
+<li><strong>Band selection:</strong> via <code>band_map</code> (1-based) or by positional index.</li>
+<li><strong>Per-operator resampling:</strong> queries <code>OPERATOR_REGISTRY[var.operator].resampling()</code>. Each variable uses the method appropriate to its semantics (<code>Resampling.mode</code> for <code>majority</code>, <code>Resampling.average</code> for <code>mean</code>).</li>
+<li><strong>Reprojection:</strong> <code>band.rio.reproject(grid.crs, shape=(rows, cols), transform=grid.transform, resampling=...)</code>.</li>
+<li><strong>Alignment invariant:</strong> checks <code>aligned.rio.shape == (grid.rows, grid.cols)</code>. A mismatch → explicit <code>ValueError</code>.</li>
+</ol>
+<p>Returns an <code>xr.Dataset</code> with one <code>DataArray</code> per variable, already with <code>dims=("y", "x")</code>.</p>
+<h3 id="vector_1">Vector</h3>
+<ol>
+<li>Reprojects the GeoDataFrame to the grid CRS, using <code>pyproj.CRS.equals()</code> for robust comparison.</li>
+<li>Clips to the grid bbox with <code>shapely.geometry.box</code>.</li>
+</ol>
+<p>Returns the processed GeoDataFrame in <code>ctx.data</code>.</p>
+<h3 id="why-per-variable">Why per variable?</h3>
+<p>Multi-variable derivations from multi-band sources often use different operators:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">variables</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"uso"</span><span class="p">,</span>  <span class="n">operator</span><span class="o">=</span><span class="s2">"majority"</span><span class="p">),</span>  <span class="c1"># Resampling.mode</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"alt"</span><span class="p">,</span>  <span class="n">operator</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">),</span>       <span class="c1"># Resampling.average</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"solo"</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s2">"majority"</span><span class="p">),</span>   <span class="c1"># Resampling.mode</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">]</span>
+</code></pre></div>
+<p>With the per-variable approach, each band is reprojected with the semantically correct method. The previous version used only <code>variables[0].operator</code> for the whole raster.</p>
+<hr />
 <h2 id="3-aggregator">3. Aggregator</h2>
-<p>Applies domain-specific logic (FillCell operators).
-- <strong>Proximity</strong>: Calculates Euclidean distance transforms for vector features.
-- <strong>Zonal Stats</strong>: Aggregates point or polygon data into grid cells.</p>
+<p><strong>File:</strong> <code>disscube/pipeline/aggregator.py</code></p>
+<p><strong>Responsibility:</strong> derive each variable by calling its operator.</p>
+<p>For each variable in the derivation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">op_cls</span> <span class="o">=</span> <span class="n">OPERATOR_REGISTRY</span><span class="p">[</span><span class="n">var</span><span class="o">.</span><span class="n">operator</span><span class="p">]</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Raster: ctx.data is a Dataset → select the pre-aligned DataArray</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Vector: ctx.data is a GeoDataFrame → the operator does the rasterization</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">var_data</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="k">else</span> <span class="n">ctx</span><span class="o">.</span><span class="n">data</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">op_cls</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">var_data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">final_ds</span><span class="p">[</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+</code></pre></div>
+<p>It contains no operator logic — it is pure dispatch. The historical <code>if/elif</code> chain was removed.</p>
+<p>It builds the final <code>xr.Dataset</code>. <code>write_crs()</code> and <code>write_transform()</code> are called <strong>after</strong> the variable loop — rioxarray propagates <code>grid_mapping="spatial_ref"</code> only to the data variables already present in the Dataset at the time of the call. Calling them before the loop would leave no variable with the attribute, preventing CF readers (QGIS, GDAL) from detecting the projection automatically. The CRS is named explicitly to avoid <code>PROJCS["unknown"]</code> for CRSs without a registered EPSG code (e.g. BDC Albers).</p>
+<hr />
 <h2 id="4-variablewriter">4. VariableWriter</h2>
-<p>Persists the final result.
-- <strong>Format</strong>: Saves as a Zarr dataset with consolidated metadata.
-- <strong>Hashing</strong>: Calculates the <code>spec_hash</code> and <code>content_hash</code>.
-- <strong>Registration</strong>: Updates the SQLite catalog with the new <code>DerivedVariable</code> entry.</p>
+<p><strong>File:</strong> <code>disscube/pipeline/writer.py</code></p>
+<p><strong>Responsibility:</strong> persist and register.</p>
+<p>For each variable in the Dataset:</p>
+<ol>
+<li>Adds attributes: <code>grid_id</code>, <code>role</code>, <code>spec_hash</code>, <code>crs</code>, <code>tile_id</code>.</li>
+<li>Writes it as Zarr to <code>data/derived/{grid_id}/{partition}/{spec_hash}/{var}.zarr</code>.</li>
+<li>Computes <code>content_hash</code> (SHA-256 of all the Zarr bytes, in deterministic order).</li>
+<li>Determines <code>times</code>:</li>
+<li>If <code>source.time</code> is set → <code>[source.time]</code> (e.g. MapBiomas 2020)</li>
+<li>Otherwise, if <code>valid_from</code> is a year → <code>[int(valid_from)]</code></li>
+<li>No temporal information → <code>[]</code> (static variable)</li>
+<li>Registers the <code>DerivedVariable</code> in the SQLite catalog.</li>
+</ol>
+<h3 id="tile-detection">Tile detection</h3>
+<p>If <code>tile_id</code> is not passed explicitly and <code>grid.id</code> starts with <code>BDC_</code>, it tries to extract the tile from <code>source.id</code> (convention <code>BDC_LG_009002</code>). This is a fallback for compatibility with the BDC workflow.</p>
+<hr />
+<h2 id="idempotence-and-caching">Idempotence and caching</h2>
+<p><code>CubeClient.derive()</code> checks the cache before running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">spec_hash</span> <span class="o">=</span> <span class="n">derivation</span><span class="o">.</span><span class="n">spec_hash</span><span class="p">()</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">cached_vars</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">all_derived</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">spec_hash</span> <span class="o">==</span> <span class="n">spec_hash</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">asset_url</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">if</span> <span class="n">expected</span> <span class="o">==</span> <span class="n">cached_names</span><span class="p">:</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">return</span> <span class="n">cached_vars</span>   <span class="c1"># return without running the pipeline</span>
+</code></pre></div>
+<p>Re-running the same derivation is safe and fast.</p>
 
 
 
@@ -828,10 +1239,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

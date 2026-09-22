@@ -6,7 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Spatial data cube engine of the DisSModel ecosystem">
       
+      
+      
+        <link rel="canonical" href="https://dissmodel.github.io/disscube/guides/grids/">
       
       
         <link rel="prev" href="../bdc/">
@@ -17,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -25,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -70,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#grids-spatial-interoperability" class="md-skip">
+        <a href="#grids-and-spatial-interoperability" class="md-skip">
           Skip to content
         </a>
       
@@ -157,6 +161,18 @@
       
     
     
+      <div class="md-header__source">
+        <a href="https://github.com/DisSModel/disscube" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DisSModel/disscube
+  </div>
+</a>
+      </div>
+    
   </nav>
   
 </header>
@@ -184,6 +200,25 @@
     
   
   Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
 
       </a>
     </li>
@@ -263,6 +298,18 @@
     DisSCube Documentation
   </label>
   
+    <div class="md-nav__source">
+      <a href="https://github.com/DisSModel/disscube" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DisSModel/disscube
+  </div>
+</a>
+    </div>
+  
   <ul class="md-nav__list" data-md-scrollfix>
     
       
@@ -298,6 +345,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -310,10 +384,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -331,8 +405,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -357,6 +431,34 @@
     
   
     Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operator System
   
 
     
@@ -454,6 +556,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../terrame_fill_correspondence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraME Fill Cells Correspondence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -484,10 +614,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -505,8 +635,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -611,49 +741,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-magic-of-snapped-grids" class="md-nav__link">
+  <a href="#the-problem-snapped-grids-solve" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔗 The "Magic" of Snapped Grids
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔗 The &#34;Magic&#34; of Snapped Grids">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-is-snapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is Snapping?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-it-matters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why it matters
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#nested-grids-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Nested Grids (Hierarchy)
+        The problem snapped grids solve
       
     </span>
   </a>
@@ -661,10 +752,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-register_local_grid" class="md-nav__link">
+  <a href="#national-reference-grids" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🛠 Using register_local_grid
+        National reference grids
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapped-local-grids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapped local grids
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution hierarchy
       
     </span>
   </a>
@@ -675,35 +788,29 @@
   <a href="#spatial-relations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🗺 Spatial Relations
+        Spatial relations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="🗺 Spatial Relations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strategies
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-custom-local-grid-manual" class="md-nav__link">
+  <a href="#creating-a-grid-manually" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating a Custom Local Grid (Manual)
+        Creating a grid manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#derived-properties-of-gridspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived properties of GridSpec
       
     </span>
   </a>
@@ -753,49 +860,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-magic-of-snapped-grids" class="md-nav__link">
+  <a href="#the-problem-snapped-grids-solve" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔗 The "Magic" of Snapped Grids
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔗 The &#34;Magic&#34; of Snapped Grids">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-is-snapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is Snapping?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-it-matters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why it matters
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#nested-grids-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Nested Grids (Hierarchy)
+        The problem snapped grids solve
       
     </span>
   </a>
@@ -803,10 +871,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-register_local_grid" class="md-nav__link">
+  <a href="#national-reference-grids" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🛠 Using register_local_grid
+        National reference grids
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapped-local-grids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapped local grids
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution hierarchy
       
     </span>
   </a>
@@ -817,35 +907,29 @@
   <a href="#spatial-relations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🗺 Spatial Relations
+        Spatial relations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="🗺 Spatial Relations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strategies
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-custom-local-grid-manual" class="md-nav__link">
+  <a href="#creating-a-grid-manually" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating a Custom Local Grid (Manual)
+        Creating a grid manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#derived-properties-of-gridspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived properties of GridSpec
       
     </span>
   </a>
@@ -868,68 +952,119 @@
                   
 
 
+  
+    <a href="https://github.com/DisSModel/disscube/edit/main/docs/guides/grids.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
 
-<h1 id="grids-spatial-interoperability">Grids &amp; Spatial Interoperability</h1>
-<p>DisSCube is built on a <strong>Universal Grid Architecture</strong>. This allows multiple areas of study and different resolutions to coexist and interact without the need for expensive and lossy resampling.</p>
-<h2 id="the-magic-of-snapped-grids">🔗 The "Magic" of Snapped Grids</h2>
-<p>When you create a local grid (for a state, municipality, or any Area of Interest), DisSCube doesn't just cut the data at the boundaries. It performs a <strong>Snapping</strong> operation.</p>
-<h3 id="what-is-snapping">What is Snapping?</h3>
-<p>Snapping ensures that the boundaries of any grid are exact multiples of its resolution, calculated from the origin <code>(0,0)</code> of the Coordinate Reference System (CRS).</p>
-<ul>
-<li><strong>Without Snapping</strong>: A grid starting at <code>x=2815245.5</code> with 5km resolution would have pixels shifted relative to a national grid.</li>
-<li><strong>With Snapping</strong>: DisSCube rounds the start to <code>x=2815000.0</code>. </li>
-</ul>
-<h3 id="why-it-matters">Why it matters</h3>
-<p>Because all grids (National, State, Local) are "pinned" to the same universal virtual mesh, <strong>their pixels always align perfectly</strong>. If you place a 5km pixel of the Acre grid over the 5km pixel of the Brazil grid, they are exactly the same square in the world.</p>
-<h2 id="nested-grids-hierarchy">📦 Nested Grids (Hierarchy)</h2>
-<p>Nesting happens when you use resolutions that are multiples of each other (e.g., 5km, 1km, 100m). </p>
-<p>Since they are all snapped to the same origin, the pixels form a perfect hierarchy:
-- <strong>1 pixel of 5km</strong> contains exactly <strong>25 pixels of 1km</strong> ($5 \times 5$).
-- <strong>1 pixel of 1km</strong> contains exactly <strong>100 pixels of 100m</strong> ($10 \times 10$).</p>
-<p>This "magic" allows for <strong>Zero-Error Aggregation</strong>. When calculating the percentage of forest (at 100m resolution) inside a model cell (at 5km), DisSCube knows exactly which $50 \times 50$ small pixels belong to the large cell. There are no "partial pixels" at the edges.</p>
-<h2 id="using-register_local_grid">🛠 Using <code>register_local_grid</code></h2>
-<p>To take advantage of this, always use the <code>register_local_grid</code> utility:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.utils.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_local_grid</span>
+
+<h1 id="grids-and-spatial-interoperability">Grids and Spatial Interoperability</h1>
+<h2 id="the-problem-snapped-grids-solve">The problem snapped grids solve</h2>
+<p>In traditional GIS workflows, creating one grid for Acre and another for Brazil often produces misaligned pixels — the corner of a 5 km Acre pixel does not coincide with the corner of a 5 km Brazil pixel. Aggregating from one grid to the other then introduces errors from partial pixels at the edges.</p>
+<p>DisSCube solves this by <strong>snapping to a virtual mesh</strong>: every local grid is anchored to the same CRS origin, guaranteeing that pixels at multiple resolutions always line up exactly.</p>
+<h2 id="national-reference-grids">National reference grids</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.utils.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_simulation_grids</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Register a 1km grid for Acre that &quot;nests&quot; inside the national 5km grid</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">register_local_grid</span><span class="p">(</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">cube</span><span class="p">,</span> 
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;AC&quot;</span><span class="p">,</span> 
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">bbox_geo</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">74</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">,</span> <span class="o">-</span><span class="mi">66</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">),</span> 
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">snap</span><span class="o">=</span><span class="kc">True</span> <span class="c1"># This is the magic switch (True by default)</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">register_simulation_grids</span><span class="p">(</span><span class="n">cube</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Registers:</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">#   BR/5km  — 5000 m, BDC Albers, national bbox</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">#   BR/1km  — 1000 m, BDC Albers, national bbox</span>
 </code></pre></div>
-<h2 id="spatial-relations">🗺 Spatial Relations</h2>
-<p><code>SpatialRelation</code> entities define how data should move between different grids. Because of the snapping/nesting logic, these relations become much more powerful.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpatialRelation</span>
+<h2 id="snapped-local-grids">Snapped local grids</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.utils.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_local_grid</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Define that BR/1km is a child of BR/5km</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">rel</span> <span class="o">=</span> <span class="n">SpatialRelation</span><span class="p">(</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">source_grid_id</span><span class="o">=</span><span class="s2">&quot;BR/1km&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">target_grid_id</span><span class="o">=</span><span class="s2">&quot;BR/5km&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span> <span class="c1"># Because they are nested, &quot;simple&quot; is perfectly accurate</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_relation</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">register_local_grid</span><span class="p">(</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"AC"</span><span class="p">,</span>                            <span class="c1"># or state="AC"</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">bbox_geo</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">73.99</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.15</span><span class="p">,</span> <span class="o">-</span><span class="mf">66.62</span><span class="p">,</span> <span class="o">-</span><span class="mf">7.11</span><span class="p">),</span>  <span class="c1"># lon_min, lat_min, lon_max, lat_max</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">5_000.0</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">snap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                            <span class="c1"># default</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Produces grid "AC/5km" in BDC Albers</span>
 </code></pre></div>
-<h3 id="strategies">Strategies</h3>
-<ul>
-<li><strong>simple</strong>: Used when grids are nested. The engine can perform fast block-aggregation (e.g., average $5 \times 5$ pixels).</li>
-<li><strong>keepinboth</strong>: Used when you want to ensure the variable is available at both scales during cross-scale models.</li>
-</ul>
-<h2 id="creating-a-custom-local-grid-manual">Creating a Custom Local Grid (Manual)</h2>
-<p>If you don't want to use the universal mesh (not recommended), you can register a <code>GridSpec</code> manually:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSpec</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">my_grid</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;ProjectX/30m&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">crs</span><span class="o">=</span><span class="s2">&quot;EPSG:31983&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mi">580000</span><span class="p">,</span> <span class="mi">9700000</span><span class="p">,</span> <span class="mi">600000</span><span class="p">,</span> <span class="mi">9720000</span><span class="p">],</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Manual grid - won&#39;t align with BDC national mesh&quot;</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">)</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_grid</span><span class="p">(</span><span class="n">my_grid</span><span class="p">)</span>
+<p><strong>What <code>snap=True</code> does:</strong></p>
+<p>The geographic bbox is converted to BDC Albers and its bounds are rounded to the nearest multiple of the resolution:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">minx</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">minx</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span> <span class="o">*</span> <span class="n">resolution</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">maxx</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">maxx</span>  <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span> <span class="o">*</span> <span class="n">resolution</span>
+</code></pre></div>
+<p>Result: <code>AC/5km</code> and <code>BR/5km</code> have identical pixels over the overlapping area — a 5 km Acre pixel is the same geographic square as the 5 km Brazil pixel.</p>
+<h2 id="resolution-hierarchy">Resolution hierarchy</h2>
+<p>Multiple resolutions within the same CRS form a perfect hierarchy:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>1 pixel at 5km
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>├── 25 pixels at 1km (5×5)
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>└── 2500 pixels at 100m (50×50)
+</code></pre></div>
+<p>This enables <strong>zero-error aggregation</strong>: when computing the forest <code>percentage</code> (100 m) inside a model cell (5 km), every 100 m pixel that makes up the 5 km cell is known exactly.</p>
+<h2 id="spatial-relations">Spatial relations</h2>
+<p><code>SpatialRelation</code> records the parent–child relation between grids:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpatialRelation</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_relation</span><span class="p">(</span><span class="n">SpatialRelation</span><span class="p">(</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">source_grid_id</span><span class="o">=</span><span class="s2">"AC/1km"</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">target_grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">strategy</span><span class="o">=</span><span class="s2">"simple"</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">))</span>
+</code></pre></div>
+<p><strong>Available strategies</strong> (reserved for future use in the pipeline):</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Intended use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simple</code></td>
+<td>Nested grids — no ambiguity in aggregation</td>
+</tr>
+<tr>
+<td><code>chooseone</code></td>
+<td>Cells that belong to only one target grid</td>
+</tr>
+<tr>
+<td><code>keepinboth</code></td>
+<td>Cells kept in both grids (overlap)</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Strategy status</p>
+<p>The strategies are modeled in the schema but are not yet applied by the derivation pipeline. They are reserved for DisSModel's cross-scale mechanism.</p>
+</div>
+<h2 id="creating-a-grid-manually">Creating a grid manually</h2>
+<p>When snapping to the BDC mesh is not needed (e.g. a project with a local CRS):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSpec</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nb">id</span><span class="o">=</span><span class="s2">"local_project/30m"</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:31983"</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mf">580000.0</span><span class="p">,</span> <span class="mf">9700000.0</span><span class="p">,</span> <span class="mf">600000.0</span><span class="p">,</span> <span class="mf">9720000.0</span><span class="p">],</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">"Manual grid, not snapped to the national mesh"</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Unsnapped grids may not align with the national grids. Cross-grid aggregation between misaligned grids introduces partial-pixel errors.</p>
+</div>
+<h2 id="derived-properties-of-gridspec">Derived properties of <code>GridSpec</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"G"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:31982"</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">])</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">grid</span><span class="o">.</span><span class="n">rows</span>        <span class="c1"># 10</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">grid</span><span class="o">.</span><span class="n">cols</span>        <span class="c1"># 10</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">grid</span><span class="o">.</span><span class="n">transform</span>   <span class="c1"># Affine (north-up, origin at the upper-left corner)</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">grid</span><span class="o">.</span><span class="n">xs</span>          <span class="c1"># array of X centroids, one per column</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">grid</span><span class="o">.</span><span class="n">ys</span>          <span class="c1"># array of Y centroids, one per row</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Cell identification</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">cell</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">cell_id</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>          <span class="c1"># "G:R0003C0007"</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">coords_from_cell_id</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>     <span class="c1"># centroid in CRS coordinates</span>
 </code></pre></div>
 
 
@@ -980,10 +1115,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
