@@ -110,6 +110,40 @@ backend = cube.to_lucc_data(
 )
 ```
 
+## Pipeline files (TOML)
+
+A whole data preparation — grid, sources, derived variables — can be declared
+in one TOML file, the counterpart of a TerraME `fill` script, and run from the
+command line:
+
+```bash
+disscube validate examples/pipelines/itaituba_fill.toml   # no downloads
+disscube run      examples/pipelines/itaituba_fill.toml --workspace outputs/itaituba
+```
+
+```toml
+schema = 1
+
+[grid]
+name = "ilha_do_maranhao"
+bbox = [-44.35, -2.62, -44.20, -2.47]   # WGS84 → BDC Albers grid
+resolution = 300
+
+[[source]]
+id = "lulc_{year}"
+type = "mapbiomas"
+years = [2000, 2020]
+
+[[derive]]
+target = "urban_pct"
+source = "lulc_{year}"
+operator = "percentage"
+class_code = 24
+```
+
+See [`docs/guides/pipeline_files.md`](docs/guides/pipeline_files.md) and
+[`examples/pipelines/`](examples/pipelines/).
+
 ## Examples
 
 [`examples/`](examples/) has runnable scripts; 01–06 need no downloads and run
@@ -205,6 +239,8 @@ disscube/
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage/          AssetStore (fsspec — local and S3)
 ├── api/              Experimental HTTP API (optional `api` extra)
+├── config/           Pipeline files (TOML): schema, planning, running
+├── cli.py            `disscube validate` / `disscube run`
 ├── sources/          Adapters that bring external data in as SpatialSources,
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster

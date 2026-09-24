@@ -34,6 +34,10 @@ how faithful they are — but the engineering around them:
   including the BDC Brazil Albers grid, with named-WKT serialization to avoid
   `PROJCS["unknown"]` round-trip problems.
 
+A TerraME fill script can also be written as a DisSCube pipeline file —
+see [Pipeline files (TOML)](guides/pipeline_files.md) and
+`examples/pipelines/itaituba_fill.toml`, the tutorial below as TOML.
+
 ## Strategy → operator correspondence
 
 | TerraME fill strategy | DisSCube operator (`name`) | Status | Notes |

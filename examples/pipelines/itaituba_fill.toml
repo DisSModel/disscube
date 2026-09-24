@@ -1,0 +1,73 @@
+# TerraME's Fill tutorial (Itaituba, Pará) as a DisSCube pipeline file.
+#
+# The same cellular space and layers as examples/data/terrame/itaituba/itaituba.lua,
+# runnable offline with the bundled data:
+#
+#     disscube validate examples/pipelines/itaituba_fill.toml
+#     disscube run      examples/pipelines/itaituba_fill.toml --workspace outputs/itaituba
+#
+# TerraME                                        DisSCube
+# itaitubaCells:fill{operation = "average",      [[derive]] operator = "mean"
+# itaitubaCells:fill{operation = "coverage",     [[derive]] operator = "percentage", class_code = …
+# itaitubaCells:fill{operation = "distance",     [[derive]] operator = "min_distance"
+# (the census "sum, area = true" fill has no DisSCube operator yet)
+
+schema = 1
+name = "TerraME Fill tutorial — Itaituba"
+
+[grid]
+name = "itaituba/5km"
+crs = "EPSG:29191"                         # SAD69 / UTM 21S, as in the Lua script
+bbox = [547177.3501989994, 9485214.18712, 702177.3501989994, 9585214.18712]
+resolution = 5000
+
+[[source]]
+id = "elevation"
+type = "file"
+path = "../data/terrame/itaituba/itaituba-elevation.tif"
+crs = "EPSG:29191"
+
+[[source]]
+id = "deforestation"
+type = "file"
+path = "../data/terrame/itaituba/itaituba-deforestation.tif"
+crs = "EPSG:29191"
+
+[[source]]
+id = "roads"
+type = "file"
+path = "zip://../data/terrame/itaituba/itaituba-roads.zip"
+crs = "EPSG:29191"
+
+[[source]]
+id = "localities"
+type = "file"
+path = "zip://../data/terrame/itaituba/itaituba-localities.zip"
+crs = "EPSG:29191"
+
+[[derive]]
+target = "elevation"
+source = "elevation"
+operator = "mean"
+
+[[derive]]
+target = "defor_87"                        # TerraME's "deforestation" class
+source = "deforestation"
+operator = "percentage"
+class_code = 87
+
+[[derive]]
+target = "defor_167"                       # TerraME's "river" class
+source = "deforestation"
+operator = "percentage"
+class_code = 167
+
+[[derive]]
+target = "distroad"
+source = "roads"
+operator = "min_distance"
+
+[[derive]]
+target = "distlocal"
+source = "localities"
+operator = "min_distance"

@@ -1,0 +1,29 @@
+# Example 09 as a pipeline file: PRODES in the LuccME Lab15 area (south of Santarém).
+# Downloads the PRODES edition once (~130 MB, cached in ~/.cache/disscube/prodes).
+#
+#     disscube run examples/pipelines/lab15_prodes.toml --workspace outputs/lab15_prodes
+
+schema = 1
+name = "LuccME Lab15 area — PRODES deforestation"
+
+[grid]
+name = "lab15"
+bbox = [-54.842, -3.587, -54.459, -3.168]
+resolution = 500
+
+[[source]]
+id = "prodes_{year}"
+type = "prodes"
+years = [2008, 2016, 2024]                 # the current edition separates years from 2007
+
+[[derive]]
+target = "deforested_pct"
+source = "prodes_{year}"
+operator = "percentage"
+class_code = 2                             # 1 forest, 2 deforested, 3 other
+
+[[derive]]
+target = "forest_pct"
+source = "prodes_{year}"
+operator = "percentage"
+class_code = 1

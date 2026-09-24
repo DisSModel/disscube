@@ -1,0 +1,42 @@
+# Example 08 as a pipeline file: MapBiomas land use of Ilha do Maranhão, 2000 and 2020.
+# Needs network.
+#
+#     disscube run examples/pipelines/ilha_mapbiomas.toml --workspace outputs/ilha_mapbiomas
+
+schema = 1
+name = "Ilha do Maranhão — MapBiomas land use"
+
+[grid]
+name = "ilha_do_maranhao"
+bbox = [-44.35, -2.62, -44.20, -2.47]
+resolution = 300
+
+[[source]]
+id = "lulc_{year}"
+type = "mapbiomas"
+years = [2000, 2020]                       # one source per year: lulc_2000, lulc_2020
+collection = 11
+resolution = 30
+
+[[derive]]
+target = "landuse"
+source = "lulc_{year}"                     # expanded over the source's years
+operator = "majority"
+
+[[derive]]
+target = "urban_pct"
+source = "lulc_{year}"
+operator = "percentage"
+class_code = 24
+
+[[derive]]
+target = "forest_pct"
+source = "lulc_{year}"
+operator = "percentage"
+class_code = 3
+
+[[derive]]
+target = "mangrove_pct"
+source = "lulc_{year}"
+operator = "percentage"
+class_code = 5

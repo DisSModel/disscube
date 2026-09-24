@@ -38,6 +38,9 @@ dependencies = [
     "dissmodel>=0.6.0,<0.7.0",
 ]
 
+[project.scripts]
+disscube = "disscube.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest",
