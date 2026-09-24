@@ -1187,6 +1187,12 @@ see <a href="../guides/pipeline_files/">Pipeline files (TOML)</a> and
 </tr>
 <tr>
 <td><code>distance</code></td>
+<td><code>distance</code></td>
+<td>implemented (exact, from the cell centre)</td>
+<td>Euclidean distance from each cell centre to the nearest feature, in CRS units, without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so <code>distance</code> is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and <code>distance</code> reproduces its fields.</td>
+</tr>
+<tr>
+<td><code>distance</code></td>
 <td><code>min_distance</code></td>
 <td><strong>approximation — semantics differ</strong></td>
 <td>Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so <code>min_distance</code> overestimates it by up to about one cell (see the benchmarks).</td>

@@ -1234,8 +1234,13 @@
 </thead>
 <tbody>
 <tr>
+<td><code>distance</code></td>
+<td>Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid</td>
+<td>no</td>
+</tr>
+<tr>
 <td><code>min_distance</code></td>
-<td>Euclidean distance (in CRS units) to the nearest feature</td>
+<td>Raster approximation of the distance to the nearest feature inside the grid (NaN, with a warning, if none is inside)</td>
 <td>no</td>
 </tr>
 <tr>
