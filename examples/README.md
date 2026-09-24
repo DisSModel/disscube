@@ -2,8 +2,9 @@
 
 Self-contained, runnable examples. Examples 01–03 generate their own
 synthetic input data; examples 04–06 use real data bundled in
-[`data/terrame/`](data/terrame/). All of them work in a temporary directory
-and finish in a few seconds — no downloads, no local data folders:
+[`data/terrame/`](data/terrame/); example 07 reads the Brazil Data Cube over
+the network. All of them work in a temporary directory; 01–06 finish in a few
+seconds with no downloads:
 
 ```bash
 pip install -e .
@@ -25,9 +26,11 @@ python examples/01_quickstart.py ./scratch
 | [`04_terrame_fill_itaituba.py`](04_terrame_fill_itaituba.py) | TerraME's *Fill* tutorial on real data (Itaituba, Pará, 5 km): `mean`, `percentage` × `coverage_purity`, `min_distance`, compared cell by cell with TerraME's own output |
 | [`05_terrame_fill_emas.py`](05_terrame_fill_emas.py) | TerraME's Emas National Park example (500 m): `presence` of lines, `max` / `min` of a raster; a study area defined by a limit polygon |
 | [`06_terrame_fill_amazonia.py`](06_terrame_fill_amazonia.py) | TerraME's Brazilian Amazon example (50 km): PRODES coverage with a declared nodata, distances to roads and ports |
+| [`07_bdc_cube.py`](07_bdc_cube.py) | Brazil Data Cube: Landsat 16-day cube over Ilha do Maranhão via STAC (windowed reads), dry-season median, NDVI / MNDWI / open-water drivers on a 300 m BDC Albers grid. Needs network and `.[bdc]`; `--offline` runs a synthetic stand-in |
 
 All examples are executed by the test suite (`tests/test_examples.py`), so
-they are kept in sync with the API.
+they are kept in sync with the API. The suite sets `DISSCUBE_OFFLINE=1`, so
+07 runs on its synthetic stand-in there.
 
 ## Scope
 

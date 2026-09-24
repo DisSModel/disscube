@@ -27,8 +27,92 @@ To use another copy of the grids, pass `sm_path`, `md_path` and/or `lg_path` (an
 
 Tile IDs repeat across levels (e.g. `005004` exists in both SM and MD), so a tile is identified by level and ID. Provenance, checksums and licensing of the bundled files are documented in `disscube/data/bdc_grids/README.md`; the files are © INPE and are not covered by DisSCube's MIT license.
 
-!!! warning "STAC data ingestion — planned"
-    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata), but **does not ingest data via STAC**. The registered `SpatialSource`s have a placeholder `asset_url` (`data/bdc/<LEVEL>/<tile>.tif`) that is not populated, so they cannot be loaded directly as raster data. Integration with the BDC STAC catalog is planned but not yet implemented. To use real BDC data, provide the files locally through a `SpatialSource` whose `asset_url` points to the correct file.
+!!! note "Tiles index geometry, not data"
+    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata). The registered tile `SpatialSource`s have a placeholder `asset_url` (`data/bdc/<LEVEL>/<tile>.tif`) and cannot be loaded as raster data. To bring BDC *data* in, use `disscube.utils.bdc_stac` (next section), which writes local GeoTIFFs you register as ordinary sources.
+
+## Reading data cubes via STAC
+
+The BDC publishes analysis-ready 16-day data cubes — `LANDSAT-16D-1` (30 m,
+from 1990), `S2-16D-2` (10 m, from 2017) and `CBERS4-WFI-16D-2` (64 m, from
+2016) — as Cloud-Optimized GeoTIFFs indexed by a public STAC API
+(`https://data.inpe.br/bdc/stac/v1/`). Each item carries spectral bands and
+ready-made indices (`NDVI`, `EVI`; `NBR` for Sentinel-2).
+`disscube.utils.bdc_stac` reads only the pixels of an area of interest, so an
+area of a few kilometres costs a few HTTP range requests per item instead of a
+full tile download. Searching needs `pystac-client` (`pip install disscube[bdc]`).
+
+```python
+from disscube.utils.bdc_stac import (
+    BDC_INDEX_SCALE, fetch_composite, normalized_difference, read_composite,
+    search_items, write_geotiff,
+)
+
+bbox = (-44.35, -2.62, -44.20, -2.47)          # WGS84
+period = "2020-07-01/2020-09-30"
+
+# one asset, one call: search → windowed reads → per-pixel median → GeoTIFF
+fetch_composite("LANDSAT-16D-1", "NDVI", bbox, period, "raw/ndvi.tif",
+                scale=BDC_INDEX_SCALE)            # indices are int16 × 10 000
+
+# several assets of the same items: search once, derive an index
+items = search_items("LANDSAT-16D-1", bbox, period)
+green = read_composite("LANDSAT-16D-1", "green", bbox, period, items=items)
+swir = read_composite("LANDSAT-16D-1", "swir16", bbox, period, items=items)
+write_geotiff(normalized_difference(green, swir), "raw/mndwi.tif")   # MNDWI
+```
+
+### Registering with provenance
+
+`register_bdc_source()` does the fetch and the registration in one call, and
+keeps the record of where the data came from:
+
+```python
+from disscube.utils.bdc_stac import BDC_INDEX_SCALE, register_bdc_source
+
+src = register_bdc_source(
+    cube, "ndvi_2020", "LANDSAT-16D-1", "NDVI", bbox, period, out_dir="raw",
+    scale=BDC_INDEX_SCALE,
+)
+# raw/ndvi_2020.tif               the composite
+# raw/ndvi_2020.provenance.json   STAC URL, collection, asset, bbox, period,
+#                                 reducer, scale/offset, items (id, dates and
+#                                 interval when declared, URL), checksum,
+#                                 retrieval time, software versions (disscube,
+#                                 rasterio, GDAL, numpy, pystac-client)
+```
+
+The source is registered with the SHA-256 of the file as `checksum`, the first
+year of the period as `time`, and tags naming the collection, asset, period
+and the provenance file. The checksum enters the `spec_hash` of every
+derivation from that source: fetching another period (or with another reducer
+or scale) produces a new file, a new checksum and a new product, while
+re-fetching the same data is a cache hit. For a layer computed from several
+assets — an index such as MNDWI — build the `Window2D` yourself and call
+`register_composite(cube, source_id, window, out_dir, provenance)`; see
+`examples/07_bdc_cube.py`.
+
+What the reader does for you:
+
+- **Physical units.** Nodata becomes NaN, and a scale/offset is applied: the
+  one passed as `scale=`/`offset=`, else the one declared by the asset (STAC
+  `raster:bands`), else the GeoTIFF's own. The BDC cubes declare none, so pass
+  `scale=BDC_INDEX_SCALE` (1e-4) for `NDVI`, `EVI` and `NBR`; without it, raw
+  int16 values are returned. Ratios of bands (e.g. MNDWI from `green` and
+  `swir16`) do not need it, since a common scale factor cancels out.
+- **Composites and mosaics.** Items are reduced tile by tile (`median`, `mean`,
+  `max` or `min`, ignoring NaN, i.e. clouds); when the area spans several BDC
+  tiles, the per-tile composites are pasted into one layer (the tiles share one
+  pixel mesh, so nothing is resampled).
+- **A portable CRS.** The cubes declare BDC Albers as `EPSG:10857`, a code
+  registered in 2023 and missing from older PROJ databases. Outputs are written
+  with the proj4 definition in `disscube.utils.grids.BDC_CRS` instead, which
+  every PROJ version reads.
+
+!!! note "Not included"
+    Land-use/land-cover classification products are not published in this STAC
+    catalog, so the cubes serve as observations (vegetation and water indices,
+    reflectance) rather than as land-use maps. Derived variables are not
+    published back as STAC.
 
 ## Per-tile derivation
 

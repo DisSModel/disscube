@@ -44,6 +44,19 @@ What the differences mean — and which TerraME operations DisSCube does not
 support yet — is discussed in
 [TerraME Fill Cells Correspondence](terrame_fill_correspondence.md).
 
+## Real data — Brazil Data Cube
+
+Example 07 reads a satellite data cube straight from the Brazil Data Cube
+STAC catalog; see [BDC Integration](guides/bdc.md#reading-data-cubes-via-stac).
+
+| Example | Cells | What it shows |
+|---|---|---|
+| [`07_bdc_cube.py`](https://github.com/DisSModel/disscube/blob/main/examples/07_bdc_cube.py) | 58 × 59 × 300 m | `LANDSAT-16D-1` over Ilha do Maranhão: windowed reads, dry-season median, `mean` of NDVI and MNDWI, `percentage` of open water on a grid snapped to the BDC Albers mesh |
+
+It needs network access and `pip install -e ".[bdc]"`. Without network, or
+with `--offline`, it runs on a synthetic scene with the same grid and value
+ranges and prints a warning that the numbers are not BDC data.
+
 ## Scope
 
 DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.

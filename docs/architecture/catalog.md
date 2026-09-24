@@ -37,6 +37,8 @@ relevant_data = {
     "valid_from":  ...,
     "valid_until": ...,
 }
+if source_checksum is not None:          # copied from SpatialSource.checksum
+    relevant_data["source_checksum"] = source_checksum
 encoded = json.dumps(relevant_data, sort_keys=True).encode("utf-8")
 return hashlib.sha256(encoded).hexdigest()
 ```
@@ -48,10 +50,19 @@ return hashlib.sha256(encoded).hexdigest()
 - Adding/removing/renaming variables
 - Changing the operator or `class_code`
 - Changing `valid_from` / `valid_until`
+- Changing the source's `checksum` — `CubeClient.derive()` copies
+  `SpatialSource.checksum` into the derivation, so a replaced source file
+  registered with a new checksum yields a new product instead of a stale cache
+  hit. Use `disscube.utils.files.sha256_file()` to compute it;
+  `disscube.utils.bdc_stac.register_bdc_source()` does it for you.
 
 **What does not change the hash:**
 
 - The order of the variables in the list (they are sorted by name)
+- Anything about a source registered **without** a checksum: its file can
+  change and the cached product is still returned. Sources without a checksum
+  keep the hash they had before checksums entered it, so older catalogs stay
+  valid.
 - The `bbox` of a `Derivation` (descriptive metadata, not a parameter)
 - `SpatialRelation` — relations are persisted in the catalog but excluded from the hash because no pipeline stage uses them during computation. Including them would make the cache key sensitive to metadata that does not affect the result.
 

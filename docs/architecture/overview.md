@@ -87,6 +87,10 @@ Every `SpatialDerivation` has a `spec_hash` — a deterministic SHA-256 of:
 - `role`
 - variables (name + operator + class_code, sorted by name)
 - `valid_from` / `valid_until`
+- the source's `checksum`, when the `SpatialSource` has one (copied by `CubeClient.derive()`)
+
+A new product for the same variable, grid, tile and time supersedes the older
+catalog entry, so `load()` returns the current version rather than stacking both.
 
 `SpatialRelation` is excluded from the hash: no pipeline stage uses it during computation, so including it would make the cache sensitive to metadata that has no effect on the result.
 
