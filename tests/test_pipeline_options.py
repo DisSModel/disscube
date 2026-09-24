@@ -12,6 +12,7 @@ import geopandas as gpd
 import numpy as np
 import pytest
 import rasterio
+import shapely
 import xarray as xr
 from pydantic import ValidationError
 from pyproj import Transformer
@@ -394,3 +395,13 @@ def test_to_lucc_data_carries_the_grid_transform(cube, tmp_path):
     for grid_id in ("geo", None):
         backend = cube.to_lucc_data(["v"], grid_id=grid_id)
         assert backend.transform == GEO.transform
+
+
+def test_area_of_a_polygon_with_many_vertices(cube, tmp_path):
+    # > 4096 vertices: cut into quadrants before the cells are intersected
+    circle = Point(1500, 1500).buffer(1400, quad_segs=2000)
+    _vector(cube, tmp_path, "c", [circle], "EPSG:31983")
+    got = _derive(cube, "utm", "c", "area")
+    xmin, ymax = np.meshgrid(UTM.bbox[0] + 300 * np.arange(10), UTM.bbox[3] - 300 * np.arange(10))
+    cells = shapely.box(xmin, ymax - 300, xmin + 300, ymax)
+    np.testing.assert_allclose(got, shapely.area(shapely.intersection(cells, circle)) / 300**2, atol=1e-9)

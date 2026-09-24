@@ -422,6 +422,31 @@ class PresenceOperator(Operator):
         raise TypeError(f"'presence' got unexpected type {type(data).__name__}")
 
 
+def _quarters(polygon, min_size: float, max_vertices: int = 4096) -> list:
+    """
+    ``polygon`` cut into quadrants until each piece has at most ``max_vertices``
+    vertices or is no wider than ``min_size`` (one cell).
+
+    Intersecting a cell with a polygon costs time in the polygon's vertices; a
+    country's outline has hundreds of thousands, and every cell along it would
+    pay for all of them. The pieces tile the polygon without overlapping, so
+    their intersection areas add up to the polygon's.
+    """
+    import shapely
+
+    xmin, ymin, xmax, ymax = polygon.bounds
+    if shapely.get_num_coordinates(polygon) <= max_vertices or max(xmax - xmin, ymax - ymin) <= min_size:
+        return [polygon]
+    xm, ym = (xmin + xmax) / 2, (ymin + ymax) / 2
+    pieces = []
+    for box in shapely.box([xmin, xm, xmin, xm], [ymin, ymin, ym, ym], [xm, xmax, xm, xmax], [ym, ym, ymax, ymax]):
+        cut = shapely.intersection(polygon, box)
+        for q in shapely.get_parts(cut):
+            if shapely.get_type_id(q) == 3 and not q.is_empty:
+                pieces += _quarters(q, min_size, max_vertices)
+    return pieces
+
+
 class AreaOperator(Operator):
     """
     Share (0..1) of each cell covered by the polygons of a vector source —
@@ -448,6 +473,7 @@ class AreaOperator(Operator):
         if polygons.size:
             parts = shapely.get_parts(shapely.union_all(polygons))
             parts = parts[shapely.get_type_id(parts) == 3]
+            parts = np.array([q for part in parts for q in _quarters(part, grid.resolution)], dtype=object)
             res = grid.resolution
             xmin, ymax = np.meshgrid(grid.bbox[0] + np.arange(grid.cols) * res,
                                      grid.bbox[3] - np.arange(grid.rows) * res)
