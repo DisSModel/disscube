@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://dissmodel.github.io/disscube/guides/mapbiomas/">
+        <link rel="canonical" href="https://dissmodel.github.io/disscube/guides/landcover/">
       
       
-        <link rel="prev" href="../bdc/">
+        <link rel="prev" href="../mapbiomas/">
       
       
-        <link rel="next" href="../landcover/">
+        <link rel="next" href="../grids/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>MapBiomas - DisSCube Documentation</title>
+        <title>Land-cover maps: PRODES and SITS - DisSCube Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#mapbiomas" class="md-skip">
+        <a href="#land-cover-maps-prodes-and-classified-maps-sits" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              MapBiomas
+              Land-cover maps: PRODES and SITS
             
           </span>
         </div>
@@ -680,6 +680,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../mapbiomas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MapBiomas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -699,7 +727,7 @@
   <span class="md-ellipsis">
     
   
-    MapBiomas
+    Land-cover maps: PRODES and SITS
   
 
     
@@ -717,7 +745,7 @@
   <span class="md-ellipsis">
     
   
-    MapBiomas
+    Land-cover maps: PRODES and SITS
   
 
     
@@ -743,10 +771,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#registering-a-year" class="md-nav__link">
+  <a href="#prodes-disscubesourcesprodes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Registering a year
+        PRODES (disscube.sources.prodes)
       
     </span>
   </a>
@@ -754,21 +782,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#code-0-is-nodata" class="md-nav__link">
+  <a href="#any-classified-map-eg-from-sits-disscubesourcesclassified" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Code 0 is nodata
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#classes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Classes
+        Any classified map, e.g. from SITS (disscube.sources.classified)
       
     </span>
   </a>
@@ -779,34 +796,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../landcover/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Land-cover maps: PRODES and SITS
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -874,10 +863,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#registering-a-year" class="md-nav__link">
+  <a href="#prodes-disscubesourcesprodes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Registering a year
+        PRODES (disscube.sources.prodes)
       
     </span>
   </a>
@@ -885,21 +874,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#code-0-is-nodata" class="md-nav__link">
+  <a href="#any-classified-map-eg-from-sits-disscubesourcesclassified" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Code 0 is nodata
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#classes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Classes
+        Any classified map, e.g. from SITS (disscube.sources.classified)
       
     </span>
   </a>
@@ -923,7 +901,7 @@
 
 
   
-    <a href="https://github.com/DisSModel/disscube/edit/main/docs/guides/mapbiomas.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/DisSModel/disscube/edit/main/docs/guides/landcover.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -931,73 +909,60 @@
   
 
 
-<h1 id="mapbiomas">MapBiomas</h1>
-<p><a href="https://brasil.mapbiomas.org/">MapBiomas</a> publishes annual land-cover and
-land-use maps of Brazil. <code>disscube.sources.mapbiomas</code> reads them straight from
-the national GeoTIFFs on Google Cloud Storage: the files are tiled in 256 × 256
-blocks, so only the pixels of the area of interest are fetched.</p>
-<table>
-<thead>
-<tr>
-<th>Dataset</th>
-<th>Resolution</th>
-<th>Years</th>
-<th>Call with</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Collection 11 (Landsat) — default</td>
-<td>30 m</td>
-<td>1985–2025</td>
-<td><code>collection=11, resolution=30</code></td>
-</tr>
-<tr>
-<td>Collection 4 of the 10 m series (Sentinel-2)</td>
-<td>10 m</td>
-<td>2017–2025</td>
-<td><code>collection=4, resolution=10</code></td>
-</tr>
-</tbody>
-</table>
-<p>For land-change modelling the 30 m collection is the natural choice: it has
-the long series needed for calibration and validation years, and the same
-resolution as the Landsat cubes of the Brazil Data Cube.</p>
-<h2 id="registering-a-year">Registering a year</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources.mapbiomas</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_mapbiomas_source</span>
+<h1 id="land-cover-maps-prodes-and-classified-maps-sits">Land-cover maps: PRODES and classified maps (SITS)</h1>
+<p>Besides MapBiomas, two adapters bring categorical land-cover maps into a cube.
+Both follow the same contract as every source: a local GeoTIFF (<code>uint8</code>,
+nodata 0 by default), its SHA-256 as the source <code>checksum</code>, and a
+<code>&lt;source&gt;.provenance.json</code> that records the legend used.</p>
+<h2 id="prodes-disscubesourcesprodes">PRODES (<code>disscube.sources.prodes</code>)</h2>
+<p><a href="https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa/">PRODES</a>
+maps deforestation in the Legal Amazon every year. TerraBrasilis distributes
+one ZIP per edition with a national GeoTIFF and a QGIS style file (<code>.qml</code>)
+holding its legend.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">prodes</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">44.35</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.62</span><span class="p">,</span> <span class="o">-</span><span class="mf">44.20</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.47</span><span class="p">)</span>          <span class="c1"># WGS84</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">2020</span><span class="p">):</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">register_mapbiomas_source</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># raw/lulc_2020.tif               uint8 class codes, nodata 0, EPSG:4326</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># raw/lulc_2020.provenance.json   dataset, collection, resolution, year, URL,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#                                 bbox, legend, license, checksum, software</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">files</span> <span class="o">=</span> <span class="n">prodes</span><span class="o">.</span><span class="n">download</span><span class="p">()</span>                     <span class="c1"># once; cached in ~/.cache/disscube/prodes</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2008</span><span class="p">,</span> <span class="mi">2016</span><span class="p">,</span> <span class="mi">2024</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">prodes</span><span class="o">.</span><span class="n">register_prodes_source</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"prodes_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                  <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
 </code></pre></div>
-<p>Each year becomes a source with <code>time=year</code>, so derivations from several years
-load as a <code>(time, y, x)</code> series and go to DisSModel with <code>to_lucc_data()</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube</span><span class="w"> </span><span class="kn">import</span> <span class="n">Derivation</span>
+<ul>
+<li><strong>Download and cache.</strong> <code>download()</code> fetches the ZIP to a temporary name and
+  renames it when complete, so an interrupted download never leaves a broken
+  file; later calls reuse it. Set <code>DISSCUBE_CACHE</code> to move the cache.
+  <code>latest_url()</code> asks TerraBrasilis' own download index for the newest edition.</li>
+<li><strong>Legend from the file.</strong> Codes are read from the <code>.qml</code> (<code>"7 d2007"</code>,
+  <code>"91 Hidrografia"</code>, <code>"100 Vegetação nativa florestal"</code>, …), not hard-coded,
+  so a new edition with another encoding is read correctly or fails loudly.</li>
+<li><strong>One map per year.</strong> For a year Y the local map has <code>FOREST</code> (1),
+  <code>DEFORESTED</code> (2, any <code>dYYYY</code> or residual <code>rYYYY</code> up to Y) and <code>OTHER</code> (3,
+  non-forest vegetation and water); clouds and unknown codes are nodata.</li>
+<li><strong>Years.</strong> The edition distributed today separates deforestation by year
+  from 2007 on (<code>d2007</code> holds everything cleared up to then). Earlier years
+  raise an error; use MapBiomas for them.</li>
+</ul>
+<p>The provenance records the edition, its URL, the ZIP's SHA-256, the legend and
+the code mapping.</p>
+<h2 id="any-classified-map-eg-from-sits-disscubesourcesclassified">Any classified map, e.g. from SITS (<code>disscube.sources.classified</code>)</h2>
+<p><a href="https://e-sensing.github.io/sitsbook/">SITS</a> classifies satellite image time
+series — including the Brazil Data Cube cubes — into land-cover maps written
+as GeoTIFFs. <code>register_classified_map()</code> reads such a map (or any categorical
+GeoTIFF, local or a Cloud-Optimized URL) over an area and registers it with
+its legend:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources.classified</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_classified_map</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">2020</span><span class="p">):</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">Derivation</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="s2">"landuse"</span><span class="p">,</span> <span class="n">source_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                                       <span class="n">operator</span><span class="o">=</span><span class="s2">"majority"</span><span class="p">),</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">Derivation</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="s2">"urban_pct"</span><span class="p">,</span> <span class="n">source_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                                       <span class="n">operator</span><span class="o">=</span><span class="s2">"percentage"</span><span class="p">,</span> <span class="n">class_code</span><span class="o">=</span><span class="mi">24</span><span class="p">),</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">to_lucc_data</span><span class="p">([</span><span class="s2">"landuse"</span><span class="p">,</span> <span class="s2">"urban_pct"</span><span class="p">],</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">register_classified_map</span><span class="p">(</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="p">,</span> <span class="s2">"lulc_sits_2020"</span><span class="p">,</span> <span class="s2">"classified/santarem_class_2020.tif"</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">time</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">"Forest"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"Pasture"</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">"Water"</span><span class="p">},</span>   <span class="c1"># or .qml / .json / .csv</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">producer</span><span class="o">=</span><span class="s2">"SITS"</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
 </code></pre></div>
-<h2 id="code-0-is-nodata">Code 0 is nodata</h2>
-<p>The files declare no nodata value, but code 0 means "not observed" (for
-example open sea outside the mapped area). The reader treats 0 as nodata and
-writes the local file with <code>nodata=0</code>, so it never counts as a class in
-<code>majority</code> or <code>percentage</code>.</p>
-<h2 id="classes">Classes</h2>
-<p><code>disscube.sources.mapbiomas.CLASSES</code> names the classes most common in
-land-change studies (forest formation 3, savanna 4, mangrove 5, floodable
-forest 6, wetland 11, grassland 12, pasture 15, mosaic of uses 21, beach and
-dune 23, urban area 24, other non-vegetated 25, hypersaline tidal flat 32,
-water 33). The authoritative list is the legend of the collection in use:
-<a href="https://brasil.mapbiomas.org/en/codigos-de-legenda/">https://brasil.mapbiomas.org/en/codigos-de-legenda/</a>.</p>
-<p>Data © MapBiomas, licensed CC-BY-4.0; cite the collection you use.</p>
+<p>The legend may be a mapping, a QGIS <code>.qml</code>, a <code>.json</code> (<code>{"1": "Forest"}</code> or a
+list of <code>{"code", "label"}</code>) or a <code>.csv</code> with <code>code,label</code> columns. A map that
+uses class 0 needs an explicit <code>nodata=</code> so that 0 is not taken as missing.</p>
+<p>To remap codes before registering — e.g. to merge classes — read the map with
+<code>disscube.sources.read_window</code>, apply <code>disscube.sources.reclassify(window,
+{old: new})</code> and register the result with <code>disscube.sources.register_raster</code>.</p>
 
 
 

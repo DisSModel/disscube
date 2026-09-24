@@ -452,6 +452,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#real-data-prodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — PRODES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -808,6 +819,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/landcover/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Land-cover maps: PRODES and SITS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/grids/" class="md-nav__link">
         
   
@@ -900,6 +939,17 @@
     <span class="md-ellipsis">
       
         Real data — MapBiomas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-data-prodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — PRODES
       
     </span>
   </a>
@@ -1061,6 +1111,26 @@ national files; see <a href="../guides/mapbiomas/">MapBiomas</a>.</p>
 </table>
 <p>It needs network access. Without it, or with <code>--offline</code>, it runs on a
 synthetic scene with the same grid and class codes and says so.</p>
+<h2 id="real-data-prodes">Real data — PRODES</h2>
+<p>Example 09 downloads the current PRODES edition once (≈130 MB, cached) and
+reads its legend from the <code>.qml</code> in the ZIP; see
+<a href="../guides/landcover/">Land-cover maps: PRODES and classified maps</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Cells</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/09_prodes_deforestation.py"><code>09_prodes_deforestation.py</code></a></td>
+<td>94 × 86 × 500 m, 3 years</td>
+<td>The LuccME Lab15 area south of Santarém at the end of 2008, 2016 and 2024: forest / deforested / other, <code>percentage</code> of deforested and forest per cell</td>
+</tr>
+</tbody>
+</table>
 <h2 id="scope">Scope</h2>
 <p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
