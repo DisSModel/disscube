@@ -441,6 +441,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#real-data-mapbiomas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — MapBiomas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -769,6 +780,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/mapbiomas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MapBiomas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/grids/" class="md-nav__link">
         
   
@@ -850,6 +889,17 @@
     <span class="md-ellipsis">
       
         Real data — Brazil Data Cube
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-data-mapbiomas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — MapBiomas
       
     </span>
   </a>
@@ -990,6 +1040,27 @@ STAC catalog; see <a href="../guides/bdc/#reading-data-cubes-via-stac">BDC Integ
 <p>It needs network access and <code>pip install -e ".[bdc]"</code>. Without network, or
 with <code>--offline</code>, it runs on a synthetic scene with the same grid and value
 ranges and prints a warning that the numbers are not BDC data.</p>
+<h2 id="real-data-mapbiomas">Real data — MapBiomas</h2>
+<p>Example 08 reads the MapBiomas annual land-cover maps straight from the
+national files; see <a href="../guides/mapbiomas/">MapBiomas</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Cells</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/08_mapbiomas_land_use.py"><code>08_mapbiomas_land_use.py</code></a></td>
+<td>58 × 59 × 300 m, 2 years</td>
+<td>Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: <code>majority</code> and <code>percentage</code> (urban, forest, mangrove) on the grid of example 07, <code>(time, y, x)</code> series handed to DisSModel with <code>to_lucc_data()</code></td>
+</tr>
+</tbody>
+</table>
+<p>It needs network access. Without it, or with <code>--offline</code>, it runs on a
+synthetic scene with the same grid and class codes and says so.</p>
 <h2 id="scope">Scope</h2>
 <p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong

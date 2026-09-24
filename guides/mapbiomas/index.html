@@ -10,11 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://dissmodel.github.io/disscube/guides/grids/">
+        <link rel="canonical" href="https://dissmodel.github.io/disscube/guides/mapbiomas/">
       
       
-        <link rel="prev" href="../mapbiomas/">
+        <link rel="prev" href="../bdc/">
       
+      
+        <link rel="next" href="../grids/">
       
       
         
@@ -25,7 +27,7 @@
     
     
       
-        <title>Custom Grids - DisSCube Documentation</title>
+        <title>MapBiomas - DisSCube Documentation</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#grids-and-spatial-interoperability" class="md-skip">
+        <a href="#mapbiomas" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Custom Grids
+              MapBiomas
             
           </span>
         </div>
@@ -678,34 +680,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../mapbiomas/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MapBiomas
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -725,7 +699,7 @@
   <span class="md-ellipsis">
     
   
-    Custom Grids
+    MapBiomas
   
 
     
@@ -743,7 +717,7 @@
   <span class="md-ellipsis">
     
   
-    Custom Grids
+    MapBiomas
   
 
     
@@ -769,10 +743,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-problem-snapped-grids-solve" class="md-nav__link">
+  <a href="#registering-a-year" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The problem snapped grids solve
+        Registering a year
       
     </span>
   </a>
@@ -780,10 +754,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#national-reference-grids" class="md-nav__link">
+  <a href="#code-0-is-nodata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        National reference grids
+        Code 0 is nodata
       
     </span>
   </a>
@@ -791,54 +765,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#snapped-local-grids" class="md-nav__link">
+  <a href="#classes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Snapped local grids
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resolution-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution hierarchy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spatial-relations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spatial relations
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-grid-manually" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating a grid manually
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#derived-properties-of-gridspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Derived properties of GridSpec
+        Classes
       
     </span>
   </a>
@@ -849,6 +779,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Grids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -888,10 +846,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-problem-snapped-grids-solve" class="md-nav__link">
+  <a href="#registering-a-year" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The problem snapped grids solve
+        Registering a year
       
     </span>
   </a>
@@ -899,10 +857,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#national-reference-grids" class="md-nav__link">
+  <a href="#code-0-is-nodata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        National reference grids
+        Code 0 is nodata
       
     </span>
   </a>
@@ -910,54 +868,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#snapped-local-grids" class="md-nav__link">
+  <a href="#classes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Snapped local grids
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resolution-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution hierarchy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spatial-relations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spatial relations
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-grid-manually" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating a grid manually
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#derived-properties-of-gridspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Derived properties of GridSpec
+        Classes
       
     </span>
   </a>
@@ -981,7 +895,7 @@
 
 
   
-    <a href="https://github.com/DisSModel/disscube/edit/main/docs/guides/grids.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/DisSModel/disscube/edit/main/docs/guides/mapbiomas.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -989,111 +903,73 @@
   
 
 
-<h1 id="grids-and-spatial-interoperability">Grids and Spatial Interoperability</h1>
-<h2 id="the-problem-snapped-grids-solve">The problem snapped grids solve</h2>
-<p>In traditional GIS workflows, creating one grid for Acre and another for Brazil often produces misaligned pixels — the corner of a 5 km Acre pixel does not coincide with the corner of a 5 km Brazil pixel. Aggregating from one grid to the other then introduces errors from partial pixels at the edges.</p>
-<p>DisSCube solves this by <strong>snapping to a virtual mesh</strong>: every local grid is anchored to the same CRS origin, guaranteeing that pixels at multiple resolutions always line up exactly.</p>
-<h2 id="national-reference-grids">National reference grids</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.utils.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_simulation_grids</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">register_simulation_grids</span><span class="p">(</span><span class="n">cube</span><span class="p">)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Registers:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">#   BR/5km  — 5000 m, BDC Albers, national bbox</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">#   BR/1km  — 1000 m, BDC Albers, national bbox</span>
-</code></pre></div>
-<h2 id="snapped-local-grids">Snapped local grids</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.utils.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_local_grid</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">register_local_grid</span><span class="p">(</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"AC"</span><span class="p">,</span>                            <span class="c1"># or state="AC"</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">bbox_geo</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">73.99</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.15</span><span class="p">,</span> <span class="o">-</span><span class="mf">66.62</span><span class="p">,</span> <span class="o">-</span><span class="mf">7.11</span><span class="p">),</span>  <span class="c1"># lon_min, lat_min, lon_max, lat_max</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">5_000.0</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">snap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                            <span class="c1"># default</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Produces grid "AC/5km" in BDC Albers</span>
-</code></pre></div>
-<p><strong>What <code>snap=True</code> does:</strong></p>
-<p>The geographic bbox is converted to BDC Albers and its bounds are rounded to the nearest multiple of the resolution:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">minx</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">minx</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span> <span class="o">*</span> <span class="n">resolution</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">maxx</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">maxx</span>  <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span> <span class="o">*</span> <span class="n">resolution</span>
-</code></pre></div>
-<p>Result: <code>AC/5km</code> and <code>BR/5km</code> have identical pixels over the overlapping area — a 5 km Acre pixel is the same geographic square as the 5 km Brazil pixel.</p>
-<h2 id="resolution-hierarchy">Resolution hierarchy</h2>
-<p>Multiple resolutions within the same CRS form a perfect hierarchy:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>1 pixel at 5km
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>├── 25 pixels at 1km (5×5)
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>└── 2500 pixels at 100m (50×50)
-</code></pre></div>
-<p>This enables <strong>zero-error aggregation</strong>: when computing the forest <code>percentage</code> (100 m) inside a model cell (5 km), every 100 m pixel that makes up the 5 km cell is known exactly.</p>
-<h2 id="spatial-relations">Spatial relations</h2>
-<p><code>SpatialRelation</code> records the parent–child relation between grids:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpatialRelation</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_relation</span><span class="p">(</span><span class="n">SpatialRelation</span><span class="p">(</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">source_grid_id</span><span class="o">=</span><span class="s2">"AC/1km"</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">target_grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">strategy</span><span class="o">=</span><span class="s2">"simple"</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">))</span>
-</code></pre></div>
-<p><strong>Available strategies</strong> (reserved for future use in the pipeline):</p>
+<h1 id="mapbiomas">MapBiomas</h1>
+<p><a href="https://brasil.mapbiomas.org/">MapBiomas</a> publishes annual land-cover and
+land-use maps of Brazil. <code>disscube.sources.mapbiomas</code> reads them straight from
+the national GeoTIFFs on Google Cloud Storage: the files are tiled in 256 × 256
+blocks, so only the pixels of the area of interest are fetched.</p>
 <table>
 <thead>
 <tr>
-<th>Strategy</th>
-<th>Intended use</th>
+<th>Dataset</th>
+<th>Resolution</th>
+<th>Years</th>
+<th>Call with</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>simple</code></td>
-<td>Nested grids — no ambiguity in aggregation</td>
+<td>Collection 11 (Landsat) — default</td>
+<td>30 m</td>
+<td>1985–2025</td>
+<td><code>collection=11, resolution=30</code></td>
 </tr>
 <tr>
-<td><code>chooseone</code></td>
-<td>Cells that belong to only one target grid</td>
-</tr>
-<tr>
-<td><code>keepinboth</code></td>
-<td>Cells kept in both grids (overlap)</td>
+<td>Collection 4 of the 10 m series (Sentinel-2)</td>
+<td>10 m</td>
+<td>2017–2025</td>
+<td><code>collection=4, resolution=10</code></td>
 </tr>
 </tbody>
 </table>
-<div class="admonition note">
-<p class="admonition-title">Strategy status</p>
-<p>The strategies are modeled in the schema but are not yet applied by the derivation pipeline. They are reserved for DisSModel's cross-scale mechanism.</p>
-</div>
-<h2 id="creating-a-grid-manually">Creating a grid manually</h2>
-<p>When snapping to the BDC mesh is not needed (e.g. a project with a local CRS):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSpec</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nb">id</span><span class="o">=</span><span class="s2">"local_project/30m"</span><span class="p">,</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:31983"</span><span class="p">,</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mf">580000.0</span><span class="p">,</span> <span class="mf">9700000.0</span><span class="p">,</span> <span class="mf">600000.0</span><span class="p">,</span> <span class="mf">9720000.0</span><span class="p">],</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">"Manual grid, not snapped to the national mesh"</span><span class="p">,</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">cube</span><span class="o">.</span><span class="n">register_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+<p>For land-change modelling the 30 m collection is the natural choice: it has
+the long series needed for calibration and validation years, and the same
+resolution as the Landsat cubes of the Brazil Data Cube.</p>
+<h2 id="registering-a-year">Registering a year</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources.mapbiomas</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_mapbiomas_source</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">44.35</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.62</span><span class="p">,</span> <span class="o">-</span><span class="mf">44.20</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.47</span><span class="p">)</span>          <span class="c1"># WGS84</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">2020</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">register_mapbiomas_source</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># raw/lulc_2020.tif               uint8 class codes, nodata 0, EPSG:4326</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># raw/lulc_2020.provenance.json   dataset, collection, resolution, year, URL,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#                                 bbox, legend, license, checksum, software</span>
 </code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Unsnapped grids may not align with the national grids. Cross-grid aggregation between misaligned grids introduces partial-pixel errors.</p>
-</div>
-<h2 id="derived-properties-of-gridspec">Derived properties of <code>GridSpec</code></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"G"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:31982"</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">])</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">grid</span><span class="o">.</span><span class="n">rows</span>        <span class="c1"># 10</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">grid</span><span class="o">.</span><span class="n">cols</span>        <span class="c1"># 10</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">grid</span><span class="o">.</span><span class="n">transform</span>   <span class="c1"># Affine (north-up, origin at the upper-left corner)</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">grid</span><span class="o">.</span><span class="n">xs</span>          <span class="c1"># array of X centroids, one per column</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">grid</span><span class="o">.</span><span class="n">ys</span>          <span class="c1"># array of Y centroids, one per row</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Cell identification</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">cell</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">cell_id</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>          <span class="c1"># "G:R0003C0007"</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">coords_from_cell_id</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>     <span class="c1"># centroid in CRS coordinates</span>
+<p>Each year becomes a source with <code>time=year</code>, so derivations from several years
+load as a <code>(time, y, x)</code> series and go to DisSModel with <code>to_lucc_data()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube</span><span class="w"> </span><span class="kn">import</span> <span class="n">Derivation</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">2020</span><span class="p">):</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">Derivation</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="s2">"landuse"</span><span class="p">,</span> <span class="n">source_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                                       <span class="n">operator</span><span class="o">=</span><span class="s2">"majority"</span><span class="p">),</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">Derivation</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="s2">"urban_pct"</span><span class="p">,</span> <span class="n">source_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lulc_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                                       <span class="n">operator</span><span class="o">=</span><span class="s2">"percentage"</span><span class="p">,</span> <span class="n">class_code</span><span class="o">=</span><span class="mi">24</span><span class="p">),</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">to_lucc_data</span><span class="p">([</span><span class="s2">"landuse"</span><span class="p">,</span> <span class="s2">"urban_pct"</span><span class="p">],</span> <span class="n">grid_id</span><span class="o">=</span><span class="n">grid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="code-0-is-nodata">Code 0 is nodata</h2>
+<p>The files declare no nodata value, but code 0 means "not observed" (for
+example open sea outside the mapped area). The reader treats 0 as nodata and
+writes the local file with <code>nodata=0</code>, so it never counts as a class in
+<code>majority</code> or <code>percentage</code>.</p>
+<h2 id="classes">Classes</h2>
+<p><code>disscube.sources.mapbiomas.CLASSES</code> names the classes most common in
+land-change studies (forest formation 3, savanna 4, mangrove 5, floodable
+forest 6, wetland 11, grassland 12, pasture 15, mosaic of uses 21, beach and
+dune 23, urban area 24, other non-vegetated 25, hypersaline tidal flat 32,
+water 33). The authoritative list is the legend of the collection in use:
+<a href="https://brasil.mapbiomas.org/en/codigos-de-legenda/">https://brasil.mapbiomas.org/en/codigos-de-legenda/</a>.</p>
+<p>Data © MapBiomas, licensed CC-BY-4.0; cite the collection you use.</p>
 
 
 
