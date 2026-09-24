@@ -79,6 +79,13 @@ reads its legend from the `.qml` in the ZIP; see
 |---|---|---|
 | [`09_prodes_deforestation.py`](https://github.com/DisSModel/disscube/blob/main/examples/09_prodes_deforestation.py) | 94 × 86 × 500 m, 3 years | The LuccME Lab15 area south of Santarém at the end of 2008, 2016 and 2024: forest / deforested / other, `percentage` of deforested and forest per cell |
 
+## Pipeline files (TOML)
+
+The same preparations can be declared as TOML files in
+[`examples/pipelines/`](https://github.com/DisSModel/disscube/tree/main/examples/pipelines)
+and run with `disscube run <file>` — including TerraME's Itaituba Fill
+tutorial, offline. See [Pipeline files](guides/pipeline_files.md).
+
 ## Scope
 
 DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.

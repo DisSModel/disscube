@@ -34,6 +34,13 @@ All examples are executed by the test suite (`tests/test_examples.py`), so
 they are kept in sync with the API. The suite sets `DISSCUBE_OFFLINE=1`, so
 07, 08 and 09 run on their synthetic stand-ins there.
 
+## Pipeline files
+
+[`pipelines/`](pipelines/) has the same preparations declared as TOML files and
+run with `disscube run <file>`: TerraME's Itaituba Fill tutorial (offline,
+bundled data) and the BDC, MapBiomas and PRODES examples. See
+`docs/guides/pipeline_files.md`.
+
 ## Scope
 
 DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
