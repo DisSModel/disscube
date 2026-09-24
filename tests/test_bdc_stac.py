@@ -218,6 +218,16 @@ def test_read_composite_mosaics_several_tiles(tmp_path):
     assert np.allclose(np.unique(np.round(out.data, 4)), [0.1, 0.3])
 
 
+def test_read_composite_explicit_scale_overrides_stac(tmp_path):
+    items = [_item("a", _write(tmp_path / "a.tif", np.full((1000, 1000), 5000, dtype="int16")),
+                   scale=0.001, tile="016004")]
+    out = read_composite("LANDSAT-16D-1", "NDVI", BBOX, "2020", items=items, scale=0.0001)
+    assert np.allclose(out.data, 0.5)
+    no_scale = [_item("b", _write(tmp_path / "b.tif", np.full((1000, 1000), 5000, dtype="int16")),
+                      tile="016004")]
+    assert np.allclose(read_composite("LANDSAT-16D-1", "NDVI", BBOX, "2020", items=no_scale).data, 5000)
+
+
 def test_read_composite_without_items_raises(monkeypatch):
     monkeypatch.setattr(bdc_stac, "search_items", lambda *a, **k: [])
     with pytest.raises(ValueError, match="no LANDSAT-16D-1 items"):
@@ -308,7 +318,7 @@ def test_real_bdc_landsat_ndvi(tmp_path):
     pytest.importorskip("pystac_client")
     small = (-44.30, -2.56, -44.27, -2.53)
     out = bdc_stac.fetch_composite("LANDSAT-16D-1", "NDVI", small, "2020-07-01/2020-07-31",
-                                   tmp_path / "ndvi.tif")
+                                   tmp_path / "ndvi.tif", scale=bdc_stac.BDC_INDEX_SCALE)
     with rasterio.open(out) as ds:
         data = ds.read(1)
     valid = data[np.isfinite(data)]

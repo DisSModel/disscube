@@ -51,6 +51,12 @@ BDC_STAC_URL = "https://data.inpe.br/bdc/stac/v1/"
 #: EPSG code the BDC cubes declare for BDC Albers (registered in 2023).
 BDC_ALBERS_EPSG = 10857
 
+#: Scale of the vegetation indices (NDVI, EVI, NBR) in the BDC 16-day cubes:
+#: stored as int16 × 10 000. The catalog does not declare it (neither STAC
+#: ``raster:bands`` nor the GeoTIFFs, checked on LANDSAT-16D-1 in 2026-09), so
+#: pass it explicitly: ``read_composite(..., "NDVI", ..., scale=BDC_INDEX_SCALE)``.
+BDC_INDEX_SCALE = 1e-4
+
 
 @dataclass
 class Window2D:
@@ -272,15 +278,19 @@ def fetch_composite(
     *,
     reducer: str = "median",
     url: str = BDC_STAC_URL,
+    scale: float | None = None,
+    offset: float | None = None,
 ) -> Path:
     """
     Search, read and reduce one asset over a period, and write the composite.
 
     Items are reduced tile by tile; when the area spans several BDC tiles the
-    per-tile composites are mosaicked.
+    per-tile composites are mosaicked. ``scale``/``offset`` override whatever
+    the catalog or the files declare (see :data:`BDC_INDEX_SCALE`).
     """
     return write_geotiff(
-        read_composite(collection, asset, bbox_geo, period, reducer=reducer, url=url),
+        read_composite(collection, asset, bbox_geo, period, reducer=reducer, url=url,
+                       scale=scale, offset=offset),
         out_path,
     )
 
@@ -294,6 +304,8 @@ def read_composite(
     reducer: str = "median",
     url: str = BDC_STAC_URL,
     items: Sequence | None = None,
+    scale: float | None = None,
+    offset: float | None = None,
 ) -> Window2D:
     """Like :func:`fetch_composite`, but return the composite instead of writing it.
 
@@ -308,16 +320,33 @@ def read_composite(
     for item in items:
         by_tile.setdefault(tile_of(item), []).append(item)
     per_tile = [
-        composite([read_item_window(i, asset, bbox_geo) for i in tile_items], reducer)
+        composite([read_item_window(i, asset, bbox_geo, scale=scale, offset=offset)
+                   for i in tile_items], reducer)
         for _, tile_items in sorted(by_tile.items())
     ]
     return mosaic(per_tile)
 
 
-def read_item_window(item, asset: str, bbox_geo: Sequence[float]) -> Window2D:
-    """Read ``asset`` of a STAC ``item`` over ``bbox_geo``, honouring its declared scale/offset."""
-    scale, offset = asset_scale_offset(item, asset)
-    return read_window(item.assets[asset].href, bbox_geo, scale=scale, offset=offset)
+def read_item_window(
+    item,
+    asset: str,
+    bbox_geo: Sequence[float],
+    *,
+    scale: float | None = None,
+    offset: float | None = None,
+) -> Window2D:
+    """
+    Read ``asset`` of a STAC ``item`` over ``bbox_geo``.
+
+    Scale and offset come, in order of precedence, from the arguments, from the
+    item's STAC ``raster:bands``, and from the GeoTIFF itself.
+    """
+    stac_scale, stac_offset = asset_scale_offset(item, asset)
+    return read_window(
+        item.assets[asset].href, bbox_geo,
+        scale=scale if scale is not None else stac_scale,
+        offset=offset if offset is not None else stac_offset,
+    )
 
 
 class _quiet_all_nan:

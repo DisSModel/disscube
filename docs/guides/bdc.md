@@ -43,14 +43,16 @@ full tile download. Searching needs `pystac-client` (`pip install disscube[bdc]`
 
 ```python
 from disscube.utils.bdc_stac import (
-    fetch_composite, normalized_difference, read_composite, search_items, write_geotiff,
+    BDC_INDEX_SCALE, fetch_composite, normalized_difference, read_composite,
+    search_items, write_geotiff,
 )
 
 bbox = (-44.35, -2.62, -44.20, -2.47)          # WGS84
 period = "2020-07-01/2020-09-30"
 
 # one asset, one call: search → windowed reads → per-pixel median → GeoTIFF
-fetch_composite("LANDSAT-16D-1", "NDVI", bbox, period, "raw/ndvi.tif")
+fetch_composite("LANDSAT-16D-1", "NDVI", bbox, period, "raw/ndvi.tif",
+                scale=BDC_INDEX_SCALE)            # indices are int16 × 10 000
 
 # several assets of the same items: search once, derive an index
 items = search_items("LANDSAT-16D-1", bbox, period)
@@ -64,10 +66,12 @@ other raster (see `examples/07_bdc_cube.py`).
 
 What the reader does for you:
 
-- **Physical units.** Nodata becomes NaN, and the scale/offset declared by the
-  asset (STAC `raster:bands`, or the GeoTIFF itself) is applied. When neither
-  declares one, raw values are kept — check the range (BDC stores indices as
-  int16 × 10 000).
+- **Physical units.** Nodata becomes NaN, and a scale/offset is applied: the
+  one passed as `scale=`/`offset=`, else the one declared by the asset (STAC
+  `raster:bands`), else the GeoTIFF's own. The BDC cubes declare none, so pass
+  `scale=BDC_INDEX_SCALE` (1e-4) for `NDVI`, `EVI` and `NBR`; without it, raw
+  int16 values are returned. Ratios of bands (e.g. MNDWI from `green` and
+  `swir16`) do not need it, since a common scale factor cancels out.
 - **Composites and mosaics.** Items are reduced tile by tile (`median`, `mean`,
   `max` or `min`, ignoring NaN, i.e. clouds); when the area spans several BDC
   tiles, the per-tile composites are pasted into one layer (the tiles share one

@@ -47,6 +47,7 @@ GRID_RES = 300.0
 
 def fetch_from_bdc(raw: Path) -> dict:
     from disscube.utils.bdc_stac import (
+        BDC_INDEX_SCALE,
         asset_scale_offset,
         normalized_difference,
         read_composite,
@@ -61,14 +62,12 @@ def fetch_from_bdc(raw: Path) -> dict:
     for asset in ("NDVI", "green", "swir16"):
         print(f"  {asset:7s} scale/offset (STAC): {asset_scale_offset(items[0], asset)}")
 
-    def season(asset):
-        return read_composite(COLLECTION, asset, BBOX, PERIOD, items=items)
+    def season(asset, scale=None):
+        return read_composite(COLLECTION, asset, BBOX, PERIOD, items=items, scale=scale)
 
-    ndvi = season("NDVI")
-    if np.nanmax(np.abs(ndvi.data)) > 1.5:
-        # the catalog declared no scale: BDC stores indices as int16 × 10 000
-        print("  NDVI has no declared scale; applying the BDC convention (× 0.0001)")
-        ndvi.data *= np.float32(1e-4)
+    # The catalog declares no scale; BDC stores indices as int16 × 10 000.
+    ndvi = season("NDVI", scale=BDC_INDEX_SCALE)
+    # MNDWI is a ratio, so a common scale factor on green and SWIR cancels out.
     mndwi = normalized_difference(season("green"), season("swir16"))
     write_geotiff(ndvi, raw / "ndvi.tif")
     write_geotiff(mndwi, raw / "mndwi.tif")
