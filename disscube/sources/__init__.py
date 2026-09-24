@@ -7,6 +7,7 @@ its SHA-256 as the source ``checksum`` — which keys the derivation cache — a
 a ``<source>.provenance.json`` sidecar recording where the data came from.
 
 - :mod:`disscube.sources.bdc` — Brazil Data Cube data cubes via STAC
+- :mod:`disscube.sources.mapbiomas` — MapBiomas annual land-cover maps
 """
 
 from disscube.sources._raster import (

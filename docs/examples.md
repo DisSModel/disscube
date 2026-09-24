@@ -57,6 +57,18 @@ It needs network access and `pip install -e ".[bdc]"`. Without network, or
 with `--offline`, it runs on a synthetic scene with the same grid and value
 ranges and prints a warning that the numbers are not BDC data.
 
+## Real data — MapBiomas
+
+Example 08 reads the MapBiomas annual land-cover maps straight from the
+national files; see [MapBiomas](guides/mapbiomas.md).
+
+| Example | Cells | What it shows |
+|---|---|---|
+| [`08_mapbiomas_land_use.py`](https://github.com/DisSModel/disscube/blob/main/examples/08_mapbiomas_land_use.py) | 58 × 59 × 300 m, 2 years | Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: `majority` and `percentage` (urban, forest, mangrove) on the grid of example 07, `(time, y, x)` series handed to DisSModel with `to_lucc_data()` |
+
+It needs network access. Without it, or with `--offline`, it runs on a
+synthetic scene with the same grid and class codes and says so.
+
 ## Scope
 
 DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
