@@ -3,7 +3,7 @@
 Self-contained, runnable examples. Examples 01–03 generate their own
 synthetic input data; examples 04–06 use real data bundled in
 [`data/terrame/`](data/terrame/); example 07 reads the Brazil Data Cube over
-the network, and 08 reads MapBiomas over the network. All of them work in a temporary directory; 01–06 finish in a few
+the network, 08 reads MapBiomas and 09 downloads PRODES (≈130 MB, cached). All of them work in a temporary directory; 01–06 finish in a few
 seconds with no downloads:
 
 ```bash
@@ -28,10 +28,11 @@ python examples/01_quickstart.py ./scratch
 | [`06_terrame_fill_amazonia.py`](06_terrame_fill_amazonia.py) | TerraME's Brazilian Amazon example (50 km): PRODES coverage with a declared nodata, distances to roads and ports |
 | [`07_bdc_cube.py`](07_bdc_cube.py) | Brazil Data Cube: Landsat 16-day cube over Ilha do Maranhão via STAC (windowed reads), dry-season median, NDVI / MNDWI / open-water drivers on a 300 m BDC Albers grid. Needs network and `.[bdc]`; `--offline` runs a synthetic stand-in |
 | [`08_mapbiomas_land_use.py`](08_mapbiomas_land_use.py) | MapBiomas Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: windowed reads of the national files, code 0 as nodata, `majority` and `percentage` (urban, forest, mangrove) on the grid of 07, `(time, y, x)` series and `to_lucc_data()`. Needs network; `--offline` runs a synthetic stand-in |
+| [`09_prodes_deforestation.py`](09_prodes_deforestation.py) | PRODES in the LuccME Lab15 area (south of Santarém) at the end of 2008, 2016 and 2024: edition downloaded once and cached, legend read from its `.qml`, forest / deforested / other, `percentage` on a 500 m BDC grid. Needs network; `--offline` runs a synthetic stand-in |
 
 All examples are executed by the test suite (`tests/test_examples.py`), so
 they are kept in sync with the API. The suite sets `DISSCUBE_OFFLINE=1`, so
-07 and 08 run on their synthetic stand-ins there.
+07, 08 and 09 run on their synthetic stand-ins there.
 
 ## Scope
 

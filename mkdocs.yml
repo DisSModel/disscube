@@ -41,4 +41,5 @@ nav:
   - Guides:
       - BDC Integration: guides/bdc.md
       - MapBiomas: guides/mapbiomas.md
+      - "Land-cover maps: PRODES and SITS": guides/landcover.md
       - Custom Grids: guides/grids.md

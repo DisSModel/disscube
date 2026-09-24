@@ -130,6 +130,10 @@ in seconds:
   11, 30 m), read straight from the national files and aggregated on the same
   grid as 07 (`majority`, urban/forest/mangrove `percentage`), then handed to
   DisSModel with `to_lucc_data()`. Needs network; `--offline` runs a stand-in.
+- **09, PRODES** — deforestation in the LuccME Lab15 area (south of Santarém,
+  Pará) at the end of 2008, 2016 and 2024: the PRODES edition is downloaded
+  once and cached, its legend read from the `.qml`, and the maps aggregated on
+  a 500 m BDC grid. Needs network; `--offline` runs a stand-in.
 
 ```bash
 python examples/01_quickstart.py
@@ -205,7 +209,10 @@ disscube/
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
 │   ├── bdc.py        Brazil Data Cube cubes via STAC (`bdc` extra)
-│   └── mapbiomas.py  MapBiomas annual land-cover maps (Collection 11, 10 m series)
+│   ├── _categorical.py  legends (.qml/.json/.csv) and reclassification
+│   ├── mapbiomas.py  MapBiomas annual land-cover maps (Collection 11, 10 m series)
+│   ├── prodes.py     PRODES deforestation (download + cache, legend from the .qml)
+│   └── classified.py any classified map with its legend, e.g. from SITS
 └── utils/            Grids (grids.py), BDC tile geometry (bdc_importer.py),
                       checksums (files.py)
 ```
