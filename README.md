@@ -197,7 +197,12 @@ disscube/
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage/          AssetStore (fsspec — local and S3)
 ├── api/              Experimental HTTP API (optional `api` extra)
-└── utils/grids.py    register_local_grid, register_simulation_grids
+├── sources/          Adapters that bring external data in as SpatialSources,
+│   │                 each with a checksum and a provenance.json sidecar
+│   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
+│   └── bdc.py        Brazil Data Cube cubes via STAC (`bdc` extra)
+└── utils/            Grids (grids.py), BDC tile geometry (bdc_importer.py),
+                      checksums (files.py)
 ```
 
 ## Adding a new operator
@@ -258,7 +263,7 @@ The `SpatialRelation` model is persisted in the catalog, but no pipeline stage u
 The `purity_threshold` field on `Derivation` is included in `spec_hash` but is not applied to the output — purity masking is not implemented. Setting `purity_threshold` changes the cache key without changing the result.
 
 **STAC: reading only**
-`disscube.utils.bdc_stac` reads Brazil Data Cube cubes through their STAC catalog (search, windowed reads, per-tile composites, mosaics) and writes local GeoTIFFs that are registered as ordinary sources. Derived variables are not published back as STAC, and the `valid_from`/`valid_until` and `bbox` fields on `Derivation` only follow STAC naming conventions.
+`disscube.sources.bdc` reads Brazil Data Cube cubes through their STAC catalog (search, windowed reads, per-tile composites, mosaics) and writes local GeoTIFFs that are registered as ordinary sources. Derived variables are not published back as STAC, and the `valid_from`/`valid_until` and `bbox` fields on `Derivation` only follow STAC naming conventions.
 
 ## License
 

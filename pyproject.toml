@@ -48,7 +48,7 @@ dev = [
 ]
 bdc = [
     "fiona",
-    "pystac-client",        # disscube.utils.bdc_stac: searching the BDC STAC catalog
+    "pystac-client",        # disscube.sources.bdc: searching the BDC STAC catalog
 ]
 s3 = [
     "s3fs",
