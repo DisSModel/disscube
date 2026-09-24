@@ -49,6 +49,7 @@ operator = "min_distance"
 | `coverage` / `percentage` | `percentage` (one derivation per `class_code`) |
 | `majority` / `minority` | `majority` / `minority` |
 | `distance` | `distance` (exact, from the cell centre) or `min_distance` (raster approximation) |
+| `area` | `area` (share of the cell covered by polygons) |
 | `presence`, `count`, `sum`, `minimum`, `maximum`, `stdev` | `presence`, `count`, `sum`, `min`, `max`, `std` |
 
 How faithful each operator is to TerraME — and what is not supported yet — is
@@ -70,7 +71,7 @@ resolution = 300
 
 [[source]]                    # one block per source; see the types below
 id = "…"
-type = "file" | "bdc" | "mapbiomas" | "prodes" | "classified"
+type = "file" | "bdc" | "mapbiomas" | "prodes" | "classified" | "union"
 
 [[derive]]                    # one block per derived variable
 target = "urban_pct"
@@ -79,6 +80,8 @@ operator = "percentage"
 class_code = 24
 # role = "driver"
 # years = [2020]              # restrict a {year} source to some years
+# params = { subcells = 20 }  # operator options, see below
+# fill = "nearest"            # cells left without a value take the nearest cell's
 ```
 
 Without `crs`, `bbox` is `[min_lon, min_lat, max_lon, max_lat]` in WGS84 and the
@@ -89,13 +92,63 @@ relative to the pipeline file, so a folder with its TOML and data is portable.
 
 | `type` | Fields | Adapter |
 |---|---|---|
-| `file` | `path` (raster, vector, or `zip://…` shapefile), `crs`, `format`, `time` | a local file, checksummed |
+| `file` | `path` (raster, vector, or `zip://…` shapefile), `crs`, `format`, `time`, `variable`, `nodata`, `read` | a local file, checksummed |
 | `bdc` | `collection`, `asset` **or** `normalized_difference = [a, b]`, `period`, `reducer`, `scale`, `offset`, `url`, `time` | `disscube.sources.bdc` |
 | `mapbiomas` | `year`, `collection` (11), `resolution` (30), `url` | `disscube.sources.mapbiomas` |
 | `prodes` | `year`, `url`, `cache` | `disscube.sources.prodes` |
 | `classified` | `path`, `legend` (table or `.qml`/`.json`/`.csv` file), `time`, `nodata`, `producer` | `disscube.sources.classified` |
+| `union` | `of` (ids of vector sources declared before it) | their features in one GeoPackage under `raw/` |
 
 Every source block also accepts `name` and `years`.
+
+### Taking files as they come
+
+A `file` source can say how to read the file, so that the data need no
+preparation script:
+
+- `variable = "veg"` reads one variable of a NetCDF file as a raster
+  (GDAL's `NETCDF:"file":veg`; its time axis is not decoded);
+- `nodata = -9.99e8` declares the raster's no-data value when the file does
+  not;
+- `read = { … }` passes options to `geopandas.read_file` for a vector file:
+  `where` (an SQL filter on the attributes), `encoding` (for a shapefile
+  without `.cpg`), `layer`, `on_invalid`, …
+
+`read` and `nodata` enter the source's fingerprint, so two selections of one
+file are two products in the cache. A `union` joins vector sources — e.g.
+state roads from one file and federal roads from another, each filtered by
+its own attributes — in the first one's CRS:
+
+```toml
+[[source]]
+id = "state_paved"
+type = "file"
+path = "rodovias_estaduais.shp"
+read = { encoding = "utf-8", where = "SURFACE IN ('Paved', 'Duplicated')" }
+
+[[source]]
+id = "federal_paved"
+type = "file"
+path = "zip://Transporte.zip!TRA_Trecho_Rodoviario_L.shp"
+read = { where = "JURISDICAO = 'Federal' AND REVESTIMEN = 'Pavimentado'" }
+
+[[source]]
+id = "paved_roads"
+type = "union"
+of = ["state_paved", "federal_paved"]
+```
+
+### Operator `params` and `fill`
+
+| Operator | `params` | Meaning |
+|---|---|---|
+| `distance` | `crs` | measure in this CRS — e.g. a projected one, for metres on a geographic grid |
+| `percentage`, `majority`, `minority`, `std` | `subcells` | at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90) |
+
+An unknown key fails the plan. `fill = "nearest"` gives the cells an
+operator leaves without a value (NaN — e.g. a coastal cell a raster does not
+reach) the value of the nearest cell that has one. Both enter the product's
+`spec_hash`; a derivation without them keeps the hash it had before.
 
 ### Several years: `years` and `{year}`
 

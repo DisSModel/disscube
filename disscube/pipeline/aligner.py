@@ -112,6 +112,7 @@ class GridAligner(PipelineStage):
                 grid,
                 ctx.derivation.variables,
                 ctx.source.band_map,
+                nodata=ctx.source.nodata,
             )
         elif fmt == "vector":
             gdf: gpd.GeoDataFrame = ctx.data
@@ -140,6 +141,7 @@ class GridAligner(PipelineStage):
         grid: GridSpec,
         variables: list[Variable],
         band_map: dict[str, int],
+        nodata: float | None = None,
     ) -> dict[str, xr.DataArray]:
         """
         Reproject and resample the source raster for each variable.
@@ -159,8 +161,22 @@ class GridAligner(PipelineStage):
             Variables to derive; determines band selection and resampling.
         band_map : dict[str, int]
             Optional ``{variable_name: 1-based band index}`` from the source.
+        nodata : float | None
+            The source's no-data value, when the file does not declare it
+            (``SpatialSource.nodata``); it overrides the file's own.
         """
-        ds_src = rioxarray.open_rasterio(url)
+        # decode_times=False: a NetCDF variable ("NETCDF:file:var") carries its
+        # file's time metadata, and units such as "years since 2000-1-1" do not
+        # decode; the time of a source is set when it is registered.
+        ds_src = rioxarray.open_rasterio(url, decode_times=False)
+        # GDAL names the band axis of a NetCDF variable after its own
+        # dimension (e.g. "time"); every band of a raster is a "band" here.
+        extra = [d for d in ds_src.dims if d not in ("y", "x")]
+        if len(extra) == 1 and extra[0] != "band":
+            ds_src = ds_src.rename({extra[0]: "band"})
+            ds_src = ds_src.assign_coords(band=np.arange(1, ds_src.sizes["band"] + 1))
+        if nodata is not None:
+            ds_src = ds_src.rio.write_nodata(nodata, encoded=False)
         # Map of variable name -> aligned DataArray. A plain dict (not a
         # Dataset) is used because fine-aligned categorical arrays have a
         # different shape than the target grid; putting them in a Dataset
@@ -199,7 +215,7 @@ class GridAligner(PipelineStage):
                 # Reproject with NEAREST (never average a class code) onto a
                 # fine grid that shares the target grid origin, at a resolution
                 # that is an integer sub-multiple of the target cell size.
-                aligned = self._align_fine(band, grid)
+                aligned = self._align_fine(band, grid, var.params.get("subcells"))
                 result[var.name] = aligned
                 log.debug(
                     "fine-aligned '%s' via '%s' (nearest, fine shape=%s -> target=%s)",
@@ -244,7 +260,9 @@ class GridAligner(PipelineStage):
     # Fine alignment for categorical operators
     # ------------------------------------------------------------------
 
-    def _align_fine(self, band: xr.DataArray, grid: GridSpec) -> xr.DataArray:
+    def _align_fine(
+        self, band: xr.DataArray, grid: GridSpec, max_subcells: int | None = None
+    ) -> xr.DataArray:
         """
         Reproject ``band`` onto a fine grid snapped to the target grid origin.
 
@@ -256,12 +274,20 @@ class GridAligner(PipelineStage):
         source without one gets a fill value that cannot collide with a class
         (see _with_non_colliding_nodata).
 
+        ``max_subcells`` (the operator's ``subcells`` param) caps the number of
+        fine pixels per target cell along each axis. A 100 m source on a
+        ~9 km grid would otherwise be sampled at ~90 × 90 pixels per cell —
+        billions of pixels over a country; at 20 × 20 each fine pixel is the
+        source pixel nearest to its centre.
+
         Parameters
         ----------
         band : xr.DataArray
             Single-band source (already band-selected).
         grid : GridSpec
             Target grid.
+        max_subcells : int | None
+            Upper bound on the fine pixels per cell along each axis.
 
         Returns
         -------
@@ -271,12 +297,18 @@ class GridAligner(PipelineStage):
         """
         from affine import Affine
 
-        # Estimate source resolution in target CRS units by reprojecting first
-        # to the target CRS at native resolution, then deriving a sub-multiple.
+        # The source resolution in target CRS units: the resolution GDAL would
+        # choose to reproject it (the same one ``rio.reproject`` uses by
+        # default), computed without reprojecting the pixels.
+        from rasterio.warp import calculate_default_transform
+
         band = _with_non_colliding_nodata(band)
-        src = band.rio.reproject(grid.crs, resampling=Resampling.nearest)
         try:
-            src_res = abs(float(src.rio.resolution()[0]))
+            rows, cols = band.rio.shape
+            src_transform, _, _ = calculate_default_transform(
+                band.rio.crs, grid.crs, cols, rows, *band.rio.bounds()
+            )
+            src_res = abs(float(src_transform.a))
         except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
             src_res = grid.resolution
 
@@ -287,6 +319,8 @@ class GridAligner(PipelineStage):
         else:
             # Largest integer factor whose fine res (target/factor) is >= src_res.
             factor = max(1, int(np.floor(target_res / src_res)))
+        if max_subcells is not None:
+            factor = max(1, min(factor, int(max_subcells)))
 
         fine_res = target_res / factor
         fine_rows = grid.rows * factor

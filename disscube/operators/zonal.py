@@ -8,6 +8,8 @@ when a new operator is added here.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import geopandas as gpd
 import numpy as np
 import rasterio.features
@@ -285,6 +287,7 @@ class StdOperator(Operator):
     # real per-cell window pass, so this operator uses fine alignment.
     _resampling = Resampling.nearest
     needs_fine_alignment = True
+    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
@@ -323,6 +326,7 @@ class MajorityOperator(Operator):
     name = "majority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
+    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
@@ -340,6 +344,7 @@ class MinorityOperator(Operator):
     name = "minority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
+    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
@@ -358,6 +363,7 @@ class PercentageOperator(Operator):
     requires_class_code = True
     _resampling = Resampling.nearest
     needs_fine_alignment = True
+    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
@@ -414,6 +420,49 @@ class PresenceOperator(Operator):
             shapes = [(g, val) for g in data.geometry if g is not None]
             return _wrap(_rasterize(shapes, grid), grid)
         raise TypeError(f"'presence' got unexpected type {type(data).__name__}")
+
+
+class AreaOperator(Operator):
+    """
+    Share (0..1) of each cell covered by the polygons of a vector source —
+    TerraME's ``area`` fill: intersection area / cell area.
+
+    Overlapping polygons count once (they are merged first). Areas are
+    measured in the grid CRS; on a geographic grid the ratio inside one cell
+    differs from the ratio of true areas by the variation of the cell's width
+    with latitude, below 0.1 % for cells up to 1/12° at 60°.
+    """
+
+    name = "area"
+    _resampling = Resampling.nearest
+
+    def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
+        if not isinstance(data, gpd.GeoDataFrame):
+            raise TypeError(f"'area' expects a vector source, got {type(data).__name__}")
+        import shapely
+
+        share = np.zeros(grid.rows * grid.cols)
+        geoms = data.geometry[data.geometry.notna() & ~data.geometry.is_empty].values
+        polygons = shapely.get_parts(shapely.make_valid(np.asarray(geoms)))
+        polygons = polygons[shapely.get_type_id(polygons) == 3]  # 3 = Polygon
+        if polygons.size:
+            parts = shapely.get_parts(shapely.union_all(polygons))
+            parts = parts[shapely.get_type_id(parts) == 3]
+            res = grid.resolution
+            xmin, ymax = np.meshgrid(grid.bbox[0] + np.arange(grid.cols) * res,
+                                     grid.bbox[3] - np.arange(grid.rows) * res)
+            cells = shapely.box(xmin.ravel(), (ymax - res).ravel(), (xmin + res).ravel(), ymax.ravel())
+            tree = shapely.STRtree(parts)
+            # Cells inside one part are covered whole; the others are intersected.
+            inside = np.zeros(cells.size, dtype=bool)
+            inside[tree.query(cells, predicate="within")[0]] = True
+            cell_idx, part_idx = tree.query(cells, predicate="intersects")
+            edge = ~inside[cell_idx]
+            cell_idx, part_idx = cell_idx[edge], part_idx[edge]
+            covered = shapely.area(shapely.intersection(cells[cell_idx], parts[part_idx]))
+            share += np.bincount(cell_idx, weights=covered, minlength=cells.size) / (res * res)
+            share[inside] = 1.0
+        return _wrap(np.clip(share, 0.0, 1.0).reshape(grid.rows, grid.cols), grid)
 
 
 # ---------------------------------------------------------------------------

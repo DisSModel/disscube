@@ -195,6 +195,11 @@ for how DisSCube's operators relate to TerraME's *Fill*.
 | `distance` | proximity (exact, cell centre → nearest feature, source not clipped) | — | no |
 | `min_distance` | proximity (raster approximation, features inside the grid) | nearest | no |
 | `count` | proximity | nearest | no |
+| `area` | polygons (exact share of the cell covered) | — | no |
+
+`distance` takes `params = {crs = …}` to measure in another CRS (metres on a
+geographic grid); the ¹ operators take `params = {subcells = n}` to cap the
+fine pixels per cell. Any derivation takes `fill = "nearest"`.
 
 > ¹ These use `needs_fine_alignment=True`: GridAligner resamples with `nearest` at high resolution; the actual reduction (per-window counting) is done by the operator.
 
@@ -300,7 +305,7 @@ The limitations below are scope decisions for the current version, not bugs. The
 Each call to `derive()` loads a tile's full data into memory. There is no lazy (Dask) or distributed processing. For continental-scale grids (e.g. `BR/1km`), use the tile loop — each tile is processed and saved independently.
 
 **Vector aggregation by rasterization (not area-weighted)**
-Operators over vector sources (`majority`, `percentage`, `attribute`, `presence`, `minority`) convert geometries to raster before aggregating pixels. Each cell's coverage fraction is estimated by pixel counting, not by computing intersection areas. For more accurate proportional coverage, use a raster source at a resolution substantially finer than the target cell.
+Operators over vector sources (`majority`, `percentage`, `attribute`, `presence`, `minority`) convert geometries to raster before aggregating pixels. For the share of each cell covered by polygons, use `area`, which intersects the polygons with the cells exactly.
 
 **Tile disambiguation in `load()`**
 `CubeClient.load(name)` without `tile_id` raises `ValueError` when multiple tiles of the same variable exist on the same grid. Automatic mosaicking is not implemented. **Always pass `tile_id` in multi-tile workloads.**

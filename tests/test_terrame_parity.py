@@ -172,7 +172,7 @@ def test_amazonia_distance(amazonia, sid, attr):
     assert _share(ours, amazonia.ref[attr].to_numpy(), 100) >= 0.75
 
 
-@pytest.mark.xfail(strict=True, reason="area fraction over polygons (TerraME area) not implemented")
 def test_amazonia_area_fraction(amazonia):
+    """TerraME's ``area`` (intersection area / cell area) is DisSCube's ``area``."""
     ours = amazonia.derive("indigenous", "protected", "area")
     assert _share(ours, amazonia.ref["protected"].to_numpy(), 0.01) >= 0.99

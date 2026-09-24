@@ -81,6 +81,26 @@ def _on_grid_coords(result: xr.DataArray, final_ds: xr.Dataset, name: str) -> xr
     return result.assign_coords(y=final_ds["y"].values, x=final_ds["x"].values)
 
 
+def _fill_nearest(result: xr.DataArray) -> xr.DataArray:
+    """
+    Give each NaN cell the value of the nearest cell that has one (Euclidean,
+    in cells; ties go to the first found by ``distance_transform_edt``).
+
+    For layers that do not reach every cell of the grid — a raster that stops
+    short of the coast, for instance. A grid with no value at all is left as
+    it is.
+    """
+    import numpy as np
+    from scipy.ndimage import distance_transform_edt
+
+    values = result.values
+    missing = np.isnan(values)
+    if not missing.any() or missing.all():
+        return result
+    _, (rows, cols) = distance_transform_edt(missing, return_indices=True)
+    return result.copy(data=values[rows, cols])
+
+
 class Aggregator(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
         grid = ctx.grid
@@ -108,6 +128,8 @@ class Aggregator(PipelineStage):
 
             result: xr.DataArray = op_cls().compute(var_data, var, grid)
             result = _on_grid_coords(result, final_ds, var.name)
+            if var.fill == "nearest":
+                result = _fill_nearest(result)
 
             # Purity metrics (coverage_purity / dominance_purity) produced by
             # categorical operators are kept as COORDINATES on the variable's

@@ -90,7 +90,7 @@ def test_spec_hash_without_checksum_is_unchanged():
     # value of the hash before source_checksum existed (regression guard)
     legacy = json.dumps({
         "source_id": "s", "grid_id": "g", "role": "driver",
-        "variables": [v.model_dump() for v in base.variables],
+        "variables": [{"name": "v", "operator": "mean", "class_code": None}],
         "valid_from": None, "valid_until": None,
     }, sort_keys=True, ensure_ascii=False).encode("utf-8")
     assert base.spec_hash() == hashlib.sha256(legacy).hexdigest()

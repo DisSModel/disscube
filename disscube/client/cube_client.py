@@ -54,8 +54,8 @@ class CubeClient:
         # A source registered with a checksum ties the product to that content:
         # new file + new checksum -> new spec_hash -> recomputed, not a stale hit.
         source = self.catalog.get_spatial_source(derivation.source_id)
-        if source is not None and source.checksum and derivation.source_checksum is None:
-            derivation.source_checksum = source.checksum
+        if source is not None and derivation.source_checksum is None:
+            derivation.source_checksum = source.fingerprint()
 
         spec_hash = derivation.spec_hash()
 
@@ -228,7 +228,9 @@ class CubeClient:
     ) -> RasterBackend:
         """
         Standard integration point for the DisSModel ecosystem.
-        Returns a RasterBackend containing all requested variables.
+        Returns a RasterBackend containing all requested variables, with
+        the grid's CRS and affine transform (``backend.crs``,
+        ``backend.transform``), so it can be written back as a GeoTIFF.
 
         Static variables are stored as (y, x) arrays — identical to the
         previous behaviour; existing executors require no changes.
@@ -326,8 +328,20 @@ class CubeClient:
 
         if backend.crs is None and detected_crs:
             backend.crs = detected_crs
+        if backend.transform is None:
+            backend.transform = self._grid_transform(grid_id, variables)
 
         return backend
+
+    def _grid_transform(self, grid_id: str | None, variables: list[str]):
+        """The affine transform of the grid the variables were derived on, or None."""
+        if grid_id is None:
+            ids = {d.grid_id for d in self.catalog.search_derived_variables() if d.name in variables}
+            if len(ids) != 1:
+                return None
+            grid_id = ids.pop()
+        grid = self.catalog.get_grid(grid_id)
+        return grid.transform if grid is not None else None
 
     def to_data_source(self, derived_id: str) -> dict:
         """
