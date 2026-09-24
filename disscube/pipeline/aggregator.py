@@ -61,6 +61,26 @@ def _crs_to_named_wkt(crs_str: str) -> str:
     return crs.to_wkt()
 
 
+def _on_grid_coords(result: xr.DataArray, final_ds: xr.Dataset, name: str) -> xr.DataArray:
+    """
+    Put ``result`` on the grid's own x/y labels, by position.
+
+    Operators return arrays on the target grid, but their coordinates may come
+    from rioxarray and differ from ``GridSpec.xs``/``ys`` by floating-point
+    noise (e.g. 0.0045° cells in a geographic CRS). Assigning such an array
+    into the grid-indexed Dataset would align by label and silently turn the
+    mismatching rows or columns into NaN, so the labels are replaced here —
+    after checking that the shape is the grid's.
+    """
+    expected = (final_ds.sizes["y"], final_ds.sizes["x"])
+    actual = (result.sizes.get("y"), result.sizes.get("x"))
+    if actual != expected:
+        raise ValueError(
+            f"Aggregator: operator result for {name!r} has shape {actual}, expected the grid's {expected}"
+        )
+    return result.assign_coords(y=final_ds["y"].values, x=final_ds["x"].values)
+
+
 class Aggregator(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
         grid = ctx.grid
@@ -87,6 +107,7 @@ class Aggregator(PipelineStage):
                 var_data = source_data
 
             result: xr.DataArray = op_cls().compute(var_data, var, grid)
+            result = _on_grid_coords(result, final_ds, var.name)
 
             # Purity metrics (coverage_purity / dominance_purity) produced by
             # categorical operators are kept as COORDINATES on the variable's
