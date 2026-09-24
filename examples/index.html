@@ -257,7 +257,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../guides/bdc/" class="md-tabs__link">
+        <a href="../guides/pipeline_files/" class="md-tabs__link">
           
   
   
@@ -456,6 +456,17 @@
     <span class="md-ellipsis">
       
         Real data — PRODES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-files-toml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline files (TOML)
       
     </span>
   </a>
@@ -763,6 +774,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/pipeline_files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline files (TOML)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/bdc/" class="md-nav__link">
         
   
@@ -957,6 +996,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pipeline-files-toml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline files (TOML)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1131,6 +1181,11 @@ reads its legend from the <code>.qml</code> in the ZIP; see
 </tr>
 </tbody>
 </table>
+<h2 id="pipeline-files-toml">Pipeline files (TOML)</h2>
+<p>The same preparations can be declared as TOML files in
+<a href="https://github.com/DisSModel/disscube/tree/main/examples/pipelines"><code>examples/pipelines/</code></a>
+and run with <code>disscube run &lt;file&gt;</code> — including TerraME's Itaituba Fill
+tutorial, offline. See <a href="../guides/pipeline_files/">Pipeline files</a>.</p>
 <h2 id="scope">Scope</h2>
 <p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
