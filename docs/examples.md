@@ -69,6 +69,16 @@ national files; see [MapBiomas](guides/mapbiomas.md).
 It needs network access. Without it, or with `--offline`, it runs on a
 synthetic scene with the same grid and class codes and says so.
 
+## Real data — PRODES
+
+Example 09 downloads the current PRODES edition once (≈130 MB, cached) and
+reads its legend from the `.qml` in the ZIP; see
+[Land-cover maps: PRODES and classified maps](guides/landcover.md).
+
+| Example | Cells | What it shows |
+|---|---|---|
+| [`09_prodes_deforestation.py`](https://github.com/DisSModel/disscube/blob/main/examples/09_prodes_deforestation.py) | 94 × 86 × 500 m, 3 years | The LuccME Lab15 area south of Santarém at the end of 2008, 2016 and 2024: forest / deforested / other, `percentage` of deforested and forest per cell |
+
 ## Scope
 
 DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.

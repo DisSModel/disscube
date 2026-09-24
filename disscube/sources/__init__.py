@@ -8,8 +8,11 @@ a ``<source>.provenance.json`` sidecar recording where the data came from.
 
 - :mod:`disscube.sources.bdc` — Brazil Data Cube data cubes via STAC
 - :mod:`disscube.sources.mapbiomas` — MapBiomas annual land-cover maps
+- :mod:`disscube.sources.prodes` — PRODES deforestation maps (INPE)
+- :mod:`disscube.sources.classified` — any classified map, e.g. from SITS
 """
 
+from disscube.sources._categorical import read_legend, read_qml_legend, reclassify
 from disscube.sources._raster import (
     Window2D,
     composite,
@@ -30,7 +33,10 @@ __all__ = [
     "mosaic",
     "normalized_difference",
     "portable_crs",
+    "read_legend",
+    "read_qml_legend",
     "read_window",
+    "reclassify",
     "register_raster",
     "software_versions",
     "write_geotiff",
