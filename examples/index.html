@@ -430,6 +430,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#real-data-brazil-data-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — Brazil Data Cube
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -835,6 +846,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#real-data-brazil-data-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real data — Brazil Data Cube
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -946,6 +968,28 @@ own output.</p>
 <p>What the differences mean — and which TerraME operations DisSCube does not
 support yet — is discussed in
 <a href="../terrame_fill_correspondence/">TerraME Fill Cells Correspondence</a>.</p>
+<h2 id="real-data-brazil-data-cube">Real data — Brazil Data Cube</h2>
+<p>Example 07 reads a satellite data cube straight from the Brazil Data Cube
+STAC catalog; see <a href="../guides/bdc/#reading-data-cubes-via-stac">BDC Integration</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Cells</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/07_bdc_cube.py"><code>07_bdc_cube.py</code></a></td>
+<td>58 × 59 × 300 m</td>
+<td><code>LANDSAT-16D-1</code> over Ilha do Maranhão: windowed reads, dry-season median, <code>mean</code> of NDVI and MNDWI, <code>percentage</code> of open water on a grid snapped to the BDC Albers mesh</td>
+</tr>
+</tbody>
+</table>
+<p>It needs network access and <code>pip install -e ".[bdc]"</code>. Without network, or
+with <code>--offline</code>, it runs on a synthetic scene with the same grid and value
+ranges and prints a warning that the numbers are not BDC data.</p>
 <h2 id="scope">Scope</h2>
 <p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong

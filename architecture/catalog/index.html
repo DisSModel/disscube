@@ -1028,8 +1028,10 @@
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">"valid_from"</span><span class="p">:</span>  <span class="o">...</span><span class="p">,</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">"valid_until"</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">encoded</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">relevant_data</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">if</span> <span class="n">source_checksum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>          <span class="c1"># copied from SpatialSource.checksum</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">relevant_data</span><span class="p">[</span><span class="s2">"source_checksum"</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_checksum</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">encoded</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">relevant_data</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>What changes the hash:</strong></p>
 <ul>
@@ -1038,10 +1040,19 @@
 <li>Adding/removing/renaming variables</li>
 <li>Changing the operator or <code>class_code</code></li>
 <li>Changing <code>valid_from</code> / <code>valid_until</code></li>
+<li>Changing the source's <code>checksum</code> — <code>CubeClient.derive()</code> copies
+  <code>SpatialSource.checksum</code> into the derivation, so a replaced source file
+  registered with a new checksum yields a new product instead of a stale cache
+  hit. Use <code>disscube.utils.files.sha256_file()</code> to compute it;
+  <code>disscube.utils.bdc_stac.register_bdc_source()</code> does it for you.</li>
 </ul>
 <p><strong>What does not change the hash:</strong></p>
 <ul>
 <li>The order of the variables in the list (they are sorted by name)</li>
+<li>Anything about a source registered <strong>without</strong> a checksum: its file can
+  change and the cached product is still returned. Sources without a checksum
+  keep the hash they had before checksums entered it, so older catalogs stay
+  valid.</li>
 <li>The <code>bbox</code> of a <code>Derivation</code> (descriptive metadata, not a parameter)</li>
 <li><code>SpatialRelation</code> — relations are persisted in the catalog but excluded from the hash because no pipeline stage uses them during computation. Including them would make the cache key sensitive to metadata that does not affect the result.</li>
 </ul>

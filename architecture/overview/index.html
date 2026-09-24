@@ -1077,7 +1077,10 @@ Both modes reach the same pipeline — <code>Derivation</code> is a front end, n
 <li><code>role</code></li>
 <li>variables (name + operator + class_code, sorted by name)</li>
 <li><code>valid_from</code> / <code>valid_until</code></li>
+<li>the source's <code>checksum</code>, when the <code>SpatialSource</code> has one (copied by <code>CubeClient.derive()</code>)</li>
 </ul>
+<p>A new product for the same variable, grid, tile and time supersedes the older
+catalog entry, so <code>load()</code> returns the current version rather than stacking both.</p>
 <p><code>SpatialRelation</code> is excluded from the hash: no pipeline stage uses it during computation, so including it would make the cache sensitive to metadata that has no effect on the result.</p>
 <p>If any parameter changes, the hash changes. The pipeline checks the cache before processing: if every <code>DerivedVariable</code> with the same <code>spec_hash</code> already exists on disk, the derivation is skipped.</p>
 <p><code>Derivation.spec_hash()</code> delegates to <code>SpatialDerivation.spec_hash()</code> and adds <code>purity_threshold</code> when set. <code>bbox</code> is excluded — it is descriptive metadata, not a derivation parameter.</p>
