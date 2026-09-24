@@ -64,6 +64,12 @@ class Operator:
     # composition rather than a pre-collapsed mode.
     needs_fine_alignment: ClassVar[bool] = False
 
+    # When False, GridAligner does not clip a vector source to the grid bbox
+    # for this operator — needed by operators that measure to features lying
+    # outside the grid (``distance``). A derivation is clipped only if every
+    # one of its operators allows it.
+    clip_to_grid: ClassVar[bool] = True
+
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "name") and isinstance(cls.name, str):

@@ -4,6 +4,8 @@ Proximity operators — Euclidean distance and feature-count over vector sources
 
 from __future__ import annotations
 
+import warnings
+
 import geopandas as gpd
 import numpy as np
 import rasterio.features
@@ -34,7 +36,17 @@ class MinDistanceOperator(Operator):
                 fill=0,
                 all_touched=True,
             )
-            dist = distance_transform_edt(1 - mask) * grid.resolution
+            if not mask.any():
+                # No feature inside the grid: the distance transform has no
+                # target. Use ``distance`` for features outside the grid.
+                warnings.warn(
+                    f"min_distance: no feature of '{var.name}' falls inside the grid; "
+                    "returning NaN — use operator 'distance' for features outside the grid",
+                    RuntimeWarning, stacklevel=2,
+                )
+                dist = np.full((grid.rows, grid.cols), np.nan)
+            else:
+                dist = distance_transform_edt(1 - mask) * grid.resolution
             return xr.DataArray(
                 dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs}
             )
@@ -45,6 +57,43 @@ class MinDistanceOperator(Operator):
         raise TypeError(
             f"'min_distance' expects a vector source, got {type(data).__name__}"
         )
+
+
+class DistanceOperator(Operator):
+    """
+    Exact Euclidean distance (in CRS units) from each cell centre to the
+    nearest feature of a vector source.
+
+    Unlike ``min_distance`` (a raster approximation between rasterized cell
+    centres), this measures the true distance from the cell centre to the
+    geometry, and the source is not clipped to the grid, so features outside
+    it — a town 50 km away, a road beyond the edge — count. Distances are in
+    the grid CRS units (degrees on a geographic grid), measured from cell
+    centres; TerraME's ``distance`` fill measures from the cell polygon, so
+    it is smaller by up to half a cell diagonal.
+    """
+
+    name = "distance"
+    _resampling = Resampling.nearest
+    clip_to_grid = False
+
+    def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
+        if isinstance(data, gpd.GeoDataFrame):
+            import shapely
+
+            geoms = [g for g in data.geometry if g is not None and not g.is_empty]
+            if not geoms:
+                dist = np.full((grid.rows, grid.cols), np.nan)
+            else:
+                xx, yy = np.meshgrid(grid.xs, grid.ys)
+                centres = shapely.points(xx.ravel(), yy.ravel())
+                tree = shapely.STRtree(geoms)
+                (points_idx, _), d = tree.query_nearest(centres, return_distance=True, all_matches=False)
+                flat = np.full(centres.shape, np.nan)
+                flat[points_idx] = d
+                dist = flat.reshape((grid.rows, grid.cols))
+            return xr.DataArray(dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
+        raise TypeError(f"'distance' expects a vector source, got {type(data).__name__}")
 
 
 class CountOperator(Operator):
