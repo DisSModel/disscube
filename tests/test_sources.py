@@ -1,5 +1,5 @@
 """
-Tests for disscube.utils.bdc_stac — reading Brazil Data Cube cubes via STAC.
+Tests for disscube.sources — shared raster machinery and the Brazil Data Cube adapter.
 
 Everything runs offline: rasters are written to tmp_path in BDC Albers, STAC
 items are small stand-ins, and the catalog search is exercised against a local
@@ -22,19 +22,18 @@ from pyproj import Transformer
 from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
-from disscube.utils import bdc_stac
-from disscube.utils.bdc_stac import (
+from disscube.sources import (
     Window2D,
+    bdc,
     composite,
     is_bdc_albers,
     mosaic,
     normalized_difference,
     portable_crs,
-    read_composite,
     read_window,
-    tile_of,
     write_geotiff,
 )
+from disscube.sources.bdc import read_composite, tile_of
 from disscube.utils.files import sha256_file
 from disscube.utils.grids import BDC_CRS
 
@@ -232,7 +231,7 @@ def test_read_composite_explicit_scale_overrides_stac(tmp_path):
 
 
 def test_read_composite_without_items_raises(monkeypatch):
-    monkeypatch.setattr(bdc_stac, "search_items", lambda *a, **k: [])
+    monkeypatch.setattr(bdc, "search_items", lambda *a, **k: [])
     with pytest.raises(ValueError, match="no LANDSAT-16D-1 items"):
         read_composite("LANDSAT-16D-1", "NDVI", BBOX, "2020")
 
@@ -298,14 +297,14 @@ def stac_server(tmp_path):
 
 def test_search_items_and_fetch_composite(stac_server, tmp_path):
     url = stac_server["base"]
-    items = bdc_stac.search_items("LANDSAT-16D-1", BBOX, "2020-07-01/2020-09-30", url=url)
+    items = bdc.search_items("LANDSAT-16D-1", BBOX, "2020-07-01/2020-09-30", url=url)
 
     assert [i.id[-2:] for i in items] == ["01", "02"]  # oldest first
     assert stac_server["request"]["collections"] == ["LANDSAT-16D-1"]
     assert stac_server["request"]["bbox"] == list(BBOX)
-    assert bdc_stac.asset_scale_offset(items[0], "NDVI") == (0.0001, 0)
+    assert bdc.asset_scale_offset(items[0], "NDVI") == (0.0001, 0)
 
-    out = bdc_stac.fetch_composite("LANDSAT-16D-1", "NDVI", BBOX, "2020-07-01/2020-09-30",
+    out = bdc.fetch_composite("LANDSAT-16D-1", "NDVI", BBOX, "2020-07-01/2020-09-30",
                                    tmp_path / "ndvi.tif", url=url)
     with rasterio.open(out) as ds:
         assert np.allclose(ds.read(1), 0.5)
@@ -320,8 +319,8 @@ def test_search_items_and_fetch_composite(stac_server, tmp_path):
 def test_real_bdc_landsat_ndvi(tmp_path):
     pytest.importorskip("pystac_client")
     small = (-44.30, -2.56, -44.27, -2.53)
-    out = bdc_stac.fetch_composite("LANDSAT-16D-1", "NDVI", small, "2020-07-01/2020-07-31",
-                                   tmp_path / "ndvi.tif", scale=bdc_stac.BDC_INDEX_SCALE)
+    out = bdc.fetch_composite("LANDSAT-16D-1", "NDVI", small, "2020-07-01/2020-07-31",
+                                   tmp_path / "ndvi.tif", scale=bdc.BDC_INDEX_SCALE)
     with rasterio.open(out) as ds:
         data = ds.read(1)
     valid = data[np.isfinite(data)]
@@ -343,9 +342,9 @@ def _cube(tmp_path):
 
 
 def test_period_year():
-    assert bdc_stac.period_year("2020-07-01/2020-09-30") == 2020
-    assert bdc_stac.period_year("2019") == 2019
-    assert bdc_stac.period_year("") is None
+    assert bdc.period_year("2020-07-01/2020-09-30") == 2020
+    assert bdc.period_year("2019") == 2019
+    assert bdc.period_year("") is None
 
 
 def test_register_bdc_source_writes_file_checksum_and_provenance(tmp_path):
@@ -354,9 +353,9 @@ def test_register_bdc_source_writes_file_checksum_and_provenance(tmp_path):
                    np.full((1000, 1000), v, dtype="int16")), tile="016004")
              for i, v in enumerate([2000, 4000, 9000])]
 
-    src = bdc_stac.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX,
+    src = bdc.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX,
                                        "2020-07-01/2020-09-30", tmp_path / "raw",
-                                       items=items, scale=bdc_stac.BDC_INDEX_SCALE)
+                                       items=items, scale=bdc.BDC_INDEX_SCALE)
 
     tif = tmp_path / "raw" / "ndvi.tif"
     prov = json.loads((tmp_path / "raw" / "ndvi.provenance.json").read_text())
@@ -385,7 +384,7 @@ def test_new_composite_is_recomputed_downstream(tmp_path):
         items = [_item("LANDSAT-16D_V1_016004_20200701",
                        _write(tmp_path / f"{value}.tif", np.full((1000, 1000), value, dtype="int16")),
                        tile="016004")]
-        bdc_stac.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX, period,
+        bdc.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX, period,
                                      tmp_path / "raw", items=items, scale=1e-4)
         return cube.derive_declarative(d, grid_id=grid.id)[0]
 
@@ -399,7 +398,36 @@ def test_new_composite_is_recomputed_downstream(tmp_path):
 
 def test_items_provenance_records_the_item_interval(tmp_path):
     item = _item("LANDSAT-16D_V1_016004_20200625", "x.tif", day="2020-06-25", end="2020-07-10")
-    [entry] = bdc_stac.items_provenance([item], "NDVI")
+    [entry] = bdc.items_provenance([item], "NDVI")
     assert entry["start_datetime"].startswith("2020-06-25")
     assert entry["end_datetime"].startswith("2020-07-10")
     assert entry["href"] == "x.tif"
+
+
+# ---------------------------------------------------------------------------
+# Categorical rasters (integer dtype, explicit nodata)
+# ---------------------------------------------------------------------------
+
+def test_write_geotiff_integer_keeps_class_codes_and_nodata(tmp_path):
+    w = _win([[3, np.nan], [24, 33]])
+    path = write_geotiff(w, tmp_path / "lulc.tif", dtype="uint8", nodata=0)
+    with rasterio.open(path) as ds:
+        assert ds.dtypes[0] == "uint8" and ds.nodata == 0
+        assert ds.read(1).tolist() == [[3, 0], [24, 33]]
+
+
+def test_write_geotiff_integer_requires_integer_nodata(tmp_path):
+    with pytest.raises(ValueError, match="integer nodata"):
+        write_geotiff(_win([[1]]), tmp_path / "x.tif", dtype="uint8")
+
+
+def test_register_raster_categorical(tmp_path):
+    from disscube.sources import register_raster
+
+    cube, _ = _cube(tmp_path)
+    src = register_raster(cube, "lulc_2020", _win([[3, np.nan], [24, 33]]), tmp_path / "raw",
+                          {"dataset": "stand-in"}, time=2020, dtype="uint8", nodata=0)
+    with rasterio.open(src.asset_url) as ds:
+        assert ds.dtypes[0] == "uint8" and ds.nodata == 0
+    prov = json.loads((tmp_path / "raw" / "lulc_2020.provenance.json").read_text())
+    assert prov["dataset"] == "stand-in" and prov["checksum"] == src.checksum

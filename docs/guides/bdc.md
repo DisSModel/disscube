@@ -28,7 +28,7 @@ To use another copy of the grids, pass `sm_path`, `md_path` and/or `lg_path` (an
 Tile IDs repeat across levels (e.g. `005004` exists in both SM and MD), so a tile is identified by level and ID. Provenance, checksums and licensing of the bundled files are documented in `disscube/data/bdc_grids/README.md`; the files are © INPE and are not covered by DisSCube's MIT license.
 
 !!! note "Tiles index geometry, not data"
-    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata). The registered tile `SpatialSource`s have a placeholder `asset_url` (`data/bdc/<LEVEL>/<tile>.tif`) and cannot be loaded as raster data. To bring BDC *data* in, use `disscube.utils.bdc_stac` (next section), which writes local GeoTIFFs you register as ordinary sources.
+    `bdc_importer` indexes the BDC grid and its tiles (geometry and metadata). The registered tile `SpatialSource`s have a placeholder `asset_url` (`data/bdc/<LEVEL>/<tile>.tif`) and cannot be loaded as raster data. To bring BDC *data* in, use `disscube.sources.bdc` (next section), which writes local GeoTIFFs you register as ordinary sources.
 
 ## Reading data cubes via STAC
 
@@ -37,14 +37,14 @@ from 1990), `S2-16D-2` (10 m, from 2017) and `CBERS4-WFI-16D-2` (64 m, from
 2016) — as Cloud-Optimized GeoTIFFs indexed by a public STAC API
 (`https://data.inpe.br/bdc/stac/v1/`). Each item carries spectral bands and
 ready-made indices (`NDVI`, `EVI`; `NBR` for Sentinel-2).
-`disscube.utils.bdc_stac` reads only the pixels of an area of interest, so an
+`disscube.sources.bdc` reads only the pixels of an area of interest, so an
 area of a few kilometres costs a few HTTP range requests per item instead of a
 full tile download. Searching needs `pystac-client` (`pip install disscube[bdc]`).
 
 ```python
-from disscube.utils.bdc_stac import (
-    BDC_INDEX_SCALE, fetch_composite, normalized_difference, read_composite,
-    search_items, write_geotiff,
+from disscube.sources import normalized_difference, write_geotiff
+from disscube.sources.bdc import (
+    BDC_INDEX_SCALE, fetch_composite, read_composite, search_items,
 )
 
 bbox = (-44.35, -2.62, -44.20, -2.47)          # WGS84
@@ -67,7 +67,7 @@ write_geotiff(normalized_difference(green, swir), "raw/mndwi.tif")   # MNDWI
 keeps the record of where the data came from:
 
 ```python
-from disscube.utils.bdc_stac import BDC_INDEX_SCALE, register_bdc_source
+from disscube.sources.bdc import BDC_INDEX_SCALE, register_bdc_source
 
 src = register_bdc_source(
     cube, "ndvi_2020", "LANDSAT-16D-1", "NDVI", bbox, period, out_dir="raw",
@@ -88,7 +88,7 @@ derivation from that source: fetching another period (or with another reducer
 or scale) produces a new file, a new checksum and a new product, while
 re-fetching the same data is a cache hit. For a layer computed from several
 assets — an index such as MNDWI — build the `Window2D` yourself and call
-`register_composite(cube, source_id, window, out_dir, provenance)`; see
+`disscube.sources.register_raster(cube, source_id, window, out_dir, provenance)`; see
 `examples/07_bdc_cube.py`.
 
 What the reader does for you:

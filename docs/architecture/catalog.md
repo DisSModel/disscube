@@ -54,7 +54,7 @@ return hashlib.sha256(encoded).hexdigest()
   `SpatialSource.checksum` into the derivation, so a replaced source file
   registered with a new checksum yields a new product instead of a stale cache
   hit. Use `disscube.utils.files.sha256_file()` to compute it;
-  `disscube.utils.bdc_stac.register_bdc_source()` does it for you.
+  `disscube.sources.bdc.register_bdc_source()` does it for you.
 
 **What does not change the hash:**
 

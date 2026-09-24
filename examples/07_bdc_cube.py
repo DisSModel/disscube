@@ -38,7 +38,7 @@ from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
 from disscube import CubeClient, Derivation, SpatialSource
-from disscube.utils.bdc_stac import Window2D, register_composite
+from disscube.sources import Window2D, register_raster
 from disscube.utils.files import sha256_file
 from disscube.utils.grids import BDC_CRS, register_local_grid
 
@@ -54,11 +54,11 @@ GRID_RES = 300.0
 
 def sources_from_bdc(cube: CubeClient, raw: Path) -> Window2D:
     """Register ``ndvi`` and ``mndwi`` from the BDC; return the MNDWI layer."""
-    from disscube.utils.bdc_stac import (
+    from disscube.sources import normalized_difference
+    from disscube.sources.bdc import (
         BDC_INDEX_SCALE,
         BDC_STAC_URL,
         items_provenance,
-        normalized_difference,
         read_composite,
         register_bdc_source,
         search_items,
@@ -78,7 +78,7 @@ def sources_from_bdc(cube: CubeClient, raw: Path) -> Window2D:
         return read_composite(COLLECTION, asset, BBOX, PERIOD, items=items)
 
     mndwi = normalized_difference(season("green"), season("swir16"))
-    register_composite(
+    register_raster(
         cube, "mndwi", mndwi, raw,
         provenance={
             "stac_url": BDC_STAC_URL, "collection": COLLECTION, "assets": ["green", "swir16"],
@@ -116,7 +116,7 @@ def sources_synthetic(cube: CubeClient, raw: Path) -> Window2D:
     layers = {name: Window2D(data=arr.astype("float32"), transform=transform, crs=crs)
               for name, arr in (("ndvi", ndvi), ("mndwi", mndwi))}
     for name, window in layers.items():
-        register_composite(cube, name, window, raw,
+        register_raster(cube, name, window, raw,
                            provenance={"synthetic": True, "note": "offline stand-in, not BDC data"},
                            name=f"{name} (synthetic stand-in)", time=2020, tags=["synthetic"])
     return layers["mndwi"]
