@@ -64,9 +64,11 @@ def _write(path, data, *, x0=None, y0=None, scale=None, crs=BDC_CRS, nodata=NODA
     return str(path)
 
 
-def _item(item_id, href, *, scale=None, day="2020-07-01", tile=None, asset="NDVI"):
+def _item(item_id, href, *, scale=None, day="2020-07-01", tile=None, asset="NDVI", end=None):
     extra = {"raster:bands": [{"scale": scale, "offset": 0.0}]} if scale is not None else {}
     props = {"bdc:tiles": [tile]} if tile else {}
+    if end:
+        props.update(start_datetime=f"{day}T00:00:00Z", end_datetime=f"{end}T00:00:00Z")
     return SimpleNamespace(
         id=item_id, datetime=np.datetime64(day), properties=props,
         assets={asset: SimpleNamespace(href=href, extra_fields=extra)},
@@ -367,6 +369,8 @@ def test_register_bdc_source_writes_file_checksum_and_provenance(tmp_path):
     assert prov["scale"] == 1e-4
     assert [i["id"][-2:] for i in prov["items"]] == ["00", "01", "02"]
     assert all(i["href"].endswith(".tif") for i in prov["items"])
+    assert "end_datetime" not in prov["items"][0]  # not declared by these stand-ins
+    assert prov["software"]["disscube"] and prov["software"]["rasterio"] and prov["software"]["gdal"]
     with rasterio.open(tif) as ds:
         assert np.allclose(ds.read(1), 0.4)
 
@@ -391,3 +395,11 @@ def test_new_composite_is_recomputed_downstream(tmp_path):
     import xarray as xr
     value = float(xr.open_zarr(wet.asset_url, consolidated=False)["ndvi_mean"].mean())
     assert value == pytest.approx(0.7, abs=1e-4)
+
+
+def test_items_provenance_records_the_item_interval(tmp_path):
+    item = _item("LANDSAT-16D_V1_016004_20200625", "x.tif", day="2020-06-25", end="2020-07-10")
+    [entry] = bdc_stac.items_provenance([item], "NDVI")
+    assert entry["start_datetime"].startswith("2020-06-25")
+    assert entry["end_datetime"].startswith("2020-07-10")
+    assert entry["href"] == "x.tif"

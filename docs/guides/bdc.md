@@ -75,8 +75,10 @@ src = register_bdc_source(
 )
 # raw/ndvi_2020.tif               the composite
 # raw/ndvi_2020.provenance.json   STAC URL, collection, asset, bbox, period,
-#                                 reducer, scale/offset, item ids and URLs,
-#                                 checksum, retrieval time, disscube version
+#                                 reducer, scale/offset, items (id, dates and
+#                                 interval when declared, URL), checksum,
+#                                 retrieval time, software versions (disscube,
+#                                 rasterio, GDAL, numpy, pystac-client)
 ```
 
 The source is registered with the SHA-256 of the file as `checksum`, the first

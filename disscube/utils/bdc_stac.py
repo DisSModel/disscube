@@ -368,11 +368,21 @@ def read_item_window(
 # ---------------------------------------------------------------------------
 
 def items_provenance(items: Sequence, asset: str | None = None) -> list[dict]:
-    """``id``, date and (optionally) asset URL of each item, for a provenance record."""
+    """
+    ``id``, dates and (optionally) asset URL of each item, for a provenance record.
+
+    ``start_datetime``/``end_datetime`` (STAC common metadata) are recorded when
+    the item declares them: a 16-day composite dated 2020-06-25 covers up to
+    2020-07-10, which explains why it matches a July–September search.
+    """
     out = []
     for item in items:
         entry = {"id": item.id,
                  "datetime": str(item.datetime) if getattr(item, "datetime", None) else None}
+        props = getattr(item, "properties", None) or {}
+        for key in ("start_datetime", "end_datetime"):
+            if props.get(key):
+                entry[key] = str(props[key])
         if asset is not None and asset in item.assets:
             entry["href"] = item.assets[asset].href
         out.append(entry)
@@ -418,7 +428,7 @@ def register_composite(
         "file": tif.name,
         "checksum": checksum,
         "retrieved_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "disscube_version": _disscube_version(),
+        "software": software_versions(),
     }
     prov_path = out_dir / f"{source_id}.provenance.json"
     prov_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
@@ -488,13 +498,18 @@ def register_bdc_source(
     )
 
 
-def _disscube_version() -> str | None:
-    try:
-        from importlib.metadata import version
+def software_versions() -> dict[str, str | None]:
+    """Versions of the packages that shape a composite: reading, reduction, search."""
+    from importlib.metadata import PackageNotFoundError, version
 
-        return version("disscube")
-    except Exception:  # noqa: BLE001 — metadata missing in odd installs; provenance still useful
-        return None
+    out: dict[str, str | None] = {}
+    for pkg in ("disscube", "rasterio", "numpy", "pystac-client"):
+        try:
+            out[pkg] = version(pkg)
+        except PackageNotFoundError:
+            out[pkg] = None
+    out["gdal"] = rasterio.__gdal_version__
+    return out
 
 
 class _quiet_all_nan:
