@@ -40,4 +40,5 @@ nav:
       - TerraME Fill Cells Correspondence: terrame_fill_correspondence.md
   - Guides:
       - BDC Integration: guides/bdc.md
+      - MapBiomas: guides/mapbiomas.md
       - Custom Grids: guides/grids.md

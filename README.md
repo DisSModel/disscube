@@ -126,6 +126,10 @@ in seconds:
   fetched) and derives NDVI, MNDWI and open-water drivers on a 300 m grid
   snapped to the BDC Albers mesh. Needs network and `pip install -e ".[bdc]"`;
   with `--offline` it runs on a synthetic stand-in.
+- **08, MapBiomas** — land use of Ilha do Maranhão in 2000 and 2020 (Collection
+  11, 30 m), read straight from the national files and aggregated on the same
+  grid as 07 (`majority`, urban/forest/mangrove `percentage`), then handed to
+  DisSModel with `to_lucc_data()`. Needs network; `--offline` runs a stand-in.
 
 ```bash
 python examples/01_quickstart.py
@@ -200,7 +204,8 @@ disscube/
 ├── sources/          Adapters that bring external data in as SpatialSources,
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
-│   └── bdc.py        Brazil Data Cube cubes via STAC (`bdc` extra)
+│   ├── bdc.py        Brazil Data Cube cubes via STAC (`bdc` extra)
+│   └── mapbiomas.py  MapBiomas annual land-cover maps (Collection 11, 10 m series)
 └── utils/            Grids (grids.py), BDC tile geometry (bdc_importer.py),
                       checksums (files.py)
 ```

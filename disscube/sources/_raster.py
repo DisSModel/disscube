@@ -75,6 +75,7 @@ def read_window(
     *,
     scale: float | None = None,
     offset: float | None = None,
+    nodata: float | None = None,
 ) -> Window2D:
     """
     Read the pixels of ``href`` that cover ``bbox_geo`` (WGS84).
@@ -82,6 +83,8 @@ def read_window(
     Only that window is fetched, so remote Cloud-Optimized GeoTIFFs are read
     with a few HTTP range requests. ``scale``/``offset`` override the values
     stored in the file; when neither is available the raw values are kept.
+    ``nodata`` overrides the file's nodata (for files that do not declare the
+    value they use, such as MapBiomas' 0).
     """
     with rasterio.open(href) as ds:
         bounds = transform_bounds("EPSG:4326", ds.crs, *bbox_geo, densify_pts=21)
@@ -90,7 +93,7 @@ def read_window(
         win = win.intersection(Window(0, 0, ds.width, ds.height))
         raw = ds.read(1, window=win)
         transform = ds.window_transform(win)
-        nodata = ds.nodata
+        nodata = nodata if nodata is not None else ds.nodata
         file_scale = ds.scales[0] if ds.scales else 1.0
         file_offset = ds.offsets[0] if ds.offsets else 0.0
         crs = ds.crs

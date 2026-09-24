@@ -3,7 +3,7 @@
 Self-contained, runnable examples. Examples 01–03 generate their own
 synthetic input data; examples 04–06 use real data bundled in
 [`data/terrame/`](data/terrame/); example 07 reads the Brazil Data Cube over
-the network. All of them work in a temporary directory; 01–06 finish in a few
+the network, and 08 reads MapBiomas over the network. All of them work in a temporary directory; 01–06 finish in a few
 seconds with no downloads:
 
 ```bash
@@ -27,10 +27,11 @@ python examples/01_quickstart.py ./scratch
 | [`05_terrame_fill_emas.py`](05_terrame_fill_emas.py) | TerraME's Emas National Park example (500 m): `presence` of lines, `max` / `min` of a raster; a study area defined by a limit polygon |
 | [`06_terrame_fill_amazonia.py`](06_terrame_fill_amazonia.py) | TerraME's Brazilian Amazon example (50 km): PRODES coverage with a declared nodata, distances to roads and ports |
 | [`07_bdc_cube.py`](07_bdc_cube.py) | Brazil Data Cube: Landsat 16-day cube over Ilha do Maranhão via STAC (windowed reads), dry-season median, NDVI / MNDWI / open-water drivers on a 300 m BDC Albers grid. Needs network and `.[bdc]`; `--offline` runs a synthetic stand-in |
+| [`08_mapbiomas_land_use.py`](08_mapbiomas_land_use.py) | MapBiomas Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: windowed reads of the national files, code 0 as nodata, `majority` and `percentage` (urban, forest, mangrove) on the grid of 07, `(time, y, x)` series and `to_lucc_data()`. Needs network; `--offline` runs a synthetic stand-in |
 
 All examples are executed by the test suite (`tests/test_examples.py`), so
 they are kept in sync with the API. The suite sets `DISSCUBE_OFFLINE=1`, so
-07 runs on its synthetic stand-in there.
+07 and 08 run on their synthetic stand-ins there.
 
 ## Scope
 
