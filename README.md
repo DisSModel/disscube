@@ -112,7 +112,7 @@ backend = cube.to_lucc_data(
 
 ## Examples
 
-[`examples/`](examples/) has runnable scripts that need no downloads and run
+[`examples/`](examples/) has runnable scripts; 01–06 need no downloads and run
 in seconds:
 
 - **01–03, synthetic data** — a quickstart with raster operators, vector
@@ -121,6 +121,11 @@ in seconds:
   (Itaituba, Emas National Park, Brazilian Amazon), derived with DisSCube and
   compared cell by cell with TerraME's own output. Data are bundled in
   [`examples/data/terrame/`](examples/data/terrame/).
+- **07, Brazil Data Cube** — reads the Landsat 16-day data cube over Ilha do
+  Maranhão through the BDC STAC catalog (only the pixels of the area are
+  fetched) and derives NDVI, MNDWI and open-water drivers on a 300 m grid
+  snapped to the BDC Albers mesh. Needs network and `pip install -e ".[bdc]"`;
+  with `--offline` it runs on a synthetic stand-in.
 
 ```bash
 python examples/01_quickstart.py
@@ -252,8 +257,8 @@ The `SpatialRelation` model is persisted in the catalog, but no pipeline stage u
 **`purity_threshold` reserved**
 The `purity_threshold` field on `Derivation` is included in `spec_hash` but is not applied to the output — purity masking is not implemented. Setting `purity_threshold` changes the cache key without changing the result.
 
-**No STAC integration**
-The `valid_from`/`valid_until` and `bbox` fields on `Derivation` follow STAC naming conventions, but no STAC client, catalog or export logic is implemented in this module.
+**STAC: reading only**
+`disscube.utils.bdc_stac` reads Brazil Data Cube cubes through their STAC catalog (search, windowed reads, per-tile composites, mosaics) and writes local GeoTIFFs that are registered as ordinary sources. Derived variables are not published back as STAC, and the `valid_from`/`valid_until` and `bbox` fields on `Derivation` only follow STAC naming conventions.
 
 ## License
 
