@@ -48,6 +48,7 @@ see [Pipeline files (TOML)](guides/pipeline_files.md) and
 | `majority` / `mode` | `majority` | implemented (window-based) | Dominant class per cell; ties resolve to the smallest class value. |
 | `minority` | `minority` | implemented (window-based) | Least-frequent class per cell. |
 | `count` | `count` | implemented | Count of features per cell (proximity operator). |
+| `distance` | `distance` | implemented (exact, from the cell centre) | Euclidean distance from each cell centre to the nearest feature, in CRS units, without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so `distance` is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and `distance` reproduces its fields. |
 | `distance` | `min_distance` | **approximation — semantics differ** | Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so `min_distance` overestimates it by up to about one cell (see the benchmarks). |
 | `average` / `mean` | `mean` | implemented; **parity verified** | Mean value per cell (continuous, area-weighted resampling). |
 | `sum` (raster) | `sum` | implemented | Sum per cell (continuous). |

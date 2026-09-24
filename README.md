@@ -192,7 +192,8 @@ for how DisSCube's operators relate to TerraME's *Fill*.
 | `percentage` | zonal | nearest¹ | **yes** |
 | `attribute` | zonal | nearest | no |
 | `presence` | zonal | nearest | no |
-| `min_distance` | proximity | nearest | no |
+| `distance` | proximity (exact, cell centre → nearest feature, source not clipped) | — | no |
+| `min_distance` | proximity (raster approximation, features inside the grid) | nearest | no |
 | `count` | proximity | nearest | no |
 
 > ¹ These use `needs_fine_alignment=True`: GridAligner resamples with `nearest` at high resolution; the actual reduction (per-window counting) is done by the operator.
@@ -234,7 +235,7 @@ disscube/
 ├── operators/        Operators as classes (self-registered via __init_subclass__)
 │   ├── base.py       Operator ABC + OPERATOR_REGISTRY
 │   ├── zonal.py      mean, sum, majority, percentage, attribute, presence…
-│   └── proximity.py  min_distance, count
+│   └── proximity.py  distance, min_distance, count
 ├── pipeline/         Stages: Normalizer → GridAligner → Aggregator → Writer
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage/          AssetStore (fsspec — local and S3)

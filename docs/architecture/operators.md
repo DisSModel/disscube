@@ -60,7 +60,8 @@ The last three also produce `coverage_purity` and `dominance_purity` as coordina
 
 | Operator | Description | `requires_class_code` |
 |---|---|---|
-| `min_distance` | Euclidean distance (in CRS units) to the nearest feature | no |
+| `distance` | Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid | no |
+| `min_distance` | Raster approximation of the distance to the nearest feature inside the grid (NaN, with a warning, if none is inside) | no |
 | `count` | Number of features whose centroid falls in each cell | no |
 
 ## The `compute()` contract

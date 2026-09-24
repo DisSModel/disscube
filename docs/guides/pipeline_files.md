@@ -48,7 +48,7 @@ operator = "min_distance"
 | `average` | `mean` |
 | `coverage` / `percentage` | `percentage` (one derivation per `class_code`) |
 | `majority` / `minority` | `majority` / `minority` |
-| `distance` | `min_distance` |
+| `distance` | `distance` (exact, from the cell centre) or `min_distance` (raster approximation) |
 | `presence`, `count`, `sum`, `minimum`, `maximum`, `stdev` | `presence`, `count`, `sum`, `min`, `max`, `std` |
 
 How faithful each operator is to TerraME — and what is not supported yet — is

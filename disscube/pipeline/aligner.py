@@ -123,7 +123,9 @@ class GridAligner(PipelineStage):
                 needs_reproject = str(gdf.crs) != str(grid.crs)
             if needs_reproject:
                 gdf = gdf.to_crs(grid.crs)
-            gdf = gdf.clip(box(*grid.bbox))
+            ops = [OPERATOR_REGISTRY.get(v.operator) for v in ctx.derivation.variables]
+            if all(getattr(op, "clip_to_grid", True) for op in ops):
+                gdf = gdf.clip(box(*grid.bbox))
             ctx.data = gdf
 
         return ctx
