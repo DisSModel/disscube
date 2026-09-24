@@ -35,6 +35,7 @@ from disscube.utils.bdc_stac import (
     tile_of,
     write_geotiff,
 )
+from disscube.utils.files import sha256_file
 from disscube.utils.grids import BDC_CRS
 
 BBOX = (-44.35, -2.62, -44.20, -2.47)
@@ -324,3 +325,69 @@ def test_real_bdc_landsat_ndvi(tmp_path):
     valid = data[np.isfinite(data)]
     assert valid.size > 0
     assert -1.0 <= valid.min() and valid.max() <= 1.0  # physical NDVI, scale applied
+
+
+# ---------------------------------------------------------------------------
+# Registration with provenance
+# ---------------------------------------------------------------------------
+
+def _cube(tmp_path):
+    from disscube import CubeClient
+    from disscube.utils.grids import register_local_grid
+
+    cube = CubeClient(catalog=str(tmp_path / "catalog.db"), store=str(tmp_path / "store"))
+    grid = register_local_grid(cube, name="ilha", bbox_geo=BBOX, resolution=300.0)
+    return cube, grid
+
+
+def test_period_year():
+    assert bdc_stac.period_year("2020-07-01/2020-09-30") == 2020
+    assert bdc_stac.period_year("2019") == 2019
+    assert bdc_stac.period_year("") is None
+
+
+def test_register_bdc_source_writes_file_checksum_and_provenance(tmp_path):
+    cube, _ = _cube(tmp_path)
+    items = [_item(f"LANDSAT-16D_V1_016004_2020070{i}", _write(tmp_path / f"t{i}.tif",
+                   np.full((1000, 1000), v, dtype="int16")), tile="016004")
+             for i, v in enumerate([2000, 4000, 9000])]
+
+    src = bdc_stac.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX,
+                                       "2020-07-01/2020-09-30", tmp_path / "raw",
+                                       items=items, scale=bdc_stac.BDC_INDEX_SCALE)
+
+    tif = tmp_path / "raw" / "ndvi.tif"
+    prov = json.loads((tmp_path / "raw" / "ndvi.provenance.json").read_text())
+    assert src.asset_url == str(tif) and src.checksum == sha256_file(tif)
+    assert src.time == 2020 and "collection:LANDSAT-16D-1" in src.tags
+    assert cube.catalog.get_spatial_source("ndvi").checksum == src.checksum
+    assert prov["checksum"] == src.checksum
+    assert prov["collection"] == "LANDSAT-16D-1" and prov["asset"] == "NDVI"
+    assert prov["period"] == "2020-07-01/2020-09-30" and prov["reducer"] == "median"
+    assert prov["scale"] == 1e-4
+    assert [i["id"][-2:] for i in prov["items"]] == ["00", "01", "02"]
+    assert all(i["href"].endswith(".tif") for i in prov["items"])
+    with rasterio.open(tif) as ds:
+        assert np.allclose(ds.read(1), 0.4)
+
+
+def test_new_composite_is_recomputed_downstream(tmp_path):
+    from disscube import Derivation
+
+    cube, grid = _cube(tmp_path)
+    d = Derivation(target="ndvi_mean", source_id="ndvi", operator="mean")
+
+    def run(value, period):
+        items = [_item("LANDSAT-16D_V1_016004_20200701",
+                       _write(tmp_path / f"{value}.tif", np.full((1000, 1000), value, dtype="int16")),
+                       tile="016004")]
+        bdc_stac.register_bdc_source(cube, "ndvi", "LANDSAT-16D-1", "NDVI", BBOX, period,
+                                     tmp_path / "raw", items=items, scale=1e-4)
+        return cube.derive_declarative(d, grid_id=grid.id)[0]
+
+    dry = run(3000, "2020-07-01/2020-09-30")
+    wet = run(7000, "2021-01-01/2021-03-31")
+    assert wet.spec_hash != dry.spec_hash
+    import xarray as xr
+    value = float(xr.open_zarr(wet.asset_url, consolidated=False)["ndvi_mean"].mean())
+    assert value == pytest.approx(0.7, abs=1e-4)

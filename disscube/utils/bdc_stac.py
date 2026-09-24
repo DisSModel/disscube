@@ -17,6 +17,17 @@ that can be registered as an ordinary ``SpatialSource``::
         out_path="raw/ndvi_2020.tif",
     )
 
+To register the result in a cube with its provenance — a checksum that keys
+the derivation cache and a JSON sidecar naming the collection, items, period,
+reducer and scale — use :func:`register_bdc_source` (one asset) or
+:func:`register_composite` (a layer computed from several assets)::
+
+    from disscube.utils.bdc_stac import BDC_INDEX_SCALE, register_bdc_source
+
+    register_bdc_source(cube, "ndvi_2020", "LANDSAT-16D-1", "NDVI",
+                        bbox_geo, "2020-07-01/2020-09-30", out_dir="raw",
+                        scale=BDC_INDEX_SCALE)
+
 Searching the catalog needs ``pystac-client`` (``pip install disscube[bdc]``);
 reading windows and writing composites only need rasterio, so they also work
 with asset URLs obtained elsewhere.
@@ -30,9 +41,11 @@ cubes declare (EPSG:10857) is missing from older PROJ databases.
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -42,6 +55,7 @@ from rasterio.crs import CRS
 from rasterio.warp import transform_bounds
 from rasterio.windows import Window, from_bounds
 
+from disscube.utils.files import sha256_file
 from disscube.utils.grids import BDC_CRS
 
 log = logging.getLogger(__name__)
@@ -347,6 +361,140 @@ def read_item_window(
         scale=scale if scale is not None else stac_scale,
         offset=offset if offset is not None else stac_offset,
     )
+
+
+# ---------------------------------------------------------------------------
+# Registration with provenance
+# ---------------------------------------------------------------------------
+
+def items_provenance(items: Sequence, asset: str | None = None) -> list[dict]:
+    """``id``, date and (optionally) asset URL of each item, for a provenance record."""
+    out = []
+    for item in items:
+        entry = {"id": item.id,
+                 "datetime": str(item.datetime) if getattr(item, "datetime", None) else None}
+        if asset is not None and asset in item.assets:
+            entry["href"] = item.assets[asset].href
+        out.append(entry)
+    return out
+
+
+def period_year(period: str) -> int | None:
+    """First year of an ISO period (``"2020-07-01/2020-09-30"`` -> 2020), or None."""
+    try:
+        return int(period.split("/")[0][:4])
+    except (ValueError, IndexError):
+        return None
+
+
+def register_composite(
+    cube,
+    source_id: str,
+    window: Window2D,
+    out_dir: str | Path,
+    provenance: dict,
+    *,
+    name: str | None = None,
+    time: int | None = None,
+    tags: Sequence[str] = (),
+):
+    """
+    Write ``window`` as ``<out_dir>/<source_id>.tif`` and register it as a source.
+
+    The file's SHA-256 becomes the source ``checksum`` — so a new composite
+    (another period, reducer or scale) gets a new ``spec_hash`` downstream —
+    and ``provenance`` is written next to it as ``<source_id>.provenance.json``
+    together with the checksum and the retrieval time. Returns the
+    ``SpatialSource``.
+    """
+    from disscube.models import SpatialSource
+
+    out_dir = Path(out_dir)
+    tif = write_geotiff(window, out_dir / f"{source_id}.tif")
+    checksum = sha256_file(tif)
+    record = {
+        **provenance,
+        "source_id": source_id,
+        "file": tif.name,
+        "checksum": checksum,
+        "retrieved_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "disscube_version": _disscube_version(),
+    }
+    prov_path = out_dir / f"{source_id}.provenance.json"
+    prov_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
+                         encoding="utf-8")
+
+    source = SpatialSource(
+        id=source_id,
+        name=name or source_id,
+        format="raster",
+        asset_url=str(tif),
+        checksum=checksum,
+        crs=BDC_CRS if is_bdc_albers(window.crs) else window.crs.to_string(),
+        time=time,
+        tags=[*tags, f"provenance:{prov_path}"],
+    )
+    cube.register_spatial_source(source)
+    log.info("[bdc] registered %s (%s) — provenance in %s", source_id, checksum[:15], prov_path)
+    return source
+
+
+def register_bdc_source(
+    cube,
+    source_id: str,
+    collection: str,
+    asset: str,
+    bbox_geo: Sequence[float],
+    period: str,
+    out_dir: str | Path,
+    *,
+    reducer: str = "median",
+    scale: float | None = None,
+    offset: float | None = None,
+    url: str = BDC_STAC_URL,
+    items: Sequence | None = None,
+    name: str | None = None,
+    time: int | None = None,
+):
+    """
+    Fetch one asset of a BDC cube over a period and register it as a source.
+
+    Combines :func:`read_composite` and :func:`register_composite`: the
+    composite is written to ``out_dir``, keyed by its checksum, and described
+    by a provenance sidecar (STAC URL, collection, asset, bbox, period,
+    reducer, scale/offset and the items used). ``time`` defaults to the first
+    year of ``period``.
+    """
+    if items is None:
+        items = search_items(collection, bbox_geo, period, url=url)
+    window = read_composite(collection, asset, bbox_geo, period, reducer=reducer,
+                            url=url, items=items, scale=scale, offset=offset)
+    provenance = {
+        "stac_url": url,
+        "collection": collection,
+        "asset": asset,
+        "bbox_geo": list(bbox_geo),
+        "period": period,
+        "reducer": reducer,
+        "scale": scale,
+        "offset": offset,
+        "items": items_provenance(items, asset),
+    }
+    return register_composite(
+        cube, source_id, window, out_dir, provenance,
+        name=name or f"{collection} {asset} ({reducer} of {period})",
+        time=time if time is not None else period_year(period),
+        tags=["bdc", f"collection:{collection}", f"asset:{asset}", f"period:{period}"],
+    )
+
+
+def _disscube_version() -> str | None:
+    try:
+        from importlib.metadata import version
+
+        return version("disscube")
+    except Exception:  # noqa: BLE001 — metadata missing in odd installs; provenance still useful
+        return None
 
 
 class _quiet_all_nan:

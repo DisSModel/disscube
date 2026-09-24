@@ -180,7 +180,7 @@ data/derived/{grid_id}/{partition}/{spec_hash}/{variable_name}.zarr
 ```
 
 - `partition` = `tile_id`, or `global` for untiled derivations.
-- `spec_hash` = SHA-256 of the derivation (source + grid + variables + time window).
+- `spec_hash` = SHA-256 of the derivation (source + grid + variables + time window, plus the source's `checksum` when it has one — replacing a source file and registering its new checksum recomputes instead of returning a stale product).
 
 ## Project structure
 

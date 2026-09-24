@@ -55,6 +55,13 @@ class SpatialDerivation(BaseModel):
     valid_from:  str | None = None
     valid_until: str | None = None
 
+    # Checksum of the source's content, copied from ``SpatialSource.checksum``
+    # by ``CubeClient.derive()``. When set, it enters the hash, so replacing
+    # the source file (with a new checksum) yields a new product instead of a
+    # stale cache hit. When None, the hash is the same as before this field
+    # existed, so catalogs built earlier stay valid.
+    source_checksum: str | None = None
+
     def spec_hash(self) -> str:
         """
         Deterministic SHA-256 hash of the derivation spec.
@@ -62,7 +69,7 @@ class SpatialDerivation(BaseModel):
         Includes ``valid_from`` and ``valid_until`` so that derives for
         different time periods are always treated as distinct products.
         A static derivation (both None) hashes differently from any
-        temporal derivation.
+        temporal derivation. ``source_checksum`` is included only when set.
         """
         variables_data = [
             v.model_dump() for v in sorted(self.variables, key=lambda x: x.name)
@@ -80,6 +87,8 @@ class SpatialDerivation(BaseModel):
             "valid_from":  self.valid_from,   # None for static variables
             "valid_until": self.valid_until,  # None for static variables
         }
+        if self.source_checksum is not None:
+            relevant_data["source_checksum"] = self.source_checksum
 
         encoded = json.dumps(relevant_data, sort_keys=True, ensure_ascii=False).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()

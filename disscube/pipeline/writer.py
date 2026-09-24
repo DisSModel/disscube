@@ -1,7 +1,10 @@
+import logging
 from pathlib import Path
 
 from disscube.models import DerivedVariable
 from disscube.pipeline import PipelineContext, PipelineStage
+
+log = logging.getLogger(__name__)
 
 
 class VariableWriter(PipelineStage):
@@ -68,6 +71,16 @@ class VariableWriter(PipelineStage):
                     times = [int(derivation.valid_from.split("-")[0])]
                 except (ValueError, AttributeError):
                     pass
+
+            # A new product for the same variable, grid, tile and time
+            # supersedes older ones (e.g. the source was replaced and got a new
+            # checksum). Without this, load() would stack both versions.
+            for old in self.catalog.search_derived_variables(grid_id=grid.id):
+                if (old.name == var_name and old.tile_id == tile_id and old.times == times
+                        and old.spec_hash != spec_hash):
+                    self.catalog.delete_derived(old.id)
+                    log.info("Superseded %s (spec_hash %s…) by %s…",
+                             var_name, old.spec_hash[:12], spec_hash[:12])
 
             derived = DerivedVariable(
                 id=derived_id,

@@ -11,7 +11,10 @@ of the area of interest, and turns one dry season into three drivers on a
   - ``water_pct``   fraction of each cell with MNDWI > 0 (open water)
 
 The season is reduced to a per-pixel median of the 16-day composites, which
-removes most of the remaining clouds.
+removes most of the remaining clouds. Each source is registered with the
+SHA-256 of its file as checksum and a ``<source>.provenance.json`` sidecar
+(collection, items, period, reducer, scale), so re-running with another
+period recomputes the drivers instead of returning cached ones.
 
     pip install -e ".[bdc]"                      # pystac-client for the search
     python examples/07_bdc_cube.py               # temporary workspace
@@ -23,6 +26,7 @@ the test suite) the script builds a synthetic scene with the same grid, CRS
 and value ranges, and says so loudly: those numbers are not BDC data.
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -30,9 +34,12 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
 from disscube import CubeClient, Derivation, SpatialSource
+from disscube.utils.bdc_stac import Window2D, register_composite
+from disscube.utils.files import sha256_file
 from disscube.utils.grids import BDC_CRS, register_local_grid
 
 COLLECTION = "LANDSAT-16D-1"
@@ -42,39 +49,49 @@ GRID_RES = 300.0
 
 
 # ---------------------------------------------------------------------------
-# Inputs: real (BDC) or synthetic (offline)
+# Inputs: real (BDC) or synthetic (offline) — both registered with provenance
 # ---------------------------------------------------------------------------
 
-def fetch_from_bdc(raw: Path) -> dict:
+def sources_from_bdc(cube: CubeClient, raw: Path) -> Window2D:
+    """Register ``ndvi`` and ``mndwi`` from the BDC; return the MNDWI layer."""
     from disscube.utils.bdc_stac import (
         BDC_INDEX_SCALE,
-        asset_scale_offset,
+        BDC_STAC_URL,
+        items_provenance,
         normalized_difference,
         read_composite,
+        register_bdc_source,
         search_items,
-        write_geotiff,
     )
 
     items = search_items(COLLECTION, BBOX, PERIOD)
     if not items:
         raise RuntimeError(f"no {COLLECTION} items over {BBOX} in {PERIOD}")
     print(f"BDC items           : {len(items)} ({items[0].id} … {items[-1].id})")
-    for asset in ("NDVI", "green", "swir16"):
-        print(f"  {asset:7s} scale/offset (STAC): {asset_scale_offset(items[0], asset)}")
-
-    def season(asset, scale=None):
-        return read_composite(COLLECTION, asset, BBOX, PERIOD, items=items, scale=scale)
 
     # The catalog declares no scale; BDC stores indices as int16 × 10 000.
-    ndvi = season("NDVI", scale=BDC_INDEX_SCALE)
+    register_bdc_source(cube, "ndvi", COLLECTION, "NDVI", BBOX, PERIOD, raw,
+                        items=items, scale=BDC_INDEX_SCALE)
+
     # MNDWI is a ratio, so a common scale factor on green and SWIR cancels out.
+    def season(asset):
+        return read_composite(COLLECTION, asset, BBOX, PERIOD, items=items)
+
     mndwi = normalized_difference(season("green"), season("swir16"))
-    write_geotiff(ndvi, raw / "ndvi.tif")
-    write_geotiff(mndwi, raw / "mndwi.tif")
-    return {"ndvi": ndvi.data, "mndwi": mndwi.data, "transform": mndwi.transform}
+    register_composite(
+        cube, "mndwi", mndwi, raw,
+        provenance={
+            "stac_url": BDC_STAC_URL, "collection": COLLECTION, "assets": ["green", "swir16"],
+            "expression": "(green - swir16) / (green + swir16)", "bbox_geo": list(BBOX),
+            "period": PERIOD, "reducer": "median", "items": items_provenance(items),
+        },
+        name=f"{COLLECTION} MNDWI (median of {PERIOD})", time=2020,
+        tags=["bdc", f"collection:{COLLECTION}", f"period:{PERIOD}"],
+    )
+    return mndwi
 
 
-def synthetic_scene(raw: Path) -> dict:
+def sources_synthetic(cube: CubeClient, raw: Path) -> Window2D:
     """Water to the north-west, an urban core, vegetation elsewhere — in BDC Albers."""
     from pyproj import Transformer
 
@@ -94,26 +111,30 @@ def synthetic_scene(raw: Path) -> dict:
     ndvi[water] = -0.1
     mndwi = np.clip(-0.35 + 0.05 * rng.standard_normal((rows, cols)), -1, 1)
     mndwi[water] = 0.45
-    ndvi, mndwi = ndvi.astype("float32"), mndwi.astype("float32")
 
-    for name, arr in (("ndvi", ndvi), ("mndwi", mndwi)):
-        with rasterio.open(raw / f"{name}.tif", "w", driver="GTiff", height=rows, width=cols,
-                           count=1, dtype="float32", crs=BDC_CRS, transform=transform,
-                           nodata=np.nan) as dst:
-            dst.write(arr, 1)
-    return {"ndvi": ndvi, "mndwi": mndwi, "transform": transform}
+    crs = CRS.from_string(BDC_CRS)
+    layers = {name: Window2D(data=arr.astype("float32"), transform=transform, crs=crs)
+              for name, arr in (("ndvi", ndvi), ("mndwi", mndwi))}
+    for name, window in layers.items():
+        register_composite(cube, name, window, raw,
+                           provenance={"synthetic": True, "note": "offline stand-in, not BDC data"},
+                           name=f"{name} (synthetic stand-in)", time=2020, tags=["synthetic"])
+    return layers["mndwi"]
 
 
-def write_water_mask(raw: Path, scene: dict) -> None:
+def register_water_mask(cube: CubeClient, raw: Path, mndwi: Window2D) -> None:
     """1 = open water (MNDWI > 0), 0 = land, 255 = no observation."""
-    mndwi = scene["mndwi"]
-    mask = np.where(mndwi > 0, 1, 0).astype("uint8")
-    mask[np.isnan(mndwi)] = 255
-    with rasterio.open(raw / "mndwi.tif") as ref:  # same grid as the MNDWI raster
-        profile = ref.profile
-    profile.update(dtype="uint8", nodata=255)
-    with rasterio.open(raw / "water_mask.tif", "w", **profile) as dst:
+    mask = np.where(mndwi.data > 0, 1, 0).astype("uint8")
+    mask[np.isnan(mndwi.data)] = 255
+    rows, cols = mask.shape
+    path = raw / "water.tif"
+    with rasterio.open(path, "w", driver="GTiff", height=rows, width=cols, count=1,
+                       dtype="uint8", crs=BDC_CRS, transform=mndwi.transform, nodata=255) as dst:
         dst.write(mask, 1)
+    cube.register_spatial_source(SpatialSource(
+        id="water", name="open water (MNDWI > 0)", format="raster", asset_url=str(path),
+        crs=BDC_CRS, time=2020, checksum=sha256_file(path), tags=["derived:mndwi>0"],
+    ))
 
 
 # ---------------------------------------------------------------------------
@@ -123,31 +144,23 @@ def write_water_mask(raw: Path, scene: dict) -> None:
 def main(workspace: Path, offline: bool) -> None:
     raw = workspace / "raw"
     raw.mkdir(parents=True, exist_ok=True)
-
-    source = "synthetic stand-in"
-    if not offline:
-        try:
-            scene = fetch_from_bdc(raw)
-            source = f"BDC {COLLECTION}, median of {PERIOD}"
-        except Exception as exc:  # noqa: BLE001 — any network/catalog failure falls back, loudly
-            print(f"!! BDC not reachable ({type(exc).__name__}: {exc})")
-            offline = True
-    if offline:
-        print("!! OFFLINE — using a synthetic scene; the numbers below are NOT BDC data")
-        scene = synthetic_scene(raw)
-
-    write_water_mask(raw, scene)
-
     cube = CubeClient(catalog=str(workspace / "catalog.db"), store=str(workspace / "store"))
 
     # 300 m grid snapped to the national BDC Albers mesh
     grid = register_local_grid(cube, name="ilha_do_maranhao", bbox_geo=BBOX, resolution=GRID_RES)
 
-    for sid, path in (("ndvi", "ndvi.tif"), ("mndwi", "mndwi.tif"), ("water", "water_mask.tif")):
-        cube.register_spatial_source(SpatialSource(
-            id=sid, name=f"{sid} ({source})", format="raster",
-            asset_url=str(raw / path), crs=BDC_CRS, time=2020,
-        ))
+    label = "synthetic stand-in"
+    mndwi = None
+    if not offline:
+        try:
+            mndwi = sources_from_bdc(cube, raw)
+            label = f"BDC {COLLECTION}, median of {PERIOD}"
+        except Exception as exc:  # noqa: BLE001 — any network/catalog failure falls back, loudly
+            print(f"!! BDC not reachable ({type(exc).__name__}: {exc})")
+    if mndwi is None:
+        print("!! OFFLINE — using a synthetic scene; the numbers below are NOT BDC data")
+        mndwi = sources_synthetic(cube, raw)
+    register_water_mask(cube, raw, mndwi)
 
     for d in (
         Derivation(target="ndvi_mean", source_id="ndvi", operator="mean"),
@@ -157,16 +170,20 @@ def main(workspace: Path, offline: bool) -> None:
         cube.derive_declarative(d, grid_id=grid.id)
 
     ndvi = cube.load("ndvi_mean", grid_id=grid.id)
-    mndwi = cube.load("mndwi_mean", grid_id=grid.id)
+    mndwi_mean = cube.load("mndwi_mean", grid_id=grid.id)
     water = cube.load("water_pct", grid_id=grid.id)
+    provenance = json.loads((raw / "ndvi.provenance.json").read_text(encoding="utf-8"))
 
-    print(f"source              : {source}")
+    print(f"source              : {label}")
     print(f"grid                : {grid.id}  {ndvi.shape[-2]} × {ndvi.shape[-1]} cells")
     print(f"NDVI (cell means)   : {float(np.nanmin(ndvi)):.2f} … {float(np.nanmax(ndvi)):.2f}, "
           f"mean {float(np.nanmean(ndvi)):.2f}")
-    print(f"MNDWI (cell means)  : {float(np.nanmin(mndwi)):.2f} … {float(np.nanmax(mndwi)):.2f}")
+    print(f"MNDWI (cell means)  : {float(np.nanmin(mndwi_mean)):.2f} … "
+          f"{float(np.nanmax(mndwi_mean)):.2f}")
     print(f"open water          : {float(np.nanmean(water)):.1%} of the area")
     print(f"cells without data  : {int(np.isnan(ndvi.values).sum())}")
+    print(f"ndvi provenance     : {raw / 'ndvi.provenance.json'} "
+          f"({len(provenance.get('items', []))} items, {provenance['checksum'][:19]}…)")
 
 
 if __name__ == "__main__":

@@ -61,8 +61,33 @@ swir = read_composite("LANDSAT-16D-1", "swir16", bbox, period, items=items)
 write_geotiff(normalized_difference(green, swir), "raw/mndwi.tif")   # MNDWI
 ```
 
-The GeoTIFFs are then registered as `SpatialSource`s and aggregated like any
-other raster (see `examples/07_bdc_cube.py`).
+### Registering with provenance
+
+`register_bdc_source()` does the fetch and the registration in one call, and
+keeps the record of where the data came from:
+
+```python
+from disscube.utils.bdc_stac import BDC_INDEX_SCALE, register_bdc_source
+
+src = register_bdc_source(
+    cube, "ndvi_2020", "LANDSAT-16D-1", "NDVI", bbox, period, out_dir="raw",
+    scale=BDC_INDEX_SCALE,
+)
+# raw/ndvi_2020.tif               the composite
+# raw/ndvi_2020.provenance.json   STAC URL, collection, asset, bbox, period,
+#                                 reducer, scale/offset, item ids and URLs,
+#                                 checksum, retrieval time, disscube version
+```
+
+The source is registered with the SHA-256 of the file as `checksum`, the first
+year of the period as `time`, and tags naming the collection, asset, period
+and the provenance file. The checksum enters the `spec_hash` of every
+derivation from that source: fetching another period (or with another reducer
+or scale) produces a new file, a new checksum and a new product, while
+re-fetching the same data is a cache hit. For a layer computed from several
+assets — an index such as MNDWI — build the `Window2D` yourself and call
+`register_composite(cube, source_id, window, out_dir, provenance)`; see
+`examples/07_bdc_cube.py`.
 
 What the reader does for you:
 

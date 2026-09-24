@@ -51,6 +51,12 @@ class CubeClient:
         if not derivation.relations:
             derivation.relations = self.get_relations(derivation.grid_id)
 
+        # A source registered with a checksum ties the product to that content:
+        # new file + new checksum -> new spec_hash -> recomputed, not a stale hit.
+        source = self.catalog.get_spatial_source(derivation.source_id)
+        if source is not None and source.checksum and derivation.source_checksum is None:
+            derivation.source_checksum = source.checksum
+
         spec_hash = derivation.spec_hash()
 
         expected = {v.name for v in derivation.variables}
@@ -64,7 +70,6 @@ class CubeClient:
         if expected == cached_names:
             return cached_vars
 
-        source = self.catalog.get_spatial_source(derivation.source_id)
         if not source:
             raise ValueError(f"SpatialSource not found: {derivation.source_id}")
 
