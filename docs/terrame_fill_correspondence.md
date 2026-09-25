@@ -44,11 +44,11 @@ see [Pipeline files (TOML)](guides/pipeline_files.md) and
 |---|---|---|---|
 | `presence` | `presence` | implemented; parity measured (Emas) | Binary mask: 1 where any feature is present. Matches TerraME in 98.4–99.7 % of cells: lines are rasterized through cell centres, while TerraME marks every cell a line touches. |
 | `coverage` / `percentage` (raster) | `percentage` | implemented (window-based); **parity verified** (Itaituba, Amazônia) | Fraction (0..1) of the target class per cell, **over valid pixels**. TerraME divides by the whole cell instead; `percentage × coverage_purity` reproduces TerraME's value (see the benchmarks). Requires `class_code`. |
-| `area` (polygons) | — | **not implemented** | Fraction of each cell covered by polygons (e.g. protected areas). Semantics confirmed on Amazônia: intersection area / cell area reproduces TerraME in every cell. |
+| `area` (polygons) | `area` | implemented (exact); **parity verified** (Amazônia) | Fraction (0..1) of each cell covered by polygons (e.g. protected areas): intersection area / cell area, overlapping polygons counted once. Reproduces TerraME's `protected` within 0.01 in at least 99 % of the cells. |
 | `majority` / `mode` | `majority` | implemented (window-based) | Dominant class per cell; ties resolve to the smallest class value. |
 | `minority` | `minority` | implemented (window-based) | Least-frequent class per cell. |
 | `count` | `count` | implemented | Count of features per cell (proximity operator). |
-| `distance` | `distance` | implemented (exact, from the cell centre) | Euclidean distance from each cell centre to the nearest feature, in CRS units, without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so `distance` is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and `distance` reproduces its fields. |
+| `distance` | `distance` | implemented (exact, from the cell centre) | Euclidean distance from each cell centre to the nearest feature, in CRS units (or in the CRS given as `params = {crs = …}`, e.g. metres on a geographic grid), without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so `distance` is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and `distance` reproduces its fields. |
 | `distance` | `min_distance` | **approximation — semantics differ** | Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so `min_distance` overestimates it by up to about one cell (see the benchmarks). |
 | `average` / `mean` | `mean` | implemented; **parity verified** | Mean value per cell (continuous, area-weighted resampling). |
 | `sum` (raster) | `sum` | implemented | Sum per cell (continuous). |
@@ -162,7 +162,7 @@ the 5 km PRODES raster, roads, ports and indigenous lands.
 | `prodes_10`, `prodes_208` — `coverage` | `percentage × coverage_purity` | **identical** in every cell with PRODES data; in the 55 cells without any, DisSCube reports NaN (purity 0) where TerraME reports 0 |
 | `distroads` — `distance` (lines) | `min_distance` | mean error 17 km; the exact polygon distance matches TerraME in 73 % of cells (83 % within 100 m) |
 | `distports` — `distance` (points) | `min_distance` | mean error 28 km; the exact polygon distance matches in 89 % of cells (91 % within 100 m) |
-| `protected` — `area` (polygons) | — | no operator; intersection area / cell area reproduces TerraME in every cell (within 0.01) |
+| `protected` — `area` (polygons) | `area` | intersection area / cell area reproduces TerraME within 0.01 in ≥ 99 % of cells (`tests/test_terrame_parity.py`) |
 
 The exact polygon distance explains most but not all of TerraME's `distance`
 values on Amazônia (the largest residuals reach 13–16 km), so TerraME's rule
@@ -179,15 +179,13 @@ needs to be pinned down before an exact operator is implemented.
   straddle a cell border, and `presence` rasterizes lines through cell
   centres; TerraME assigns each pixel to the cell containing its centre and
   marks every cell a line touches (Emas).
-- **Area-weighted vector aggregation.** TerraME's `sum` with `area = true` and
-  `area` (fraction of the cell covered by polygons) have no DisSCube
-  equivalent yet: vector sources are rasterized rather than area-weighted, and
-  `sum` accepts raster sources only. The raster-fine path remains the
-  recommended route for fractional drivers.
+- **Area-weighted vector aggregation.** TerraME's `sum` with `area = true`
+  has no DisSCube equivalent yet: `sum` accepts raster sources only. (`area`,
+  the fraction of the cell covered by polygons, is exact.)
 - **In-memory, single-tile by design.** The fine-alignment path materializes a
   fine array in memory; very large tiles at a high fine/target ratio are bounded
-  by available memory. Distributed/lazy execution is a roadmap item, not a
-  current capability.
+  by available memory — `params = {subcells = n}` caps the ratio.
+  Distributed/lazy execution is a roadmap item, not a current capability.
 
 ## Positioning statement
 
@@ -198,5 +196,6 @@ needs to be pinned down before an exact operator is implemented.
 > grid and explicit control of cell purity. On the three Fill examples shipped
 > with TerraME (Itaituba, Emas, Amazônia), raster averages and class coverage
 > reproduce TerraME's output cell by cell once cell purity is applied, and
-> `presence`, `min` and `max` agree in 98–99.7 % of cells; exact vector
-> distance and area-weighted polygon operations are the remaining gaps.
+> `presence`, `min` and `max` agree in 98–99.7 % of cells, and polygon
+> `area` in ≥ 99 %; exact vector distance and area-weighted sums are the
+> remaining gaps.

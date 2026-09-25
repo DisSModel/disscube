@@ -47,16 +47,11 @@ def test_align_fine_falls_back_to_grid_resolution():
     grid = GridSpec(id="g", type="local", crs="EPSG:31983", resolution=100, bbox=[0, 0, 400, 400])
     band = _raster()
 
-    original = RasterArray.resolution
-
-    def flaky_resolution(self, *args, **kwargs):
-        # rioxarray calls resolution(recalc=True) internally during reproject;
-        # fail only the plain call made by GridAligner.
-        if args or kwargs:
-            return original(self, *args, **kwargs)
+    def boom(*args, **kwargs):
         raise ValueError("boom")
 
-    with patch.object(RasterArray, "resolution", flaky_resolution):
+    # GridAligner estimates the source resolution with calculate_default_transform.
+    with patch("rasterio.warp.calculate_default_transform", boom):
         aligned = GridAligner()._align_fine(band, grid)
 
     # With src_res == grid.resolution the fine factor is 1: one pixel per cell.

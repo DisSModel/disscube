@@ -15,6 +15,7 @@ No STAC code, catalog, API, or export is implemented in this module.
 
 import hashlib
 import json
+from typing import Any, Literal
 
 from pydantic import BaseModel, model_validator
 
@@ -61,6 +62,13 @@ class Derivation(BaseModel):
         Optional bounding box ``[xmin, ymin, xmax, ymax]`` in EPSG:4326.
         Aligns with the STAC ``bbox`` field.  Reserved — not used in
         execution and excluded from ``spec_hash()``.
+    params : dict
+        Operator options, e.g. ``{"crs": "EPSG:5880"}`` for ``distance`` or
+        ``{"subcells": 20}`` for the categorical operators. Checked against
+        the operator's ``params`` at construction.
+    fill : "nearest" | None
+        Give the cells left without a value (NaN) the value of the nearest
+        cell that has one.
     """
 
     target: str
@@ -72,6 +80,8 @@ class Derivation(BaseModel):
     valid_until: str | None = None
     purity_threshold: float | None = None
     bbox: list[float] | None = None
+    params: dict[str, Any] = {}
+    fill: Literal["nearest"] | None = None
 
     @model_validator(mode="after")
     def _validate_operator(self) -> "Derivation":
@@ -85,6 +95,13 @@ class Derivation(BaseModel):
         if meta.requires_class_code and self.class_code is None:
             raise ValueError(
                 f"Operator {self.operator!r} requires class_code to be set."
+            )
+        unknown = sorted(set(self.params) - set(meta.params))
+        if unknown:
+            accepted = ", ".join(sorted(meta.params)) or "none"
+            raise ValueError(
+                f"Operator {self.operator!r} does not take {', '.join(unknown)} "
+                f"(its params: {accepted})."
             )
         return self
 
@@ -104,6 +121,8 @@ class Derivation(BaseModel):
             name=self.target,
             operator=self.operator,
             class_code=self.class_code,
+            params=self.params,
+            fill=self.fill,
         )
 
     def to_spatial_derivation(self, grid_id: str) -> SpatialDerivation:

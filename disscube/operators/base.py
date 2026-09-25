@@ -70,6 +70,10 @@ class Operator:
     # one of its operators allows it.
     clip_to_grid: ClassVar[bool] = True
 
+    # Options this operator reads from ``Variable.params``, with a one-line
+    # description each; ``Derivation`` rejects any other key.
+    params: ClassVar[dict[str, str]] = {}
+
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "name") and isinstance(cls.name, str):

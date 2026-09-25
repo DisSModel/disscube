@@ -20,7 +20,7 @@ class Normalizer(PipelineStage):
                 pass
 
         elif fmt == "vector":
-            gdf = gpd.read_file(url)
+            gdf = gpd.read_file(url, **ctx.source.read_options)
 
             if ctx.source.crs:
                 from pyproj import CRS as ProjCRS

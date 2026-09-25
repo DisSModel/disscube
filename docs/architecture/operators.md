@@ -54,15 +54,19 @@ These operators receive a high-resolution array snapped to the target grid origi
 | `minority` | least-frequent class by count | rasterizes with `class_code` (or 1) | no |
 | `percentage` | fraction of pixels of the target class | rasterizes with `class_code` | **yes** |
 
+Each accepts `params = {"subcells": n}`, a cap on the fine pixels per cell
+along each axis (see `GridAligner._align_fine`).
+
 The last three also produce `coverage_purity` and `dominance_purity` as coordinates of the output `DataArray` (persisted in the Zarr alongside the variable).
 
 ### Proximity — vector (and passthrough for raster)
 
 | Operator | Description | `requires_class_code` |
 |---|---|---|
-| `distance` | Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid | no |
+| `distance` | Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid. `params = {"crs": …}` measures in another CRS (metres in a projected one) | no |
 | `min_distance` | Raster approximation of the distance to the nearest feature inside the grid (NaN, with a warning, if none is inside) | no |
 | `count` | Number of features whose centroid falls in each cell | no |
+| `area` | Share (0..1) of each cell covered by polygons (intersection area / cell area; overlaps count once) — TerraME's `area` | no |
 
 ## The `compute()` contract
 

@@ -5,6 +5,7 @@ Proximity operators — Euclidean distance and feature-count over vector sources
 from __future__ import annotations
 
 import warnings
+from typing import ClassVar
 
 import geopandas as gpd
 import numpy as np
@@ -71,21 +72,33 @@ class DistanceOperator(Operator):
     the grid CRS units (degrees on a geographic grid), measured from cell
     centres; TerraME's ``distance`` fill measures from the cell polygon, so
     it is smaller by up to half a cell diagonal.
+
+    With ``params = {"crs": ...}`` the cell centres and the features are
+    projected to that CRS and the distance is measured there — metres on a
+    geographic grid, e.g. in a national projection.
     """
 
     name = "distance"
     _resampling = Resampling.nearest
     clip_to_grid = False
+    params: ClassVar[dict[str, str]] = {"crs": "measure in this CRS instead of the grid's (e.g. a projected CRS, for metres)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, gpd.GeoDataFrame):
             import shapely
 
+            crs = var.params.get("crs")
+            if crs is not None:
+                data = data.to_crs(crs)
             geoms = [g for g in data.geometry if g is not None and not g.is_empty]
             if not geoms:
                 dist = np.full((grid.rows, grid.cols), np.nan)
             else:
                 xx, yy = np.meshgrid(grid.xs, grid.ys)
+                if crs is not None:
+                    from pyproj import Transformer
+
+                    xx, yy = Transformer.from_crs(grid.crs, crs, always_xy=True).transform(xx, yy)
                 centres = shapely.points(xx.ravel(), yy.ravel())
                 tree = shapely.STRtree(geoms)
                 (points_idx, _), d = tree.query_nearest(centres, return_distance=True, all_matches=False)

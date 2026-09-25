@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -42,13 +42,23 @@ class _SourceBase(_Strict):
 
 
 class FileSource(_SourceBase):
-    """A local raster or vector file (path relative to the pipeline file)."""
+    """
+    A local raster or vector file (path relative to the pipeline file).
+
+    ``variable`` reads one variable of a NetCDF file as a raster. ``nodata``
+    declares the raster's no-data value when the file does not. ``read``
+    passes options to ``geopandas.read_file`` for a vector file — ``where``
+    (an SQL filter on the attributes), ``encoding``, ``layer``, ….
+    """
 
     type: Literal["file"]
     path: str
     crs: str | None = None
     format: Literal["raster", "vector"] | None = None
     time: int | None = None
+    variable: str | None = None
+    nodata: float | None = None
+    read: dict[str, Any] = Field(default_factory=dict)
 
 
 class BdcSource(_SourceBase):
@@ -102,8 +112,15 @@ class ClassifiedSource(_SourceBase):
     producer: str | None = None
 
 
+class UnionSource(_SourceBase):
+    """The features of several vector sources of this file as one source."""
+
+    type: Literal["union"]
+    of: list[str] = Field(min_length=2)
+
+
 Source = Annotated[
-    FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource,
+    FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | UnionSource,
     Field(discriminator="type"),
 ]
 
@@ -117,6 +134,8 @@ class DeriveConfig(_Strict):
     class_code: int | None = None
     role: str = "driver"
     years: list[int] | None = None
+    params: dict[str, Any] = Field(default_factory=dict)
+    fill: Literal["nearest"] | None = None
 
 
 class PipelineConfig(_Strict):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import tomllib
@@ -9,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 from pydantic import ValidationError
 
 from disscube.config.schema import (
@@ -20,6 +22,7 @@ from disscube.config.schema import (
     MapbiomasSource,
     PipelineConfig,
     ProdesSource,
+    UnionSource,
 )
 from disscube.utils.files import sha256_file
 
@@ -50,7 +53,7 @@ class PipelineFile:
 @dataclass
 class PlannedSource:
     id: str
-    config: FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource
+    config: FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | UnionSource
     year: int | None = None
 
 
@@ -61,6 +64,14 @@ class PlannedDerive:
     operator: str
     class_code: int | None
     role: str
+    params: dict = field(default_factory=dict)
+    fill: str | None = None
+
+    def derivation(self):
+        from disscube.derivation import Derivation
+
+        return Derivation(target=self.target, source_id=self.source, operator=self.operator,
+                          class_code=self.class_code, role=self.role, params=self.params, fill=self.fill)
 
 
 @dataclass
@@ -82,7 +93,9 @@ class Plan:
         lines += [f"  - {s.id:<24} {s.config.type}" for s in self.sources]
         lines.append(f"variables : {len(self.derives)}")
         lines += [f"  - {d.target:<24} {d.operator}"
-                  f"{'(' + str(d.class_code) + ')' if d.class_code is not None else ''} <- {d.source}"
+                  f"{'(' + str(d.class_code) + ')' if d.class_code is not None else ''}"
+                  f"{' ' + str(d.params) if d.params else ''}"
+                  f"{' fill ' + d.fill if d.fill else ''} <- {d.source}"
                   for d in self.derives]
         return "\n".join(lines)
 
@@ -118,7 +131,6 @@ def _expand(src, year: int):
 
 def plan(pipeline: PipelineFile | str | Path) -> Plan:
     """Expand ``years``, resolve references and check operators, years and legends."""
-    from disscube.derivation import Derivation
     from disscube.sources import mapbiomas
 
     pf = pipeline if isinstance(pipeline, PipelineFile) else load(pipeline)
@@ -139,6 +151,8 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
                     mapbiomas.dataset(c.collection, c.resolution).url(c.year)
                 except ValueError as exc:
                     raise PipelineError(f"source {c.id!r}: {exc}") from None
+            if isinstance(c, UnionSource):
+                _check_union(c, result.sources)
             result.sources.append(PlannedSource(id=c.id, config=c, year=year))
 
     ids = [s.id for s in result.sources]
@@ -150,13 +164,27 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
         for source_id in _derive_sources(d, templates):
             if source_id not in ids:
                 raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
+            planned = PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role,
+                                    params=d.params, fill=d.fill)
             try:
-                Derivation(target=d.target, source_id=source_id, operator=d.operator,
-                           class_code=d.class_code, role=d.role)
+                planned.derivation()
             except ValidationError as exc:
                 raise PipelineError(f"variable {d.target!r}: {exc.errors()[0]['msg']}") from None
-            result.derives.append(PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role))
+            result.derives.append(planned)
     return result
+
+
+def _check_union(c: UnionSource, earlier: list[PlannedSource]) -> None:
+    """A union joins vector sources declared before it."""
+    by_id = {s.id: s.config for s in earlier}
+    for part in c.of:
+        if part not in by_id:
+            raise PipelineError(f"source {c.id!r}: {part!r} must be a source declared before it")
+        cfg = by_id[part]
+        vector = isinstance(cfg, UnionSource) or (
+            isinstance(cfg, FileSource) and _file_format(cfg.path, cfg.format, cfg.variable) == "vector")
+        if not vector:
+            raise PipelineError(f"source {c.id!r}: {part!r} is not a vector file")
 
 
 def _derive_sources(d: DeriveConfig, templates: dict[str, list[int] | None]) -> list[str]:
@@ -195,7 +223,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
     ``store/``, ``raw/`` (sources with their provenance) and ``run.json``, a
     record of this run with the pipeline file's checksum.
     """
-    from disscube import CubeClient, Derivation
+    from disscube import CubeClient
 
     p = pipeline if isinstance(pipeline, Plan) else plan(pipeline)
     pf, cfg = p.file, p.file.config
@@ -218,11 +246,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
                                "checksum": src.checksum, "time": src.time})
 
     for d in p.derives:
-        derived = cube.derive_declarative(
-            Derivation(target=d.target, source_id=d.source, operator=d.operator,
-                       class_code=d.class_code, role=d.role),
-            grid_id=grid_id,
-        )
+        derived = cube.derive_declarative(d.derivation(), grid_id=grid_id)
         for dv in derived:
             report.derived.append({"target": dv.name, "source": d.source, "spec_hash": dv.spec_hash,
                                    "times": dv.times, "file": dv.asset_url})
@@ -280,6 +304,8 @@ def _register_source(cube, s: PlannedSource, raw: Path, bbox_geo: list[float], b
             legend = base / legend
         return register_classified_map(cube, c.id, _resolve(base, c.path), bbox_geo, raw, legend=legend,
                                        time=c.time, nodata=c.nodata, producer=c.producer, name=c.name)
+    if isinstance(c, UnionSource):
+        return _register_union(cube, c, raw)
     return _register_file(cube, c, base, raw)
 
 
@@ -313,6 +339,16 @@ def _register_bdc(cube, c: BdcSource, raw: Path, bbox_geo: list[float]):
                            time=time, tags=["bdc", f"collection:{c.collection}", f"period:{c.period}"])
 
 
+def _file_format(path: str, declared: str | None, variable: str | None) -> str:
+    if declared:
+        return declared
+    if variable:
+        return "raster"
+    local = _local_file(path)
+    suffix = local.suffix.lower() if local is not None else ""
+    return "vector" if path.startswith("zip://") or suffix in _VECTOR_SUFFIXES else "raster"
+
+
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
     from disscube.models import SpatialSource
 
@@ -320,20 +356,54 @@ def _register_file(cube, c: FileSource, base: Path, raw: Path):
     local = _local_file(path)
     if local is None or not local.exists():
         raise PipelineError(f"source {c.id!r}: file not found: {path}")
-    fmt = c.format or ("vector" if path.startswith("zip://")
-                       or local.suffix.lower() in _VECTOR_SUFFIXES else "raster")
-    crs = c.crs or _file_crs(path, fmt)
+    fmt = _file_format(path, c.format, c.variable)
+    if c.variable and fmt != "raster":
+        raise PipelineError(f"source {c.id!r}: 'variable' reads a NetCDF variable as a raster")
+    if c.read and fmt != "vector":
+        raise PipelineError(f"source {c.id!r}: 'read' options apply to vector files")
+    if c.nodata is not None and fmt != "raster":
+        raise PipelineError(f"source {c.id!r}: 'nodata' applies to raster files")
+    url = f'NETCDF:"{path}":{c.variable}' if c.variable else path
+    crs = c.crs or _file_crs(url, fmt, c.read)
     checksum = sha256_file(local)
     prov_path = raw / f"{c.id}.provenance.json"
-    prov_path.write_text(json.dumps({"type": "file", "path": str(path), "format": fmt, "crs": crs,
-                                     "checksum": checksum}, indent=2, ensure_ascii=False), encoding="utf-8")
-    src = SpatialSource(id=c.id, name=c.name or c.id, format=fmt, asset_url=str(path), crs=crs,
-                        time=c.time, checksum=checksum, tags=["file", f"provenance:{prov_path}"])
+    provenance = {"type": "file", "path": str(path), "format": fmt, "crs": crs, "checksum": checksum}
+    provenance |= {k: v for k, v in (("variable", c.variable), ("nodata", c.nodata), ("read", c.read)) if v}
+    prov_path.write_text(json.dumps(provenance, indent=2, ensure_ascii=False), encoding="utf-8")
+    src = SpatialSource(id=c.id, name=c.name or c.id, format=fmt, asset_url=url, crs=crs,
+                        time=c.time, checksum=checksum, tags=["file", f"provenance:{prov_path}"],
+                        read_options=c.read, nodata=c.nodata)
     cube.register_spatial_source(src)
     return src
 
 
-def _file_crs(path: str, fmt: str) -> str:
+def _register_union(cube, c: UnionSource, raw: Path):
+    """Write the features of ``c.of`` to one GeoPackage (in the first part's CRS) and register it."""
+    import geopandas as gpd
+    import pandas as pd
+
+    from disscube.models import SpatialSource
+
+    parts = [cube.catalog.get_spatial_source(pid) for pid in c.of]
+    frames = [gpd.read_file(p.asset_url, **p.read_options) for p in parts]
+    crs = frames[0].crs
+    geoms = pd.concat([f.geometry.to_crs(crs) for f in frames], ignore_index=True)
+    out = raw / f"{c.id}.gpkg"
+    gpd.GeoDataFrame({"part": np.repeat(c.of, [len(f) for f in frames])}, geometry=geoms, crs=crs
+                     ).to_file(out, driver="GPKG")
+    checksum = "sha256:" + hashlib.sha256(json.dumps([p.fingerprint() for p in parts]).encode()).hexdigest()
+    prov_path = raw / f"{c.id}.provenance.json"
+    prov_path.write_text(json.dumps({"type": "union", "of": c.of, "features": [len(f) for f in frames],
+                                     "file": str(out), "checksum": checksum}, indent=2, ensure_ascii=False),
+                         encoding="utf-8")
+    src = SpatialSource(id=c.id, name=c.name or c.id, format="vector", asset_url=str(out),
+                        crs=crs.to_string(), checksum=checksum,
+                        tags=["union", f"provenance:{prov_path}"])
+    cube.register_spatial_source(src)
+    return src
+
+
+def _file_crs(path: str, fmt: str, read: dict | None = None) -> str:
     if fmt == "raster":
         import rasterio
 
@@ -343,7 +413,8 @@ def _file_crs(path: str, fmt: str) -> str:
             return ds.crs.to_string()
     import geopandas as gpd
 
-    crs = gpd.read_file(path, rows=1).crs
+    options = {k: v for k, v in (read or {}).items() if k in ("layer", "encoding")}
+    crs = gpd.read_file(path, rows=1, **options).crs
     if crs is None:
         raise PipelineError(f"{path}: no CRS in the file; set 'crs' in the source block")
     return crs.to_string()
