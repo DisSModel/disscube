@@ -749,6 +749,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#taking-files-as-they-come" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Taking files as they come
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-params-and-fill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator params and fill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#several-years-years-and-year" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -975,6 +997,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#taking-files-as-they-come" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Taking files as they come
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-params-and-fill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator params and fill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#several-years-years-and-year" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1097,6 +1141,10 @@ its pipeline file (<code>examples/pipelines/itaituba_fill.toml</code>), side by 
 <td><code>distance</code> (exact, from the cell centre) or <code>min_distance</code> (raster approximation)</td>
 </tr>
 <tr>
+<td><code>area</code></td>
+<td><code>area</code> (share of the cell covered by polygons)</td>
+</tr>
+<tr>
 <td><code>presence</code>, <code>count</code>, <code>sum</code>, <code>minimum</code>, <code>maximum</code>, <code>stdev</code></td>
 <td><code>presence</code>, <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>std</code></td>
 </tr>
@@ -1118,7 +1166,7 @@ measured in <a href="../../terrame_fill_correspondence/">TerraME Fill Cells Corr
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">[[source]]</span><span class="w">                    </span><span class="c1"># one block per source; see the types below</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"…"</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"bdc"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"mapbiomas"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"prodes"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"classified"</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"bdc"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"mapbiomas"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"prodes"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"classified"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"union"</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
 <a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">[[derive]]</span><span class="w">                    </span><span class="c1"># one block per derived variable</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"urban_pct"</span>
@@ -1127,6 +1175,8 @@ measured in <a href="../../terrame_fill_correspondence/">TerraME Fill Cells Corr
 <a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="n">class_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">24</span>
 <a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="c1"># role = "driver"</span>
 <a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="c1"># years = [2020]              # restrict a {year} source to some years</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="c1"># params = { subcells = 20 }  # operator options, see below</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="c1"># fill = "nearest"            # cells left without a value take the nearest cell's</span>
 </code></pre></div>
 <p>Without <code>crs</code>, <code>bbox</code> is <code>[min_lon, min_lat, max_lon, max_lat]</code> in WGS84 and the
 grid is a local BDC Albers grid (<code>register_local_grid</code>). Relative paths are
@@ -1143,7 +1193,7 @@ relative to the pipeline file, so a folder with its TOML and data is portable.</
 <tbody>
 <tr>
 <td><code>file</code></td>
-<td><code>path</code> (raster, vector, or <code>zip://…</code> shapefile), <code>crs</code>, <code>format</code>, <code>time</code></td>
+<td><code>path</code> (raster, vector, or <code>zip://…</code> shapefile), <code>crs</code>, <code>format</code>, <code>time</code>, <code>variable</code>, <code>nodata</code>, <code>read</code></td>
 <td>a local file, checksummed</td>
 </tr>
 <tr>
@@ -1166,9 +1216,73 @@ relative to the pipeline file, so a folder with its TOML and data is portable.</
 <td><code>path</code>, <code>legend</code> (table or <code>.qml</code>/<code>.json</code>/<code>.csv</code> file), <code>time</code>, <code>nodata</code>, <code>producer</code></td>
 <td><code>disscube.sources.classified</code></td>
 </tr>
+<tr>
+<td><code>union</code></td>
+<td><code>of</code> (ids of vector sources declared before it)</td>
+<td>their features in one GeoPackage under <code>raw/</code></td>
+</tr>
 </tbody>
 </table>
 <p>Every source block also accepts <code>name</code> and <code>years</code>.</p>
+<h3 id="taking-files-as-they-come">Taking files as they come</h3>
+<p>A <code>file</code> source can say how to read the file, so that the data need no
+preparation script:</p>
+<ul>
+<li><code>variable = "veg"</code> reads one variable of a NetCDF file as a raster
+  (GDAL's <code>NETCDF:"file":veg</code>; its time axis is not decoded);</li>
+<li><code>nodata = -9.99e8</code> declares the raster's no-data value when the file does
+  not;</li>
+<li><code>read = { … }</code> passes options to <code>geopandas.read_file</code> for a vector file:
+  <code>where</code> (an SQL filter on the attributes), <code>encoding</code> (for a shapefile
+  without <code>.cpg</code>), <code>layer</code>, <code>on_invalid</code>, …</li>
+</ul>
+<p><code>read</code> and <code>nodata</code> enter the source's fingerprint, so two selections of one
+file are two products in the cache. A <code>union</code> joins vector sources — e.g.
+state roads from one file and federal roads from another, each filtered by
+its own attributes — in the first one's CRS:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[[source]]</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"state_paved"</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rodovias_estaduais.shp"</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"utf-8"</span><span class="p">,</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"SURFACE IN ('Paved', 'Duplicated')"</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">[[source]]</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"federal_paved"</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"zip://Transporte.zip!TRA_Trecho_Rodoviario_L.shp"</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"JURISDICAO = 'Federal' AND REVESTIMEN = 'Pavimentado'"</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="k">[[source]]</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"paved_roads"</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"union"</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">of</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"state_paved"</span><span class="p">,</span><span class="w"> </span><span class="s2">"federal_paved"</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="operator-params-and-fill">Operator <code>params</code> and <code>fill</code></h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th><code>params</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>distance</code></td>
+<td><code>crs</code></td>
+<td>measure in this CRS — e.g. a projected one, for metres on a geographic grid</td>
+</tr>
+<tr>
+<td><code>percentage</code>, <code>majority</code>, <code>minority</code>, <code>std</code></td>
+<td><code>subcells</code></td>
+<td>at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90)</td>
+</tr>
+</tbody>
+</table>
+<p>An unknown key fails the plan. <code>fill = "nearest"</code> gives the cells an
+operator leaves without a value (NaN — e.g. a coastal cell a raster does not
+reach) the value of the nearest cell that has one. Both enter the product's
+<code>spec_hash</code>; a derivation without them keeps the hash it had before.</p>
 <h3 id="several-years-years-and-year">Several years: <code>years</code> and <code>{year}</code></h3>
 <p>A source block with <code>years = [2000, 2020]</code> is expanded once per year; every
 <code>{year}</code> in its strings is replaced, <code>year</code> (MapBiomas, PRODES) and <code>time</code> are
@@ -1177,11 +1291,11 @@ whose <code>source</code> contains <code>{year}</code> is expanded over the same
 product per year that <code>load()</code> returns as a <code>(time, y, x)</code> series. There are no
 other loops or conditions: what does not fit belongs in Python.</p>
 <h2 id="what-a-run-leaves-behind">What a run leaves behind</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>&lt;workspace&gt;/
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── catalog.db          the catalog
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>├── store/              derived variables (Zarr)
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>├── raw/                every source: GeoTIFF + &lt;id&gt;.provenance.json
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>└── run.json            this run: pipeline file and checksum, sources, products
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&lt;workspace&gt;/
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── catalog.db          the catalog
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>├── store/              derived variables (Zarr)
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>├── raw/                every source: GeoTIFF + &lt;id&gt;.provenance.json
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>└── run.json            this run: pipeline file and checksum, sources, products
 </code></pre></div>
 <p>Each provenance file gains a <code>pipeline</code> entry with the pipeline file's path,
 name and SHA-256, so every derived variable can be traced back to the exact

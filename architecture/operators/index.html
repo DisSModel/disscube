@@ -1222,6 +1222,8 @@
 </tr>
 </tbody>
 </table>
+<p>Each accepts <code>params = {"subcells": n}</code>, a cap on the fine pixels per cell
+along each axis (see <code>GridAligner._align_fine</code>).</p>
 <p>The last three also produce <code>coverage_purity</code> and <code>dominance_purity</code> as coordinates of the output <code>DataArray</code> (persisted in the Zarr alongside the variable).</p>
 <h3 id="proximity-vector-and-passthrough-for-raster">Proximity — vector (and passthrough for raster)</h3>
 <table>
@@ -1235,7 +1237,7 @@
 <tbody>
 <tr>
 <td><code>distance</code></td>
-<td>Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid</td>
+<td>Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid. <code>params = {"crs": …}</code> measures in another CRS (metres in a projected one)</td>
 <td>no</td>
 </tr>
 <tr>
@@ -1246,6 +1248,11 @@
 <tr>
 <td><code>count</code></td>
 <td>Number of features whose centroid falls in each cell</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>area</code></td>
+<td>Share (0..1) of each cell covered by polygons (intersection area / cell area; overlaps count once) — TerraME's <code>area</code></td>
 <td>no</td>
 </tr>
 </tbody>

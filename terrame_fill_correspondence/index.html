@@ -1163,9 +1163,9 @@ see <a href="../guides/pipeline_files/">Pipeline files (TOML)</a> and
 </tr>
 <tr>
 <td><code>area</code> (polygons)</td>
-<td>—</td>
-<td><strong>not implemented</strong></td>
-<td>Fraction of each cell covered by polygons (e.g. protected areas). Semantics confirmed on Amazônia: intersection area / cell area reproduces TerraME in every cell.</td>
+<td><code>area</code></td>
+<td>implemented (exact); <strong>parity verified</strong> (Amazônia)</td>
+<td>Fraction (0..1) of each cell covered by polygons (e.g. protected areas): intersection area / cell area, overlapping polygons counted once. Reproduces TerraME's <code>protected</code> within 0.01 in at least 99 % of the cells.</td>
 </tr>
 <tr>
 <td><code>majority</code> / <code>mode</code></td>
@@ -1189,7 +1189,7 @@ see <a href="../guides/pipeline_files/">Pipeline files (TOML)</a> and
 <td><code>distance</code></td>
 <td><code>distance</code></td>
 <td>implemented (exact, from the cell centre)</td>
-<td>Euclidean distance from each cell centre to the nearest feature, in CRS units, without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so <code>distance</code> is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and <code>distance</code> reproduces its fields.</td>
+<td>Euclidean distance from each cell centre to the nearest feature, in CRS units (or in the CRS given as <code>params = {crs = …}</code>, e.g. metres on a geographic grid), without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so <code>distance</code> is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and <code>distance</code> reproduces its fields.</td>
 </tr>
 <tr>
 <td><code>distance</code></td>
@@ -1448,8 +1448,8 @@ the 5 km PRODES raster, roads, ports and indigenous lands.</p>
 </tr>
 <tr>
 <td><code>protected</code> — <code>area</code> (polygons)</td>
-<td>—</td>
-<td>no operator; intersection area / cell area reproduces TerraME in every cell (within 0.01)</td>
+<td><code>area</code></td>
+<td>intersection area / cell area reproduces TerraME within 0.01 in ≥ 99 % of cells (<code>tests/test_terrame_parity.py</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -1467,15 +1467,13 @@ needs to be pinned down before an exact operator is implemented.</p>
   straddle a cell border, and <code>presence</code> rasterizes lines through cell
   centres; TerraME assigns each pixel to the cell containing its centre and
   marks every cell a line touches (Emas).</li>
-<li><strong>Area-weighted vector aggregation.</strong> TerraME's <code>sum</code> with <code>area = true</code> and
-  <code>area</code> (fraction of the cell covered by polygons) have no DisSCube
-  equivalent yet: vector sources are rasterized rather than area-weighted, and
-  <code>sum</code> accepts raster sources only. The raster-fine path remains the
-  recommended route for fractional drivers.</li>
+<li><strong>Area-weighted vector aggregation.</strong> TerraME's <code>sum</code> with <code>area = true</code>
+  has no DisSCube equivalent yet: <code>sum</code> accepts raster sources only. (<code>area</code>,
+  the fraction of the cell covered by polygons, is exact.)</li>
 <li><strong>In-memory, single-tile by design.</strong> The fine-alignment path materializes a
   fine array in memory; very large tiles at a high fine/target ratio are bounded
-  by available memory. Distributed/lazy execution is a roadmap item, not a
-  current capability.</li>
+  by available memory — <code>params = {subcells = n}</code> caps the ratio.
+  Distributed/lazy execution is a roadmap item, not a current capability.</li>
 </ul>
 <h2 id="positioning-statement">Positioning statement</h2>
 <blockquote>
@@ -1486,8 +1484,9 @@ over a catalogued data cube, with aggregation on windows aligned to the target
 grid and explicit control of cell purity. On the three Fill examples shipped
 with TerraME (Itaituba, Emas, Amazônia), raster averages and class coverage
 reproduce TerraME's output cell by cell once cell purity is applied, and
-<code>presence</code>, <code>min</code> and <code>max</code> agree in 98–99.7 % of cells; exact vector
-distance and area-weighted polygon operations are the remaining gaps.</p>
+<code>presence</code>, <code>min</code> and <code>max</code> agree in 98–99.7 % of cells, and polygon
+<code>area</code> in ≥ 99 %; exact vector distance and area-weighted sums are the
+remaining gaps.</p>
 </blockquote>
 
 
