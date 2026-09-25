@@ -82,15 +82,21 @@ class Plan:
     grid: GridConfig
     sources: list[PlannedSource] = field(default_factory=list)
     derives: list[PlannedDerive] = field(default_factory=list)
+    catalog_sources: list[str] = field(default_factory=list)
+    """Sources the derivations use that this file does not declare: they must
+    already be in the workspace's catalog (registered by another pipeline file)."""
 
     def summary(self) -> str:
         g = self.grid
         lines = [
             f"pipeline  : {self.file.path.name}  ({self.file.checksum[:19]}…)",
-            f"grid      : {g.name}  {g.resolution:g} {'m, BDC Albers' if g.crs is None else g.crs}",
+            f"grid      : {g.name}  {g.resolution:g} {'m, BDC Albers' if g.crs is None else g.crs}"
+            if g is not None else f"extent    : {self.file.config.extent} (sources only)",
             f"sources   : {len(self.sources)}",
         ]
         lines += [f"  - {s.id:<24} {s.config.type}" for s in self.sources]
+        if self.catalog_sources:
+            lines.append(f"from the workspace catalog: {', '.join(self.catalog_sources)}")
         lines.append(f"variables : {len(self.derives)}")
         lines += [f"  - {d.target:<24} {d.operator}"
                   f"{'(' + str(d.class_code) + ')' if d.class_code is not None else ''}"
@@ -163,7 +169,10 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
     for d in cfg.derive:
         for source_id in _derive_sources(d, templates):
             if source_id not in ids:
-                raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
+                if not cfg.sources_from_catalog:
+                    raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
+                if source_id not in result.catalog_sources:
+                    result.catalog_sources.append(source_id)
             planned = PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role,
                                     params=d.params, fill=d.fill)
             try:
@@ -208,7 +217,7 @@ def _derive_sources(d: DeriveConfig, templates: dict[str, list[int] | None]) -> 
 @dataclass
 class RunReport:
     workspace: Path
-    grid_id: str
+    grid_id: str | None
     sources: list[dict] = field(default_factory=list)
     derived: list[dict] = field(default_factory=list)
     record: Path | None = None
@@ -234,7 +243,15 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
     started = datetime.now(UTC).isoformat(timespec="seconds")
 
     cube = CubeClient(catalog=str(ws / "catalog.db"), store=str(ws / "store"))
-    grid_id, bbox_geo = _register_grid(cube, p.grid)
+    if p.grid is not None:
+        grid_id, bbox_geo = _register_grid(cube, p.grid)
+    else:
+        grid_id, bbox_geo = None, list(cfg.extent)
+    missing = [sid for sid in p.catalog_sources if cube.catalog.get_spatial_source(sid) is None]
+    if missing:
+        raise PipelineError(
+            f"sources not declared in {pf.path.name} nor in the catalog of {ws}: {', '.join(missing)} "
+            "— run the pipeline file that registers them first, with the same workspace")
     report = RunReport(workspace=ws, grid_id=grid_id)
     pipeline_info = {"file": str(pf.path), "checksum": pf.checksum, "name": cfg.name}
 
@@ -260,6 +277,11 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
         "derived": report.derived,
     }
     report.record = ws / "run.json"
+    # one record per pipeline file too: several files can share a workspace
+    # (one registering sources, others deriving from them)
+    (ws / "runs").mkdir(exist_ok=True)
+    (ws / "runs" / f"{pf.path.stem}.json").write_text(
+        json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     report.record.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     return report
 

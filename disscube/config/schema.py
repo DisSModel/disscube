@@ -144,9 +144,24 @@ class PipelineConfig(_Strict):
     schema_version: int = Field(alias="schema")
     name: str | None = None
     workspace: str | None = None
-    grid: GridConfig
+    grid: GridConfig | None = None
+    extent: list[float] | None = Field(default=None, min_length=4, max_length=4)
+    """``[min_lon, min_lat, max_lon, max_lat]`` (WGS84) a sources-only file reads
+    windowed sources over (classified maps, BDC, MapBiomas, PRODES)."""
+    sources_from_catalog: bool = False
+    """Let [[derive]] blocks use sources this file does not declare, registered
+    in the workspace's catalog by another pipeline file. Off by default, so a
+    misspelt source id fails when the file is planned."""
     source: list[Source] = Field(default_factory=list)
     derive: list[DeriveConfig] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _grid_or_extent(self):
+        if self.derive and self.grid is None:
+            raise ValueError("a file with [[derive]] blocks needs a [grid]")
+        if self.grid is None and self.extent is None and self.source:
+            raise ValueError("a sources-only file needs `extent` (or a [grid])")
+        return self
 
     @field_validator("schema_version")
     @classmethod
