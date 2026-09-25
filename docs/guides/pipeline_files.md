@@ -138,44 +138,6 @@ type = "union"
 of = ["state_paved", "federal_paved"]
 ```
 
-### Sources in one file, derivations in another
-
-Raw data are not tied to one model: a region's layers can be registered once
-and derived onto several models' grids. A pipeline file may declare only
-sources — with `extent = [min_lon, min_lat, max_lon, max_lat]` instead of a
-`[grid]`, the area windowed sources are read over — and other files, with
-`sources_from_catalog = true`, derive from them. Run them with the same
-workspace, sources first:
-
-```toml
-# sources.toml — model-independent
-schema = 1
-extent = [-74.0, -34.0, -34.7, 5.3]
-
-[[source]]
-id = "rivers"
-type = "file"
-path = "rios.shp"
-```
-
-```toml
-# model_a.toml — one model's grid and variables
-schema = 1
-sources_from_catalog = true   # sources this file does not declare come from the catalog
-
-[grid]
-# …
-
-[[derive]]
-target = "e_rivers"
-source = "rivers"
-operator = "distance"
-```
-
-A source missing from both the file and the catalog fails the run; without
-`sources_from_catalog` it fails the plan, as before. Each run is recorded in
-`runs/<file>.json` as well as `run.json` (the latest).
-
 ### Operator `params` and `fill`
 
 | Operator | `params` | Meaning |

@@ -169,10 +169,7 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
     for d in cfg.derive:
         for source_id in _derive_sources(d, templates):
             if source_id not in ids:
-                if not cfg.sources_from_catalog:
-                    raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
-                if source_id not in result.catalog_sources:
-                    result.catalog_sources.append(source_id)
+                raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
             planned = PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role,
                                     params=d.params, fill=d.fill)
             try:
