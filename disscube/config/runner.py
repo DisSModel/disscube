@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import tomllib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -368,11 +369,34 @@ def _file_format(path: str, declared: str | None, variable: str | None) -> str:
     return "vector" if path.startswith("zip://") or suffix in _VECTOR_SUFFIXES else "raster"
 
 
+def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
+    """Downloads and validates a remote file source using pooch."""
+    import pooch
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    token = os.environ.get("GITHUB_TOKEN")
+    downloader = None
+    if token and c.url and "github" in c.url:
+        downloader = pooch.HTTPDownloader(headers={"Authorization": f"Bearer {token}", "Accept": "application/octet-stream"})
+
+    known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
+    downloaded = pooch.retrieve(
+        url=c.url,
+        known_hash=known_hash,
+        path=target_path.parent,
+        fname=target_path.name,
+        downloader=downloader,
+    )
+    return Path(downloaded)
+
+
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
     from disscube.models import SpatialSource
 
     path = _resolve(base, c.path)
     local = _local_file(path)
+    if (local is None or not local.exists()) and getattr(c, 'url', None):
+        local = _fetch_file_source(c, local or (base / c.path))
     if local is None or not local.exists():
         raise PipelineError(f"source {c.id!r}: file not found: {path}")
     fmt = _file_format(path, c.format, c.variable)
