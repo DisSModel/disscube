@@ -1,0 +1,15 @@
+schema = 1
+name = "Teste Fetch Aeroportos"
+
+[grid]
+name = "brasil_grid"
+bbox = [-74.0, -34.0, -34.0, 6.0]
+resolution = 50000
+
+[[source]]
+id = "airports"
+type = "file"
+path = "zip://data/raw/shapefiles/aeroportos_pnlt_poly_sirgas2000.zip"
+crs = "EPSG:4674"
+url = "https://github.com/profsergiocosta/luccmebr-reconstruction/releases/download/data-v1.0/aeroportos_pnlt_poly_sirgas2000.zip"
+sha256 = "cf0a0fddf6e5b6e807110fe3e0e10076b3b4271a80e87fcebf03656f8a25441c"
