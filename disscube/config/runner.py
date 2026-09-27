@@ -18,6 +18,7 @@ from disscube.config.schema import (
     BdcSource,
     ClassifiedSource,
     DeriveConfig,
+    ExportConfig,
     FileSource,
     GridConfig,
     MapbiomasSource,
@@ -170,7 +171,11 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
     for d in cfg.derive:
         for source_id in _derive_sources(d, templates):
             if source_id not in ids:
-                raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
+                if cfg.sources_from_catalog:
+                    if source_id not in result.catalog_sources:
+                        result.catalog_sources.append(source_id)
+                else:
+                    raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
             planned = PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role,
                                     params=d.params, fill=d.fill)
             try:
@@ -209,7 +214,7 @@ def _derive_sources(d: DeriveConfig, templates: dict[str, list[int] | None]) -> 
 
 
 # ---------------------------------------------------------------------------
-# Run
+# Run & Export
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -219,16 +224,60 @@ class RunReport:
     sources: list[dict] = field(default_factory=list)
     derived: list[dict] = field(default_factory=list)
     record: Path | None = None
+    exported: Path | None = None
 
 
-def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None) -> RunReport:
+@dataclass
+class ExportReport:
+    workspace: Path
+    output: Path
+    variables: list[str]
+    grid_id: str
+
+
+def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, out_path: Path) -> None:
+    """Directly writes a multi-band GeoTIFF using rasterio from a RasterBackend instance."""
+    import rasterio
+    from rasterio.transform import from_origin
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    crs = getattr(backend, "crs", None) or grid.crs
+    transform = getattr(backend, "transform", None)
+    shape = getattr(backend, "shape", None)
+
+    if transform is None or shape is None:
+        minx, miny, maxx, maxy = grid.bbox
+        res = grid.resolution
+        width = int(round((maxx - minx) / res))
+        height = int(round((maxy - miny) / res))
+        transform = from_origin(minx, maxy, res, res)
+    else:
+        height, width = shape
+
+    arrays = [np.asarray(backend.get(var), dtype=np.float64) for var in variables]
+
+    with rasterio.open(
+        out_path,
+        "w",
+        driver="GTiff",
+        height=height,
+        width=width,
+        count=len(arrays),
+        dtype=arrays[0].dtype,
+        crs=crs,
+        transform=transform,
+    ) as dst:
+        for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
+            dst.write(arr, idx)
+            dst.set_band_description(idx, var)
+
+
+def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None,
+        export_geotiff: str | Path | None = None) -> RunReport:
     """
     Execute a pipeline file: register the grid, fetch every source, derive every variable.
 
-    The workspace (``workspace`` argument, else the file's ``workspace`` key,
-    else a folder named after the file next to it) receives ``catalog.db``,
-    ``store/``, ``raw/`` (sources with their provenance) and ``run.json``, a
-    record of this run with the pipeline file's checksum.
+    The workspace receives ``catalog.db``, ``store/``, ``raw/`` and ``run.json``.
     """
     from disscube import CubeClient
 
@@ -266,6 +315,22 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
             report.derived.append({"target": dv.name, "source": d.source, "spec_hash": dv.spec_hash,
                                    "times": dv.times, "file": dv.asset_url})
 
+    # Resolve export output from parameter or TOML config
+    target_export = export_geotiff
+    if target_export is None and getattr(cfg, "export", None):
+        target_export = cfg.export.output if isinstance(cfg.export, ExportConfig) else str(cfg.export)
+
+    if target_export and p.derives and grid_id is not None:
+        vars_to_export = [d.target for d in p.derives]
+        if isinstance(getattr(cfg, "export", None), ExportConfig) and cfg.export.variables:
+            vars_to_export = cfg.export.variables
+
+        backend = cube.to_lucc_data(vars_to_export, grid_id=grid_id)
+        out_tif = Path(target_export)
+        _save_geotiff_from_backend(backend, vars_to_export, p.grid, out_tif)
+        report.exported = out_tif
+        log.info("exported GeoTIFF to %s (%d bands)", out_tif, len(vars_to_export))
+
     record = {
         "pipeline": pipeline_info,
         "started": started,
@@ -274,14 +339,48 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
         "sources": report.sources,
         "derived": report.derived,
     }
+    if report.exported:
+        record["exported"] = str(report.exported)
     report.record = ws / "run.json"
-    # one record per pipeline file too: several files can share a workspace
-    # (one registering sources, others deriving from them)
     (ws / "runs").mkdir(exist_ok=True)
     (ws / "runs" / f"{pf.path.stem}.json").write_text(
         json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     report.record.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     return report
+
+
+def export_cube(pipeline: PipelineFile | Plan | str | Path,
+                output: str | Path,
+                workspace: str | Path | None = None,
+                variables: list[str] | None = None) -> ExportReport:
+    """Export derived variables from an existing data cube workspace to a multi-band GeoTIFF."""
+    from disscube import CubeClient
+
+    p = pipeline if isinstance(pipeline, Plan) else plan(pipeline)
+    pf, cfg = p.file, p.file.config
+    ws = Path(workspace) if workspace else (
+        pf.base_dir / cfg.workspace if cfg.workspace else pf.base_dir / pf.path.stem)
+
+    if p.grid is None:
+        raise PipelineError("cannot export: pipeline does not define a [grid]")
+
+    grid_id = p.grid.name
+    cube = CubeClient(catalog=str(ws / "catalog.db"), store=str(ws / "store"))
+
+    target_vars = variables
+    if not target_vars and isinstance(getattr(cfg, "export", None), ExportConfig) and cfg.export.variables:
+        target_vars = cfg.export.variables
+    if not target_vars:
+        target_vars = [d.target for d in p.derives]
+
+    if not target_vars:
+        raise PipelineError("no variables found to export (pass --variables or declare [[derive]] in pipeline)")
+
+    out_path = Path(output)
+    backend = cube.to_lucc_data(target_vars, grid_id=grid_id)
+    _save_geotiff_from_backend(backend, target_vars, p.grid, out_path)
+    log.info("exported GeoTIFF to %s (%d bands)", out_path, len(target_vars))
+    return ExportReport(workspace=ws, output=out_path, variables=target_vars, grid_id=grid_id)
 
 
 def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
@@ -296,8 +395,7 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
         return grid.id, list(g.bbox)
     cube.register_grid(GridSpec(id=g.name, type="local", crs=g.crs, resolution=g.resolution, bbox=g.bbox))
     to_geo = Transformer.from_crs(g.crs, "EPSG:4326", always_xy=True)
-    xs, ys = zip(*(to_geo.transform(x, y) for x in (g.bbox[0], g.bbox[2]) for y in (g.bbox[1], g.bbox[3])),
-                 strict=True)
+    xs, ys = zip(*(to_geo.transform(x, y) for x in (g.bbox[0], g.bbox) for y in (g.bbox, g.bbox)))
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
@@ -370,10 +468,6 @@ def _file_format(path: str, declared: str | None, variable: str | None) -> str:
 
 
 def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
-    """Downloads and validates a remote file source using pooch.
-    Automatically extracts ZIP archives when the target is an uncompressed file (e.g. .nc),
-    with deterministic caching to avoid redundant extractions.
-    """
     import os
     import zipfile
     import pooch
@@ -495,7 +589,6 @@ def _file_crs(path: str, fmt: str, read: dict | None = None) -> str:
 
 
 def _resolve(base: Path, path: str) -> str:
-    """Resolve ``path`` against the pipeline file's folder; ``zip://`` paths too, URLs untouched."""
     if path.startswith("zip://"):
         return "zip://" + _resolve(base, path[len("zip://"):])
     if "://" in path:
@@ -505,7 +598,6 @@ def _resolve(base: Path, path: str) -> str:
 
 
 def _local_file(path: str) -> Path | None:
-    """The file on disk behind ``path`` (the archive for ``zip://…``), or None for URLs."""
     if path.startswith("zip://"):
         return Path(path[len("zip://"):].split("!")[0])
     return None if "://" in path else Path(path)
@@ -514,7 +606,7 @@ def _local_file(path: str) -> Path | None:
 def _annotate_provenance(src, info: dict) -> None:
     for tag in src.tags:
         if tag.startswith("provenance:"):
-            path = Path(tag.split(":", 1)[1])
+            path = Path(tag.split(":", 1))
             record = json.loads(path.read_text(encoding="utf-8"))
             record["pipeline"] = info
             path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
