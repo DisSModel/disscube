@@ -395,7 +395,10 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
         return grid.id, list(g.bbox)
     cube.register_grid(GridSpec(id=g.name, type="local", crs=g.crs, resolution=g.resolution, bbox=g.bbox))
     to_geo = Transformer.from_crs(g.crs, "EPSG:4326", always_xy=True)
-    xs, ys = zip(*(to_geo.transform(x, y) for x in (g.bbox[0], g.bbox) for y in (g.bbox, g.bbox)))
+    
+    min_x, min_y, max_x, max_y = g.bbox
+    xs, ys = zip(*(to_geo.transform(x, y) for x in (min_x, max_x) for y in (min_y, max_y)))
+    
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
@@ -606,7 +609,8 @@ def _local_file(path: str) -> Path | None:
 def _annotate_provenance(src, info: dict) -> None:
     for tag in src.tags:
         if tag.startswith("provenance:"):
-            path = Path(tag.split(":", 1))
+            _, prov_path = tag.split(":", 1)
+            path = Path(prov_path)
             record = json.loads(path.read_text(encoding="utf-8"))
             record["pipeline"] = info
             path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
