@@ -236,7 +236,10 @@ class ExportReport:
 
 
 def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, out_path: Path) -> None:
-    """Directly writes a multi-band GeoTIFF using rasterio from a RasterBackend instance."""
+    """Directly writes a multi-band GeoTIFF using rasterio from a RasterBackend instance,
+
+    applying the territorial boundary mask and setting pixels outside Brazil to NaN.
+    """
     import rasterio
     from rasterio.transform import from_origin
 
@@ -254,8 +257,28 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
     else:
         height, width = shape
 
-    arrays = [np.asarray(backend.get(var), dtype=np.float64) for var in variables]
+    # 1. Recupera a máscara oficial do território brasileiro (se presente)
+    mask_arr = None
+    try:
+        raw_mask = backend.get("mask")
+        if raw_mask is not None:
+            # Considera célula ativa qualquer uma com fração de terra > 0
+            mask_arr = np.asarray(raw_mask, dtype=np.float64) > 0.0
+    except Exception:
+        pass
 
+    # 2. Converte os pixels fora do Brasil para NaN
+    arrays = []
+    for var in variables:
+        arr = np.asarray(backend.get(var), dtype=np.float64).copy()
+        if mask_arr is not None:
+            if var == "mask":
+                arr = np.where(mask_arr, 1.0, np.nan)
+            else:
+                arr[~mask_arr] = np.nan  # Mar, cantos e exterior viram NaN
+        arrays.append(arr)
+
+    # 3. Grava o GeoTIFF declarando nodata=np.nan
     with rasterio.open(
         out_path,
         "w",
@@ -267,11 +290,11 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         crs=crs,
         transform=transform,
         nodata=np.nan,
+        compress="deflate",
     ) as dst:
         for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
             dst.write(arr, idx)
             dst.set_band_description(idx, var)
-
 
 def resolve_workspace(p: Plan, workspace: str | Path | None = None) -> Path:
     """
