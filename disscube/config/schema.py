@@ -45,7 +45,14 @@ class FileSource(_SourceBase):
     url: str | None = None
     sha256: str | None = None
     """
-    A local raster or vector file (path relative to the pipeline file).
+    A local raster or vector file.
+
+    Without ``url``, ``path`` is a hand-placed file resolved relative to the
+    pipeline file itself. With ``url``, ``path`` is just the logical filename
+    inside disscube's shared cache (pooch's OS cache directory) — the same
+    file works unmodified on any machine or workspace; DisSCube fetches and
+    verifies it there (via ``sha256``) once, the first time it's missing, and
+    every workspace reuses that one copy afterwards.
 
     ``variable`` reads one variable of a NetCDF file as a raster. ``nodata``
     declares the raster's no-data value when the file does not. ``read``

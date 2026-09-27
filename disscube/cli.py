@@ -48,12 +48,14 @@ def main(argv: list[str] | None = None) -> int:
         p = plan(args.file)
         print(p.summary())
         if args.command == "fetch":
-            from disscube.config.runner import _fetch_file_source, _local_file, _resolve
+            from disscube.config.runner import _fetch_file_source, _local_file, _raw_cache_dir, _resolve
             from disscube.config.schema import FileSource
+            raw = _raw_cache_dir()
+            raw.mkdir(parents=True, exist_ok=True)
             fetched = 0
             for s in p.sources:
                 if isinstance(s.config, FileSource) and getattr(s.config, 'url', None):
-                    target = _local_file(_resolve(p.file.base_dir, s.config.path))
+                    target = _local_file(_resolve(raw, s.config.path))
                     if target is not None:
                         print(f"Fetching {s.id} -> {target.name}...")
                         _fetch_file_source(s.config, target)
