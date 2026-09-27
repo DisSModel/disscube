@@ -170,7 +170,11 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
     for d in cfg.derive:
         for source_id in _derive_sources(d, templates):
             if source_id not in ids:
-                raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
+                if cfg.sources_from_catalog:
+                    if source_id not in result.catalog_sources:
+                        result.catalog_sources.append(source_id)
+                else:
+                    raise PipelineError(f"variable {d.target!r}: unknown source {source_id!r}")
             planned = PlannedDerive(d.target, source_id, d.operator, d.class_code, d.role,
                                     params=d.params, fill=d.fill)
             try:
@@ -221,7 +225,8 @@ class RunReport:
     record: Path | None = None
 
 
-def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None) -> RunReport:
+def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None,
+        export_geotiff: str | Path | None = None) -> RunReport:
     """
     Execute a pipeline file: register the grid, fetch every source, derive every variable.
 
@@ -266,6 +271,14 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
             report.derived.append({"target": dv.name, "source": d.source, "spec_hash": dv.spec_hash,
                                    "times": dv.times, "file": dv.asset_url})
 
+    if export_geotiff and p.derives and grid_id is not None:
+        from dissmodel.io.raster import save_geotiff
+        backend = cube.to_lucc_data([d.target for d in p.derives], grid_id=grid_id)
+        out_tif = Path(export_geotiff)
+        out_tif.parent.mkdir(parents=True, exist_ok=True)
+        save_geotiff(backend, str(out_tif))
+        log.info("exported GeoTIFF to %s (%d bands)", out_tif, len(backend.arrays))
+
     record = {
         "pipeline": pipeline_info,
         "started": started,
@@ -296,8 +309,8 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
         return grid.id, list(g.bbox)
     cube.register_grid(GridSpec(id=g.name, type="local", crs=g.crs, resolution=g.resolution, bbox=g.bbox))
     to_geo = Transformer.from_crs(g.crs, "EPSG:4326", always_xy=True)
-    xs, ys = zip(*(to_geo.transform(x, y) for x in (g.bbox[0], g.bbox[2]) for y in (g.bbox[1], g.bbox[3])),
-                 strict=True)
+    xs, ys = zip(*(to_geo.transform(x, y) for x in (g.bbox[0], g.bbox[2]) for y in (g.bbox[1], g.bbox[3])))
+                 
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
@@ -514,7 +527,7 @@ def _local_file(path: str) -> Path | None:
 def _annotate_provenance(src, info: dict) -> None:
     for tag in src.tags:
         if tag.startswith("provenance:"):
-            path = Path(tag.split(":", 1)[1])
+            path = Path(tag.split(":", 1))
             record = json.loads(path.read_text(encoding="utf-8"))
             record["pipeline"] = info
             path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
