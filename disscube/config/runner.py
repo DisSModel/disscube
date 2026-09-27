@@ -272,6 +272,19 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
             dst.set_band_description(idx, var)
 
 
+def resolve_workspace(p: Plan, workspace: str | Path | None = None) -> Path:
+    """
+    The workspace folder for a plan: the explicit ``workspace`` argument, else the
+    pipeline's own ``workspace =`` setting (relative to the pipeline file), else a
+    folder named after the pipeline file itself. Shared by ``run()``, ``export_cube()``
+    and the ``fetch`` CLI command so they always agree on where ``raw/`` lives.
+    """
+    pf, cfg = p.file, p.file.config
+    if workspace:
+        return Path(workspace)
+    return pf.base_dir / cfg.workspace if cfg.workspace else pf.base_dir / pf.path.stem
+
+
 def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None,
         export_geotiff: str | Path | None = None) -> RunReport:
     """
@@ -283,8 +296,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
 
     p = pipeline if isinstance(pipeline, Plan) else plan(pipeline)
     pf, cfg = p.file, p.file.config
-    ws = Path(workspace) if workspace else (
-        pf.base_dir / cfg.workspace if cfg.workspace else pf.base_dir / pf.path.stem)
+    ws = resolve_workspace(p, workspace)
     raw = ws / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     started = datetime.now(UTC).isoformat(timespec="seconds")
@@ -357,9 +369,8 @@ def export_cube(pipeline: PipelineFile | Plan | str | Path,
     from disscube import CubeClient
 
     p = pipeline if isinstance(pipeline, Plan) else plan(pipeline)
-    pf, cfg = p.file, p.file.config
-    ws = Path(workspace) if workspace else (
-        pf.base_dir / cfg.workspace if cfg.workspace else pf.base_dir / pf.path.stem)
+    cfg = p.file.config
+    ws = resolve_workspace(p, workspace)
 
     if p.grid is None:
         raise PipelineError("cannot export: pipeline does not define a [grid]")
@@ -518,13 +529,33 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
     return Path(downloaded)
 
 
+def _raw_cache_dir() -> Path:
+    """
+    Where remote (``url``-bearing) ``file`` sources are downloaded and cached.
+
+    One directory shared by every pipeline and workspace on this machine —
+    pooch's own OS-appropriate cache location (respects ``XDG_CACHE_HOME`` and
+    friends), so a multi-gigabyte raster or shapefile is fetched and verified
+    once, not once per workspace.
+    """
+    import pooch
+
+    return Path(pooch.os_cache("disslucc")) / "raw"
+
+
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
     from disscube.models import SpatialSource
 
-    path = _resolve(base, c.path)
+    # A remote source's `path` is just the logical filename inside disscube's
+    # shared pooch cache — portable across machines/workspaces, and downloaded
+    # only once regardless of how many workspaces read it. A purely local
+    # source (no `url`) still resolves against the pipeline file's own folder,
+    # since it's a hand-placed file, not a download.
+    cache_root = _raw_cache_dir() if c.url else base
+    path = _resolve(cache_root, c.path)
     local = _local_file(path)
     if (local is None or not local.exists()) and getattr(c, 'url', None):
-        local = _fetch_file_source(c, local or (base / c.path))
+        local = _fetch_file_source(c, local or (cache_root / c.path))
     if local is None or not local.exists():
         raise PipelineError(f"source {c.id!r}: file not found: {path}")
     fmt = _file_format(path, c.format, c.variable)
