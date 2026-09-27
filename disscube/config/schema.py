@@ -140,6 +140,14 @@ class DeriveConfig(_Strict):
     fill: Literal["nearest"] | None = None
 
 
+class ExportConfig(_Strict):
+    """Optional export configuration declared in pipeline TOML."""
+
+    output: str
+    format: Literal["geotiff", "netcdf"] = "geotiff"
+    variables: list[str] | None = None
+
+
 class PipelineConfig(_Strict):
     """A whole pipeline file."""
 
@@ -156,6 +164,7 @@ class PipelineConfig(_Strict):
     misspelt source id fails when the file is planned."""
     source: list[Source] = Field(default_factory=list)
     derive: list[DeriveConfig] = Field(default_factory=list)
+    export: ExportConfig | str | None = None
 
     @model_validator(mode="after")
     def _grid_or_extent(self):

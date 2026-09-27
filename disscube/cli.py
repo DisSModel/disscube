@@ -2,7 +2,9 @@
 Command line: run DisSCube pipeline files.
 
     disscube validate pipeline.toml
-    disscube run pipeline.toml [--workspace DIR] [-v]
+    disscube fetch pipeline.toml
+    disscube run pipeline.toml [--workspace DIR] [--output OUT.tif] [-v]
+    disscube export pipeline.toml --output OUT.tif [--workspace DIR] [--variables ...] [-v]
 """
 
 from __future__ import annotations
@@ -26,7 +28,15 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("file")
     p_run.add_argument("--workspace", help="output folder (default: the file's 'workspace', "
                                            "else a folder named after the file)")
+    p_run.add_argument("--output", "-o", help="export derived variables to a multi-band GeoTIFF")
     p_run.add_argument("-v", "--verbose", action="store_true", help="log each step")
+
+    p_exp = sub.add_parser("export", help="export derived variables from an existing data cube to GeoTIFF")
+    p_exp.add_argument("file", help="pipeline TOML file")
+    p_exp.add_argument("--output", "-o", required=True, help="output GeoTIFF file path (e.g. data/cellspace.tif)")
+    p_exp.add_argument("--workspace", help="workspace folder (default: data/cube or from pipeline)")
+    p_exp.add_argument("--variables", nargs="*", help="specific variables to export (default: all derived)")
+    p_exp.add_argument("-v", "--verbose", action="store_true", help="log each step")
 
     args = parser.parse_args(argv)
     from disscube.config import plan, run
@@ -53,12 +63,21 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "validate":
             print("OK")
             return 0
-        report = run(p, workspace=args.workspace)
+        if args.command == "export":
+            from disscube.config.runner import export_cube
+            exp = export_cube(p, output=args.output, workspace=args.workspace, variables=args.variables)
+            print(f"workspace : {exp.workspace}")
+            print(f"exported  : {len(exp.variables)} variables on {exp.grid_id}")
+            print(f"output    : {exp.output}")
+            return 0
+        report = run(p, workspace=args.workspace, export_geotiff=getattr(args, "output", None))
     except PipelineError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     print(f"workspace : {report.workspace}")
     print(f"derived   : {len(report.derived)} products on {report.grid_id}")
+    if report.exported:
+        print(f"exported  : {report.exported}")
     print(f"record    : {report.record}")
     return 0
 
