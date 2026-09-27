@@ -35,6 +35,7 @@ dependencies = [
     "toml",
     "rioxarray",
     "affine",
+    "pooch>=1.8.0",
     "dissmodel>=0.6.0,<0.7.0",
 ]
 

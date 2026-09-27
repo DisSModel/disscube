@@ -42,6 +42,8 @@ class _SourceBase(_Strict):
 
 
 class FileSource(_SourceBase):
+    url: str | None = None
+    sha256: str | None = None
     """
     A local raster or vector file (path relative to the pipeline file).
 

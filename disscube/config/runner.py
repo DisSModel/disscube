@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import tomllib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -368,11 +369,65 @@ def _file_format(path: str, declared: str | None, variable: str | None) -> str:
     return "vector" if path.startswith("zip://") or suffix in _VECTOR_SUFFIXES else "raster"
 
 
+def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
+    """Downloads and validates a remote file source using pooch.
+    Automatically extracts ZIP archives when the target is an uncompressed file (e.g. .nc),
+    with deterministic caching to avoid redundant extractions.
+    """
+    import os
+    import zipfile
+    import pooch
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    token = os.environ.get("GITHUB_TOKEN")
+    downloader = None
+    if token and c.url and "github" in c.url:
+        downloader = pooch.HTTPDownloader(headers={"Authorization": f"Bearer {token}", "Accept": "application/octet-stream"})
+
+    known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
+
+    if c.url and c.url.endswith(".zip") and not target_path.name.endswith(".zip"):
+        if target_path.exists() and target_path.stat().st_size > 0:
+            return target_path
+
+        zip_fname = c.url.split("/")[-1].split("?")[0]
+        downloaded_zip = pooch.retrieve(
+            url=c.url,
+            known_hash=known_hash,
+            path=target_path.parent,
+            fname=zip_fname,
+            downloader=downloader,
+        )
+        with zipfile.ZipFile(downloaded_zip, "r") as zf:
+            for member in zf.infolist():
+                if member.is_dir():
+                    continue
+                if Path(member.filename).name == target_path.name or len(zf.namelist()) == 1:
+                    with zf.open(member) as src, open(target_path, "wb") as dst:
+                        dst.write(src.read())
+                    break
+            else:
+                zf.extractall(target_path.parent)
+        return target_path
+
+    downloaded = pooch.retrieve(
+        url=c.url,
+        known_hash=known_hash,
+        path=target_path.parent,
+        fname=target_path.name,
+        downloader=downloader,
+    )
+    return Path(downloaded)
+
+
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
     from disscube.models import SpatialSource
 
     path = _resolve(base, c.path)
     local = _local_file(path)
+    if (local is None or not local.exists()) and getattr(c, 'url', None):
+        local = _fetch_file_source(c, local or (base / c.path))
     if local is None or not local.exists():
         raise PipelineError(f"source {c.id!r}: file not found: {path}")
     fmt = _file_format(path, c.format, c.variable)

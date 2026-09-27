@@ -19,6 +19,9 @@ def main(argv: list[str] | None = None) -> int:
     p_val = sub.add_parser("validate", help="check a pipeline file without fetching anything")
     p_val.add_argument("file")
 
+    p_fetch = sub.add_parser("fetch", help="download and verify remote file sources declared in the pipeline")
+    p_fetch.add_argument("file")
+
     p_run = sub.add_parser("run", help="fetch the sources and derive the variables")
     p_run.add_argument("file")
     p_run.add_argument("--workspace", help="output folder (default: the file's 'workspace', "
@@ -34,6 +37,19 @@ def main(argv: list[str] | None = None) -> int:
     try:
         p = plan(args.file)
         print(p.summary())
+        if args.command == "fetch":
+            from disscube.config.runner import _fetch_file_source, _local_file, _resolve
+            from disscube.config.schema import FileSource
+            fetched = 0
+            for s in p.sources:
+                if isinstance(s.config, FileSource) and getattr(s.config, 'url', None):
+                    target = _local_file(_resolve(p.file.base_dir, s.config.path))
+                    if target is not None:
+                        print(f"Fetching {s.id} -> {target.name}...")
+                        _fetch_file_source(s.config, target)
+                        fetched += 1
+            print(f"Fetch completed: {fetched} remote sources verified.")
+            return 0
         if args.command == "validate":
             print("OK")
             return 0
