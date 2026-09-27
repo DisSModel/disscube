@@ -266,6 +266,7 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         dtype=arrays[0].dtype,
         crs=crs,
         transform=transform,
+        nodata=np.nan,
     ) as dst:
         for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
             dst.write(arr, idx)
