@@ -1,6 +1,7 @@
+import os
+
 from disscube.client import CubeClient
 from disscube.models import GridSpec, SpatialRelation
-import os
 
 # Initialize client
 if os.path.exists("test_catalog.json"):

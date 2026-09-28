@@ -1,7 +1,9 @@
-import xarray as xr
-import rioxarray
-import sys
 import os
+import sys
+
+import rioxarray  # noqa: F401  (registers the .rio accessor on xarray objects)
+import xarray as xr
+
 
 def convert_zarr_to_tif(zarr_path, output_tif):
     if not os.path.exists(zarr_path):
@@ -32,7 +34,7 @@ def convert_zarr_to_tif(zarr_path, output_tif):
         da.rio.to_raster(output_tif)
         print(f"Success! Saved to {output_tif}")
 
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         print(f"An error occurred: {e}")
 
 if __name__ == "__main__":

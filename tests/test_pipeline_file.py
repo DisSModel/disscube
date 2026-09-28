@@ -60,7 +60,9 @@ def test_example_pipelines_are_discovered():
 @pytest.mark.parametrize("path", PIPELINES, ids=lambda p: p.name)
 def test_example_pipelines_validate(path):
     p = plan(path)
-    assert p.sources and p.derives
+    # Every example declares sources; a sources-only file (e.g. test_aeroporto.toml,
+    # which just fetches/validates one asset) is legitimate and has no [[derive]].
+    assert p.sources
 
 
 def test_itaituba_pipeline_matches_the_python_api(tmp_path):

@@ -22,7 +22,6 @@ from disscube.pipeline.context import PipelineContext
 from disscube.pipeline.writer import VariableWriter
 from disscube.storage.local import AssetStore
 
-
 # --------------------------------------------------------------------------- #
 # Shared helpers
 # --------------------------------------------------------------------------- #

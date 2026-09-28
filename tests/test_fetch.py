@@ -1,8 +1,8 @@
-from pathlib import Path
 from unittest.mock import patch
-import pytest
-from disscube.config.schema import FileSource
+
 from disscube.config.runner import _fetch_file_source
+from disscube.config.schema import FileSource
+
 
 def test_fetch_file_source_calls_pooch(tmp_path):
     target = tmp_path / "data" / "ferrovias.zip"
@@ -26,3 +26,16 @@ def test_fetch_file_source_calls_pooch(tmp_path):
             fname="ferrovias.zip",
             downloader=None,
         )
+
+
+def test_prodes_url_scheme_guard():
+    import pytest
+
+    from disscube.sources.prodes import _require_scheme
+
+    assert _require_scheme("https://example.org/a.zip") == "https://example.org/a.zip"
+    assert _require_scheme("file:///tmp/a.zip", ("http", "https", "file")).startswith("file://")
+    with pytest.raises(ValueError, match="scheme not allowed"):
+        _require_scheme("ftp://example.org/a.zip")
+    with pytest.raises(ValueError, match="scheme not allowed"):
+        _require_scheme("file:///etc/passwd")  # file:// is rejected unless explicitly allowed

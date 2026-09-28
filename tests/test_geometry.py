@@ -1,7 +1,8 @@
-import pytest
 import numpy as np
-from disscube.models import GridSpec
 from affine import Affine
+
+from disscube.models import GridSpec
+
 
 def test_gridspec_properties():
     # Example grid: 100m resolution, 1km x 1km box

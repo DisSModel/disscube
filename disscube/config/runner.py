@@ -251,8 +251,8 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
     if transform is None or shape is None:
         minx, miny, maxx, maxy = grid.bbox
         res = grid.resolution
-        width = int(round((maxx - minx) / res))
-        height = int(round((maxy - miny) / res))
+        width = round((maxx - minx) / res)
+        height = round((maxy - miny) / res)
         transform = from_origin(minx, maxy, res, res)
     else:
         height, width = shape
@@ -264,8 +264,8 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         if raw_mask is not None:
             # Considera célula ativa qualquer uma com fração de terra > 0
             mask_arr = np.asarray(raw_mask, dtype=np.float64) > 0.0
-    except Exception:
-        pass
+    except (KeyError, ValueError, LookupError) as exc:
+        log.debug("no 'mask' variable available for export: %s", exc)
 
     # 2. Converte os pixels fora do Brasil para NaN
     arrays = []
@@ -506,8 +506,8 @@ def _file_format(path: str, declared: str | None, variable: str | None) -> str:
 
 
 def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
-    import os
     import zipfile
+
     import pooch
 
     target_path.parent.mkdir(parents=True, exist_ok=True)

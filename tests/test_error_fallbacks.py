@@ -14,7 +14,6 @@ import numpy as np
 import pytest
 import rioxarray  # noqa: F401 — registers the .rio accessor
 import xarray as xr
-from rioxarray.raster_array import RasterArray
 
 from disscube.client import CubeClient
 from disscube.models import GridSpec

@@ -9,16 +9,16 @@ After the operator refactor the Aggregator's contract is:
 Band selection has moved to GridAligner; see test_aligner.py for those tests.
 """
 
-import pytest
-import numpy as np
-import xarray as xr
-import rioxarray  # noqa: F401
 import geopandas as gpd
+import numpy as np
+import pytest
+import rioxarray  # noqa: F401
+import xarray as xr
 from shapely.geometry import box
 
+from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.pipeline import PipelineContext
 from disscube.pipeline.aggregator import Aggregator
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
 
 
 def _grid():

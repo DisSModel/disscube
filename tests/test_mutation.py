@@ -1,7 +1,6 @@
-import pytest
-import os
 from disscube.client import CubeClient
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable, SpatialRelation
+from disscube.models import GridSpec, SpatialDerivation, SpatialRelation, Variable
+
 
 def test_derive_no_mutation(tmp_path):
     catalog_file = tmp_path / "catalog.json"
@@ -32,7 +31,7 @@ def test_derive_no_mutation(tmp_path):
     try:
         # This will fail because S1 is not registered, but we want to check if relations was mutated before failure
         client.derive(derivation)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - failure is expected; we only assert on mutation
         pass
     
     assert derivation.relations == original_relations

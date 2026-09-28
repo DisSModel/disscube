@@ -19,13 +19,12 @@ All inputs are generated in-memory / in ``tmp_path``; no external files are used
 import numpy as np
 import pytest
 import rasterio
-from rasterio.transform import from_bounds
-import xarray as xr
 import rioxarray  # noqa: F401 — registers the .rio accessor
+from rasterio.transform import from_bounds
 
-from disscube.pipeline.aligner import GridAligner
+from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.pipeline import PipelineContext
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
+from disscube.pipeline.aligner import GridAligner
 
 CRS = "EPSG:31982"  # UTM 22S, metres — same as existing aligner tests
 

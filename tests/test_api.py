@@ -10,9 +10,9 @@ import rasterio
 from rasterio.transform import from_origin
 
 pytest.importorskip("fastapi")
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi.testclient import TestClient
 
-from disscube.api import create_app  # noqa: E402
+from disscube.api import create_app
 
 GRID = {
     "id": "T/100m",
