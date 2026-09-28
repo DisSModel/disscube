@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 from disscube.models import DerivedVariable, GridSpec, SpatialRelation, SpatialSource
 
@@ -7,7 +8,7 @@ from disscube.models import DerivedVariable, GridSpec, SpatialRelation, SpatialS
 class JsonCatalogStore:
     def __init__(self, path: str | Path):
         self.path = Path(path)
-        self._data = {"grids": {}, "sources": {}, "derived": {}, "relations": []}
+        self._data: dict[str, Any] = {"grids": {}, "sources": {}, "derived": {}, "relations": []}
         if self.path.exists():
             with open(self.path, "r") as f:
                 self._data = json.load(f)

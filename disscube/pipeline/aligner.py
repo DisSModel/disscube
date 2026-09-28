@@ -23,6 +23,7 @@ loud errors rather than silent downstream corruption.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import geopandas as gpd
 import numpy as np
@@ -42,7 +43,7 @@ log = logging.getLogger(__name__)
 
 # Integer dtype -> next wider dtype, used to give sources without a declared
 # nodata a fill value they cannot contain (the maximum of the wider dtype).
-_WIDER_INT = {
+_WIDER_INT: dict[np.dtype[Any], np.dtype[np.integer[Any]]] = {
     np.dtype("uint8"): np.dtype("uint16"),
     np.dtype("int8"): np.dtype("int16"),
     np.dtype("uint16"): np.dtype("uint32"),
@@ -168,7 +169,13 @@ class GridAligner(PipelineStage):
         # decode_times=False: a NetCDF variable ("NETCDF:file:var") carries its
         # file's time metadata, and units such as "years since 2000-1-1" do not
         # decode; the time of a source is set when it is registered.
-        ds_src = rioxarray.open_rasterio(url, decode_times=False)
+        opened = rioxarray.open_rasterio(url, decode_times=False)
+        if not isinstance(opened, xr.DataArray):
+            raise TypeError(
+                f"{url!r} opened as {type(opened).__name__}, not a single raster; "
+                "a multi-subdataset file needs an explicit variable (e.g. NETCDF:file:var)"
+            )
+        ds_src = opened
         # GDAL names the band axis of a NetCDF variable after its own
         # dimension (e.g. "time"); every band of a raster is a "band" here.
         extra = [d for d in ds_src.dims if d not in ("y", "x")]

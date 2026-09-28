@@ -45,6 +45,8 @@ derives variables with registered operators, and catalogs every result with a
   cell-by-cell parity test suite, and the MkDocs documentation site.
 - `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `CITATION.cff`, and a publish
   workflow, following the conventions of DisSModel.
+- `mypy` in CI, configured per module in `pyproject.toml` (no blanket
+  `ignore_missing_imports`), and the whole tree is now type-clean.
 
 ### Changed
 - Remote `file` sources (those with a `url`) are downloaded and verified once
@@ -53,6 +55,8 @@ derives variables with registered operators, and catalogs every result with a
   filename inside that cache, so a pipeline file no longer depends on where it
   sits relative to a `data/raw/` folder. Sources without a `url` still resolve
   relative to the pipeline file.
+- `Plan.grid` is typed `GridConfig | None`: a sources-only pipeline has no grid. Running a file with neither a `[grid]` nor an `extent` now raises a `PipelineError` instead of a `TypeError`.
+- `GridAligner` raises a clear `TypeError` when a file opens as several subdatasets instead of one raster.
 - The workspace is resolved by one helper (`resolve_workspace`) shared by
   `run()` and `export_cube()`.
 - The test suite and tools now pass `ruff check .` and `bandit` with no findings.

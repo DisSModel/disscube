@@ -46,6 +46,7 @@ Before writing code or opening a pull request, make sure an issue tracks the tas
    ```bash
    pytest tests/
    ruff check .
+   mypy disscube
    ```
 2. Add an entry to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md) for any user-visible change.
 3. Push your branch to GitHub:
@@ -99,6 +100,14 @@ ruff check .
 ```
 
 CI pins the `ruff` minor version (see the `dev` extra in `pyproject.toml`); use the same one locally.
+
+### 6. Type checking
+
+```bash
+mypy disscube
+```
+
+Third-party packages without type stubs are listed by name in `[tool.mypy]` in `pyproject.toml`; do not add a blanket `--ignore-missing-imports`.
 
 ---
 
