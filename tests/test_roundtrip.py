@@ -13,7 +13,7 @@ import rasterio
 from rasterio.transform import from_bounds
 
 from disscube.client import CubeClient
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
+from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
 
 CRS = "EPSG:31982"
 

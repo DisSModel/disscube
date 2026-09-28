@@ -13,5 +13,5 @@ Closes #
 ### Contributor Checklist
 - [ ] The code runs locally without errors
 - [ ] All unit tests pass locally (`pytest`)
-- [ ] Static analysis and formatting pass (`ruff check .`)
+- [ ] Static analysis and formatting pass (`ruff check .`, `mypy disscube`)
 - [ ] Docstrings follow the project standard (inputs, outputs, exceptions)

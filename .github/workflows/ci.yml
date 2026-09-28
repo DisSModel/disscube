@@ -23,7 +23,7 @@ jobs:
         run: pip install "ruff>=0.16,<0.17"
 
       - name: Run Ruff
-        run: ruff check disscube/ examples/
+        run: ruff check .
 
   test:
     name: test (py${{ matrix.python-version }})
@@ -52,6 +52,12 @@ jobs:
       # Coverage XML is produced but not uploaded anywhere yet.
       - name: Run tests with coverage
         run: pytest tests/ --cov=disscube --cov-report=term-missing --cov-report=xml
+
+      # No --ignore-missing-imports here: [tool.mypy] in pyproject.toml lists
+      # every stub-less dependency by module name, so a blanket flag would
+      # silently mask typos in first-party imports again.
+      - name: Run mypy
+        run: python -m mypy disscube --python-version 3.12
 
   test-minimal:
     # Core install without optional extras: checks that tests depending on

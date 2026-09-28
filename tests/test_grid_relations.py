@@ -1,6 +1,8 @@
 import pytest
-from disscube.models import GridSpec, SpatialRelation, SpatialDerivation, Variable
+
 from disscube.client import CubeClient
+from disscube.models import GridSpec, SpatialDerivation, SpatialRelation, Variable
+
 
 def test_cell_id_round_trip():
     grid = GridSpec(

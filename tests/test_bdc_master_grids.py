@@ -106,7 +106,7 @@ class TestBDCMasterGrids(unittest.TestCase):
         mock_exists.return_value = False
         mock_hash.return_value = "fake_hash"
 
-        from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
+        from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
         grid = GridSpec(id="BDC_SM", type="reference", crs="EPSG:31984",
                         resolution=10, bbox=[0, 0, 100, 100])
         source = SpatialSource(id="BDC_SM_001", name="Tile 001",
@@ -114,10 +114,11 @@ class TestBDCMasterGrids(unittest.TestCase):
         self.cube.register_grid(grid)
         self.cube.register_spatial_source(source)
 
-        from disscube.pipeline.writer import VariableWriter
-        from disscube.pipeline.context import PipelineContext
-        import xarray as xr
         import numpy as np
+        import xarray as xr
+
+        from disscube.pipeline.context import PipelineContext
+        from disscube.pipeline.writer import VariableWriter
 
         derivation = SpatialDerivation(
             source_id="BDC_SM_001", grid_id="BDC_SM", role="test",
@@ -141,8 +142,9 @@ class TestBDCMasterGrids(unittest.TestCase):
     @patch('xarray.open_zarr')
     def test_load_with_explicit_tile_id_filters_correctly(self, mock_open_zarr, mock_exists):
         """load(name, tile_id='001') returns only the matching tile."""
-        from disscube.models import DerivedVariable
         import xarray as xr
+
+        from disscube.models import DerivedVariable
 
         mock_da = MagicMock(spec=xr.DataArray)
         mock_ds = MagicMock()

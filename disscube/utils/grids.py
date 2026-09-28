@@ -23,7 +23,7 @@ BDC_CRS = (
 )
 
 # Full Brazil bbox in BDC Albers, snapped to 5 km mesh.
-BRAZIL_BBOX = [2_720_000, 7_500_000, 7_870_000, 11_830_000]
+BRAZIL_BBOX: list[float] = [2_720_000, 7_500_000, 7_870_000, 11_830_000]
 
 # National reference resolutions
 SIMULATION_GRIDS = [

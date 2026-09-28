@@ -1,5 +1,5 @@
-import pytest
 from disscube.models import SpatialDerivation, Variable
+
 
 def test_spec_hash_stability():
     derivation1 = SpatialDerivation(

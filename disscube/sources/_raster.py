@@ -54,7 +54,8 @@ def is_bdc_albers(crs: CRS | None) -> bool:
     try:
         if crs.to_epsg() == BDC_ALBERS_EPSG:
             return True
-    except Exception:  # noqa: BLE001, S110 — to_epsg raises CRSError on unknown codes; fall through to the parameter check
+    # to_epsg() raises CRSError on unknown codes: fall through to the parameter check below.
+    except Exception:  # noqa: BLE001, S110  # nosec B110
         pass
     if f'"EPSG",{BDC_ALBERS_EPSG}' in crs.to_wkt().replace(" ", ""):
         return True

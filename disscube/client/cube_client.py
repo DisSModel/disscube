@@ -299,6 +299,8 @@ class CubeClient:
                 if period is not None:
                     start, end = period
                     time_vals = da.coords["time"].values
+                    start_val: int | str
+                    end_val: int | str
                     if len(time_vals) > 0 and isinstance(time_vals[0], (int, np.integer)):
                         try:
                             start_val, end_val = int(start), int(end)

@@ -3,9 +3,9 @@ Tests for the declarative Derivation model (disscube/derivation.py).
 """
 
 import pytest
-from disscube.derivation import Derivation
-from disscube.models.variable import Variable, SpatialDerivation
 
+from disscube.derivation import Derivation
+from disscube.models.variable import SpatialDerivation, Variable
 
 # ── Construction-time validation ──────────────────────────────────────────────
 

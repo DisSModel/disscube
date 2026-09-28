@@ -10,6 +10,7 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any, Literal
 
 import numpy as np
 from pydantic import ValidationError
@@ -81,7 +82,7 @@ class Plan:
     """A pipeline file with every ``years`` expansion resolved and every reference checked."""
 
     file: PipelineFile
-    grid: GridConfig
+    grid: GridConfig | None
     sources: list[PlannedSource] = field(default_factory=list)
     derives: list[PlannedDerive] = field(default_factory=list)
     catalog_sources: list[str] = field(default_factory=list)
@@ -137,6 +138,13 @@ def _expand(src, year: int):
     return type(src).model_validate(data)
 
 
+def _year_of(c: MapbiomasSource | ProdesSource) -> int:
+    """The concrete year of a MapBiomas/PRODES source (``years`` expansion already applied)."""
+    if not isinstance(c.year, int):
+        raise PipelineError(f"source {c.id!r}: needs 'year' (or 'years' with '{{year}}')")
+    return c.year
+
+
 def plan(pipeline: PipelineFile | str | Path) -> Plan:
     """Expand ``years``, resolve references and check operators, years and legends."""
     from disscube.sources import mapbiomas
@@ -151,12 +159,10 @@ def plan(pipeline: PipelineFile | str | Path) -> Plan:
         concrete = [(_expand(src, y), y) for y in src.years] if src.years else [(src, None)]
         for c, year in concrete:
             if isinstance(c, MapbiomasSource | ProdesSource):
-                if not isinstance(c.year, int):
-                    raise PipelineError(f"source {c.id!r}: needs 'year' (or 'years' with '{{year}}')")
-                year = c.year
+                year = _year_of(c)
             if isinstance(c, MapbiomasSource):
                 try:
-                    mapbiomas.dataset(c.collection, c.resolution).url(c.year)
+                    mapbiomas.dataset(c.collection, c.resolution).url(_year_of(c))
                 except ValueError as exc:
                     raise PipelineError(f"source {c.id!r}: {exc}") from None
             if isinstance(c, UnionSource):
@@ -251,8 +257,8 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
     if transform is None or shape is None:
         minx, miny, maxx, maxy = grid.bbox
         res = grid.resolution
-        width = int(round((maxx - minx) / res))
-        height = int(round((maxy - miny) / res))
+        width = round((maxx - minx) / res)
+        height = round((maxy - miny) / res)
         transform = from_origin(minx, maxy, res, res)
     else:
         height, width = shape
@@ -264,8 +270,8 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         if raw_mask is not None:
             # Considera célula ativa qualquer uma com fração de terra > 0
             mask_arr = np.asarray(raw_mask, dtype=np.float64) > 0.0
-    except Exception:
-        pass
+    except (KeyError, ValueError, LookupError) as exc:
+        log.debug("no 'mask' variable available for export: %s", exc)
 
     # 2. Converte os pixels fora do Brasil para NaN
     arrays = []
@@ -328,8 +334,10 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
     cube = CubeClient(catalog=str(ws / "catalog.db"), store=str(ws / "store"))
     if p.grid is not None:
         grid_id, bbox_geo = _register_grid(cube, p.grid)
-    else:
+    elif cfg.extent is not None:
         grid_id, bbox_geo = None, list(cfg.extent)
+    else:
+        raise PipelineError(f"{pf.path.name}: cannot run without a [grid] or an `extent`")
     missing = [sid for sid in p.catalog_sources if cube.catalog.get_spatial_source(sid) is None]
     if missing:
         raise PipelineError(
@@ -346,20 +354,23 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
                                "checksum": src.checksum, "time": src.time})
 
     for d in p.derives:
+        if grid_id is None:  # unreachable: PipelineConfig requires a [grid] for [[derive]] blocks
+            raise PipelineError("cannot derive: pipeline does not define a [grid]")
         derived = cube.derive_declarative(d.derivation(), grid_id=grid_id)
         for dv in derived:
             report.derived.append({"target": dv.name, "source": d.source, "spec_hash": dv.spec_hash,
                                    "times": dv.times, "file": dv.asset_url})
 
     # Resolve export output from parameter or TOML config
+    export = cfg.export
     target_export = export_geotiff
-    if target_export is None and getattr(cfg, "export", None):
-        target_export = cfg.export.output if isinstance(cfg.export, ExportConfig) else str(cfg.export)
+    if target_export is None and export:
+        target_export = export.output if isinstance(export, ExportConfig) else str(export)
 
-    if target_export and p.derives and grid_id is not None:
+    if target_export and p.derives and p.grid is not None and grid_id is not None:
         vars_to_export = [d.target for d in p.derives]
-        if isinstance(getattr(cfg, "export", None), ExportConfig) and cfg.export.variables:
-            vars_to_export = cfg.export.variables
+        if isinstance(export, ExportConfig) and export.variables:
+            vars_to_export = export.variables
 
         backend = cube.to_lucc_data(vars_to_export, grid_id=grid_id)
         out_tif = Path(target_export)
@@ -403,7 +414,7 @@ def export_cube(pipeline: PipelineFile | Plan | str | Path,
     cube = CubeClient(catalog=str(ws / "catalog.db"), store=str(ws / "store"))
 
     target_vars = variables
-    if not target_vars and isinstance(getattr(cfg, "export", None), ExportConfig) and cfg.export.variables:
+    if not target_vars and isinstance(cfg.export, ExportConfig) and cfg.export.variables:
         target_vars = cfg.export.variables
     if not target_vars:
         target_vars = [d.target for d in p.derives]
@@ -424,16 +435,16 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
     from disscube.models import GridSpec
     from disscube.utils.grids import register_local_grid
 
+    min_x, min_y, max_x, max_y = g.bbox
     if g.crs is None:
-        grid = register_local_grid(cube, name=g.name, bbox_geo=tuple(g.bbox), resolution=g.resolution,
-                                   snap=g.snap)
+        grid = register_local_grid(cube, name=g.name, bbox_geo=(min_x, min_y, max_x, max_y),
+                                   resolution=g.resolution, snap=g.snap)
         return grid.id, list(g.bbox)
     cube.register_grid(GridSpec(id=g.name, type="local", crs=g.crs, resolution=g.resolution, bbox=g.bbox))
     to_geo = Transformer.from_crs(g.crs, "EPSG:4326", always_xy=True)
-    
-    min_x, min_y, max_x, max_y = g.bbox
+
     xs, ys = zip(*(to_geo.transform(x, y) for x in (min_x, max_x) for y in (min_y, max_y)))
-    
+
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
@@ -444,20 +455,18 @@ def _register_source(cube, s: PlannedSource, raw: Path, bbox_geo: list[float], b
     if isinstance(c, MapbiomasSource):
         from disscube.sources.mapbiomas import register_mapbiomas_source
 
-        return register_mapbiomas_source(cube, c.id, c.year, bbox_geo, raw, collection=c.collection,
+        return register_mapbiomas_source(cube, c.id, _year_of(c), bbox_geo, raw, collection=c.collection,
                                          resolution=c.resolution, url=c.url, name=c.name)
     if isinstance(c, ProdesSource):
         from disscube.sources import prodes
 
         cache = (base / c.cache) if c.cache else None
         files = prodes.download(c.url or prodes.DEFAULT_URL, cache)
-        return prodes.register_prodes_source(cube, c.id, c.year, bbox_geo, raw, files=files, name=c.name)
+        return prodes.register_prodes_source(cube, c.id, _year_of(c), bbox_geo, raw, files=files, name=c.name)
     if isinstance(c, ClassifiedSource):
         from disscube.sources.classified import register_classified_map
 
-        legend = c.legend
-        if isinstance(legend, str):
-            legend = base / legend
+        legend = base / c.legend if isinstance(c.legend, str) else c.legend
         return register_classified_map(cube, c.id, _resolve(base, c.path), bbox_geo, raw, legend=legend,
                                        time=c.time, nodata=c.nodata, producer=c.producer, name=c.name)
     if isinstance(c, UnionSource):
@@ -482,6 +491,8 @@ def _register_bdc(cube, c: BdcSource, raw: Path, bbox_geo: list[float]):
         return register_bdc_source(cube, c.id, c.collection, c.asset, bbox_geo, c.period, raw,
                                    reducer=c.reducer, scale=c.scale, offset=c.offset, url=url,
                                    name=c.name, time=time)
+    if c.normalized_difference is None:  # unreachable: BdcSource validates asset xor normalized_difference
+        raise PipelineError(f"source {c.id!r}: give exactly one of 'asset' or 'normalized_difference'")
     a, b = c.normalized_difference
     items = search_items(c.collection, bbox_geo, c.period, url=url)
     layers = [read_composite(c.collection, asset, bbox_geo, c.period, reducer=c.reducer, url=url,
@@ -495,7 +506,7 @@ def _register_bdc(cube, c: BdcSource, raw: Path, bbox_geo: list[float]):
                            time=time, tags=["bdc", f"collection:{c.collection}", f"period:{c.period}"])
 
 
-def _file_format(path: str, declared: str | None, variable: str | None) -> str:
+def _file_format(path: str, declared: Literal["raster", "vector"] | None, variable: str | None) -> Literal["raster", "vector"]:
     if declared:
         return declared
     if variable:
@@ -506,8 +517,8 @@ def _file_format(path: str, declared: str | None, variable: str | None) -> str:
 
 
 def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
-    import os
     import zipfile
+
     import pooch
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -593,7 +604,7 @@ def _register_file(cube, c: FileSource, base: Path, raw: Path):
     crs = c.crs or _file_crs(url, fmt, c.read)
     checksum = sha256_file(local)
     prov_path = raw / f"{c.id}.provenance.json"
-    provenance = {"type": "file", "path": str(path), "format": fmt, "crs": crs, "checksum": checksum}
+    provenance: dict[str, Any] = {"type": "file", "path": str(path), "format": fmt, "crs": crs, "checksum": checksum}
     provenance |= {k: v for k, v in (("variable", c.variable), ("nodata", c.nodata), ("read", c.read)) if v}
     prov_path.write_text(json.dumps(provenance, indent=2, ensure_ascii=False), encoding="utf-8")
     src = SpatialSource(id=c.id, name=c.name or c.id, format=fmt, asset_url=url, crs=crs,

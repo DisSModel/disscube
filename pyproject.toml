@@ -9,9 +9,19 @@ description = "Declarative Spatial Layer for Dynamic Models"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "Sérgio Costa" }
+    { name = "Sérgio Souza Costa" }
+]
+maintainers = [
+    { name = "Sérgio Souza Costa" }
 ]
 license = { text = "MIT" }
+keywords = [
+    "spatial data cube",
+    "geospatial",
+    "land use and land cover change",
+    "brazil data cube",
+    "reproducibility",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -46,8 +56,9 @@ disscube = "disscube.cli:main"
 dev = [
     "pytest",
     "pytest-cov",
-    "ruff>=0.16,<0.17",     # pinned minor: ruff's default rule set grows across versions
-    "httpx",                # required by fastapi.testclient in tests/test_api.py
+    "mypy>=1.13",
+    "ruff>=0.16,<0.17",
+    "httpx",
     "ipykernel",
 ]
 bdc = [
@@ -67,6 +78,13 @@ api = [                     # experimental HTTP API (disscube.api)
     "python-multipart",
 ]
 
+[project.urls]
+Homepage = "https://github.com/DisSModel/disscube"
+Repository = "https://github.com/DisSModel/disscube"
+Documentation = "https://dissmodel.github.io/disscube/"
+Issues = "https://github.com/DisSModel/disscube/issues"
+Changelog = "https://github.com/DisSModel/disscube/blob/main/CHANGELOG.md"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["disscube*"]
@@ -84,3 +102,38 @@ disscube = ["data/bdc_grids/*.zip", "data/bdc_grids/README.md"]
 line-length = 120
 target-version = "py311"
 exclude = ["docs", "site", "build"]
+
+[tool.mypy]
+python_version = "3.12"
+exclude = ["tests/", "docs/", "examples/", "tools/"]
+
+[[tool.mypy.overrides]]
+# Third-party (or optional-extra) dependencies with no bundled type stubs.
+# Deliberately per-module, not a blanket `ignore_missing_imports` at the top
+# level: a global setting also silences typos in *our own* first-party import
+# paths (same policy as DisSModel/dissmodel). Add a module here only when it
+# genuinely has no stubs.
+module = [
+    "geopandas.*",
+    "pandas.*",
+    "shapely.*",
+    "scipy.*",
+    "rasterio.*",
+    "fsspec.*",
+    "pooch.*",
+    "dissmodel.*",         # sibling package, ships no py.typed marker yet
+    "toml",
+    "fiona.*",             # optional [bdc] extra
+    "pystac_client.*",     # optional [bdc] extra
+    "s3fs.*",              # optional [s3] extra
+    "fastapi.*",           # optional [api] extra
+    "uvicorn.*",           # optional [api] extra
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# zarr 3.x ships py.typed source using PEP 695 syntax (Python 3.12+), which
+# mypy cannot parse under python_version = "3.11". Never analyze it.
+module = ["zarr.*"]
+follow_imports = "skip"
+ignore_errors = true

@@ -6,14 +6,13 @@ GridAligner takes a raster URL and returns an xr.Dataset keyed by variable
 name, each band resampled with the correct method for its operator.
 """
 
-import pytest
 import numpy as np
-import xarray as xr
+import pytest
 import rioxarray  # noqa: F401
 
-from disscube.pipeline.aligner import GridAligner
+from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.pipeline import PipelineContext
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
+from disscube.pipeline.aligner import GridAligner
 
 
 def _grid(**kw):

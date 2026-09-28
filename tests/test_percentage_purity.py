@@ -10,13 +10,13 @@ reduction), not by the aligner.
 import numpy as np
 import pytest
 import rasterio
-from rasterio.transform import from_bounds
 import rioxarray  # noqa: F401
+from rasterio.transform import from_bounds
 
-from disscube.pipeline.aligner import GridAligner
-from disscube.pipeline.aggregator import Aggregator
+from disscube.models import GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.pipeline import PipelineContext
-from disscube.models import GridSpec, SpatialSource, SpatialDerivation, Variable
+from disscube.pipeline.aggregator import Aggregator
+from disscube.pipeline.aligner import GridAligner
 
 CRS = "EPSG:31982"
 

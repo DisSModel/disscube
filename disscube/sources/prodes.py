@@ -35,7 +35,7 @@ import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from disscube.sources._categorical import read_qml_legend, reclassify, strip_code
 from disscube.sources._raster import Window2D, read_window, register_raster
@@ -54,6 +54,14 @@ FOREST, DEFORESTED, OTHER = 1, 2, 3
 NODATA = 0
 
 
+# Every urlopen() below goes through _require_scheme(), hence the `nosec B310` marks.
+def _require_scheme(url: str, allowed: tuple[str, ...] = ("http", "https")) -> str:
+    """Reject URL schemes outside ``allowed`` (``urlopen`` would accept ``ftp:`` or custom ones)."""
+    if urlparse(url).scheme not in allowed:
+        raise ValueError(f"URL scheme not allowed (expected one of {allowed}): {url!r}")
+    return url
+
+
 def default_cache_dir() -> Path:
     """``$DISSCUBE_CACHE/prodes``, or ``~/.cache/disscube/prodes``."""
     root = os.environ.get("DISSCUBE_CACHE") or Path.home() / ".cache" / "disscube"
@@ -62,7 +70,7 @@ def default_cache_dir() -> Path:
 
 def latest_url(index_url: str = DOWNLOAD_INDEX, timeout: float = 30) -> str:
     """URL of the newest Legal Amazon PRODES raster listed by TerraBrasilis."""
-    with urllib.request.urlopen(index_url, timeout=timeout) as resp:
+    with urllib.request.urlopen(_require_scheme(index_url), timeout=timeout) as resp:  # nosec B310
         entries = json.load(resp)
     links = [e.get("link", "") for e in entries
              if "legal-amz-prodes/raster" in e.get("link", "") and e.get("link", "").endswith(".zip")]
@@ -103,7 +111,7 @@ def download(url: str = DEFAULT_URL, cache_dir: str | Path | None = None,
         fd, tmp = tempfile.mkstemp(dir=cache, suffix=".part")
         try:
             with os.fdopen(fd, "wb") as out, \
-                    urllib.request.urlopen(url, timeout=timeout) as resp:
+                    urllib.request.urlopen(_require_scheme(url, ("http", "https", "file")), timeout=timeout) as resp:  # nosec B310
                 shutil.copyfileobj(resp, out, length=1 << 20)
             os.replace(tmp, zip_path)
         finally:
