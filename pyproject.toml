@@ -54,11 +54,11 @@ disscube = "disscube.cli:main"
 
 [project.optional-dependencies]
 dev = [
-    "mypy",
     "pytest",
     "pytest-cov",
-    "ruff>=0.16,<0.17",     # pinned minor: ruff's default rule set grows across versions
-    "httpx",                # required by fastapi.testclient in tests/test_api.py
+    "mypy>=1.13",
+    "ruff>=0.16,<0.17",
+    "httpx",
     "ipykernel",
 ]
 bdc = [
@@ -104,7 +104,7 @@ target-version = "py311"
 exclude = ["docs", "site", "build"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 exclude = ["tests/", "docs/", "examples/", "tools/"]
 
 [[tool.mypy.overrides]]

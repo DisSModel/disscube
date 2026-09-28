@@ -57,7 +57,7 @@ jobs:
       # every stub-less dependency by module name, so a blanket flag would
       # silently mask typos in first-party imports again.
       - name: Run mypy
-        run: mypy disscube
+        run: python -m mypy disscube --python-version 3.12
 
   test-minimal:
     # Core install without optional extras: checks that tests depending on
