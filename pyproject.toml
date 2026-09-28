@@ -9,9 +9,19 @@ description = "Declarative Spatial Layer for Dynamic Models"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "Sérgio Costa" }
+    { name = "Sérgio Souza Costa" }
+]
+maintainers = [
+    { name = "Sérgio Souza Costa" }
 ]
 license = { text = "MIT" }
+keywords = [
+    "spatial data cube",
+    "geospatial",
+    "land use and land cover change",
+    "brazil data cube",
+    "reproducibility",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -66,6 +76,13 @@ api = [                     # experimental HTTP API (disscube.api)
     "uvicorn",
     "python-multipart",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DisSModel/disscube"
+Repository = "https://github.com/DisSModel/disscube"
+Documentation = "https://dissmodel.github.io/disscube/"
+Issues = "https://github.com/DisSModel/disscube/issues"
+Changelog = "https://github.com/DisSModel/disscube/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
