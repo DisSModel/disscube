@@ -603,17 +603,18 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
 
 def _raw_cache_dir() -> Path:
-    """
-    Where remote (``url``-bearing) ``file`` sources are downloaded and cached.
+  """Onde as fontes remotas (com url) são baixadas e cacheadas via Pooch."""
+  import pooch
 
-    One directory shared by every pipeline and workspace on this machine —
-    pooch's own OS-appropriate cache location (respects ``XDG_CACHE_HOME`` and
-    friends), so a multi-gigabyte raster or shapefile is fetched and verified
-    once, not once per workspace.
-    """
-    import pooch
+  # Permite sobrescrever via variável de ambiente (útil para apontar para outro disco)
+  env_cache = os.environ.get("DISSCUBE_CACHE_DIR") or os.environ.get(
+      "DISSCUBE_CACHE"
+  )
+  if env_cache:
+    return Path(env_cache) / "raw"
 
-    return Path(pooch.os_cache("disslucc")) / "raw"
+  # Padrão oficial: ~/.cache/disscube/raw
+  return Path(pooch.os_cache("disscube")) / "raw"
 
 
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
