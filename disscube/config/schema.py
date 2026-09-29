@@ -67,6 +67,16 @@ class FileSource(_SourceBase):
     time: int | None = None
     variable: str | None = None
     nodata: float | None = None
+    archive: Literal["zip"] | None = None
+    """
+    Declares that ``url`` serves a zip archive to download-once and extract,
+    regardless of what the URL string itself looks like. Without this, a zip
+    is only detected when ``url`` happens to end in ``.zip`` — which fails
+    for share links from Dropbox, Google Drive, institutional data portals,
+    etc. that serve a zip through a query-string or token URL. ``path`` is
+    still the member to extract (or, if no member matches, the whole archive
+    is extracted next to it).
+    """
     read: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -156,34 +166,49 @@ class ExportConfig(_Strict):
 
 
 class PipelineConfig(_Strict):
-    """A whole pipeline file."""
+  """A whole pipeline file."""
 
-    schema_version: int = Field(alias="schema")
-    name: str | None = None
-    workspace: str | None = None
-    grid: GridConfig | None = None
-    extent: list[float] | None = Field(default=None, min_length=4, max_length=4)
-    """``[min_lon, min_lat, max_lon, max_lat]`` (WGS84) a sources-only file reads
+  schema_version: int = Field(alias="schema")
+  name: str | None = None
+  workspace: str | None = None
+  grid: GridConfig | None = None
+  extent: list[float] | None = Field(default=None, min_length=4, max_length=4)
+  """``[min_lon, min_lat, max_lon, max_lat]`` (WGS84) a sources-only file reads
     windowed sources over (classified maps, BDC, MapBiomas, PRODES)."""
-    sources_from_catalog: bool = False
-    """Let [[derive]] blocks use sources this file does not declare, registered
+  sources_from_catalog: bool = False
+  """Let [[derive]] blocks use sources this file does not declare, registered
     in the workspace's catalog by another pipeline file. Off by default, so a
     misspelt source id fails when the file is planned."""
-    source: list[Source] = Field(default_factory=list)
-    derive: list[DeriveConfig] = Field(default_factory=list)
-    export: ExportConfig | str | None = None
+  source: list[Source] = Field(default_factory=list)
+  derive: list[DeriveConfig] = Field(default_factory=list)
+  export: ExportConfig | str | None = None
 
-    @model_validator(mode="after")
-    def _grid_or_extent(self):
-        if self.derive and self.grid is None:
-            raise ValueError("a file with [[derive]] blocks needs a [grid]")
-        if self.grid is None and self.extent is None and self.source:
-            raise ValueError("a sources-only file needs `extent` (or a [grid])")
-        return self
+  @model_validator(mode="after")
+  def _grid_or_extent(self):
+      if self.derive and self.grid is None:
+        raise ValueError("a file with [[derive]] blocks needs a [grid]")
 
-    @field_validator("schema_version")
-    @classmethod
-    def _known_schema(cls, v: int) -> int:
-        if v != 1:
-            raise ValueError(f"unsupported pipeline schema {v}; this DisSCube reads schema 1")
-        return v
+      # Apenas fontes dinâmicas em janela na nuvem precisam de extent.
+      # Fontes 'file' e 'union' já têm extensão definida por seus arquivos locais.
+      windowed_types = {"bdc", "mapbiomas", "prodes", "classified"}
+      needs_extent = any(
+          getattr(s, "type", None) in windowed_types for s in self.source
+      )
+
+      if self.grid is None and self.extent is None and needs_extent:
+        raise ValueError(
+            "a sources-only file with windowed sources (BDC, MapBiomas, PRODES)"
+            " needs `extent` (or a [grid])"
+        )
+      return self
+
+
+
+  @field_validator("schema_version")
+  @classmethod
+  def _known_schema(cls, v: int) -> int:
+    if v != 1:
+      raise ValueError(
+          f"unsupported pipeline schema {v}; this DisSCube reads schema 1"
+      )
+    return v

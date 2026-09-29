@@ -448,10 +448,19 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
-def _register_source(cube, s: PlannedSource, raw: Path, bbox_geo: list[float], base: Path):
-    c = s.config
+def _register_source(
+    cube, s: PlannedSource, raw: Path, bbox_geo: list[float] | None, base: Path
+):
+  c = s.config
+  # ── Validação defensiva: apenas fontes dinâmicas em janela na nuvem precisam de bbox_geo ──
+  if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource)):
+    if bbox_geo is None:
+      raise PipelineError(
+          f"source {c.id!r} ({c.type}): windowed cloud sources require an"
+          " `extent` (or a [grid]) in the pipeline"
+      )
     if isinstance(c, BdcSource):
-        return _register_bdc(cube, c, raw, bbox_geo)
+      return _register_bdc(cube, c, raw, bbox_geo)
     if isinstance(c, MapbiomasSource):
         from disscube.sources.mapbiomas import register_mapbiomas_source
 
@@ -523,14 +532,23 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
+    
     token = os.environ.get("GITHUB_TOKEN")
     downloader = None
-    if token and c.url and "github" in c.url:
-        downloader = pooch.HTTPDownloader(headers={"Authorization": f"Bearer {token}", "Accept": "application/octet-stream"})
+    if token and c.url and "api.github.com" in c.url:
+      downloader = pooch.HTTPDownloader(
+          headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/octet-stream",
+          }
+      )
+    else:
+      downloader = pooch.HTTPDownloader(headers={"User-Agent": "disscube"})
 
     known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
 
-    if c.url and c.url.endswith(".zip") and not target_path.name.endswith(".zip"):
+    is_zip = c.archive == "zip" or (c.url and c.url.endswith(".zip"))
+    if c.url and is_zip and not target_path.name.endswith(".zip"):
         if target_path.exists() and target_path.stat().st_size > 0:
             return target_path
 
@@ -565,17 +583,18 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
 
 def _raw_cache_dir() -> Path:
-    """
-    Where remote (``url``-bearing) ``file`` sources are downloaded and cached.
+  """Onde as fontes remotas (com url) são baixadas e cacheadas via Pooch."""
+  import pooch
 
-    One directory shared by every pipeline and workspace on this machine —
-    pooch's own OS-appropriate cache location (respects ``XDG_CACHE_HOME`` and
-    friends), so a multi-gigabyte raster or shapefile is fetched and verified
-    once, not once per workspace.
-    """
-    import pooch
+  # Permite sobrescrever via variável de ambiente (útil para apontar para outro disco)
+  env_cache = os.environ.get("DISSCUBE_CACHE_DIR") or os.environ.get(
+      "DISSCUBE_CACHE"
+  )
+  if env_cache:
+    return Path(env_cache) / "raw"
 
-    return Path(pooch.os_cache("disslucc")) / "raw"
+  # Padrão oficial: ~/.cache/disscube/raw
+  return Path(pooch.os_cache("disscube")) / "raw"
 
 
 def _register_file(cube, c: FileSource, base: Path, raw: Path):
