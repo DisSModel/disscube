@@ -319,6 +319,20 @@ The `purity_threshold` field on `Derivation` is included in `spec_hash` but is n
 **STAC: reading only**
 `disscube.sources.bdc` reads Brazil Data Cube cubes through their STAC catalog (search, windowed reads, per-tile composites, mosaics) and writes local GeoTIFFs that are registered as ordinary sources. Derived variables are not published back as STAC, and the `valid_from`/`valid_until` and `bbox` fields on `Derivation` only follow STAC naming conventions.
 
+## Citation
+
+If you use DisSCube in your research, dynamic modeling, or spatial data pipelines, please cite it using the metadata from [`CITATION.cff`](CITATION.cff) or the following BibTeX entry:
+
+```bibtex
+@software{costa_disscube_2026,
+  author       = {Costa, S{\'e}rgio Souza},
+  title        = {{DisSCube: Declarative Spatial Layer for Dynamic Models}},
+  year         = {2026},
+  version      = {0.3.0},
+  url          = {https://github.com/DisSModel/disscube}
+}
+```
+
 ## License
 
 DisSCube is part of the DisSModel ecosystem and is released under the MIT License. See [LICENSE](LICENSE) for details.

@@ -5,7 +5,9 @@ authors:
     given-names: "Sérgio Souza"
     orcid: "https://orcid.org/0000-0002-0232-4549"
 title: "DisSCube: Declarative Spatial Layer for Dynamic Models"
-version: 0.2.0
+abstract: "An open-source, declarative engine for constructing cellular spatial data cubes for dynamic modeling, spatial simulation, and environmental analysis."
+version: 0.3.0
+date-released: "2026-09-29"
 url: "https://github.com/DisSModel/disscube"
 repository-code: "https://github.com/DisSModel/disscube"
 license: MIT
@@ -14,4 +16,6 @@ keywords:
   - "geospatial"
   - "land use and land cover change"
   - "brazil data cube"
+  - "cellular automata"
   - "reproducibility"
+  - "fair-software"
