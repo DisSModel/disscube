@@ -71,7 +71,7 @@ class PlannedDerive:
     fill: str | None = None
 
     def derivation(self):
-        from disscube.derivation import Derivation
+        from disscube.models import Derivation
 
         return Derivation(target=self.target, source_id=self.source, operator=self.operator,
                           class_code=self.class_code, role=self.role, params=self.params, fill=self.fill)

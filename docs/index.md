@@ -23,7 +23,7 @@ pip install -e .
 
 ```python
 from disscube.client import CubeClient
-from disscube.derivation import Derivation
+from disscube.models import Derivation
 
 cube = CubeClient(catalog="catalog.db", store="./data/")
 

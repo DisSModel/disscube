@@ -234,19 +234,18 @@ data/derived/{grid_id}/{partition}/{spec_hash}/{variable_name}.zarr
 
 ```
 disscube/
-├── client/           CubeClient — public entry point
-├── models/           GridSpec, SpatialSource, SpatialDerivation, Variable…
-├── derivation.py     Declarative Derivation (front end over SpatialDerivation)
+├── client.py         CubeClient — public entry point
+├── models/           GridSpec, SpatialSource, SpatialDerivation, Variable, Derivation…
 ├── operators/        Operators as classes (self-registered via __init_subclass__)
 │   ├── base.py       Operator ABC + OPERATOR_REGISTRY
 │   ├── zonal.py      mean, sum, majority, percentage, attribute, presence…
 │   └── proximity.py  distance, min_distance, count
 ├── pipeline/         Stages: Normalizer → GridAligner → Aggregator → Writer
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
-├── storage/          AssetStore (fsspec — local and S3)
+├── storage.py        AssetStore (fsspec — local and S3)
 ├── api/              Experimental HTTP API (optional `api` extra)
 ├── config/           Pipeline files (TOML): schema, planning, running
-├── cli.py            `disscube validate` / `disscube run`
+├── cli.py            `disscube validate` / `disscube run` / `disscube export`
 ├── sources/          Adapters that bring external data in as SpatialSources,
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
@@ -255,8 +254,7 @@ disscube/
 │   ├── mapbiomas.py  MapBiomas annual land-cover maps (Collection 11, 10 m series)
 │   ├── prodes.py     PRODES deforestation (download + cache, legend from the .qml)
 │   └── classified.py any classified map with its legend, e.g. from SITS
-└── utils/            Grids (grids.py), BDC tile geometry (bdc_importer.py),
-                      checksums (files.py)
+└── utils.py          Checksums (sha256_file) and BDC tile importer (import_bdc_grids)
 ```
 
 ## Adding a new operator
