@@ -560,10 +560,18 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
+    
     token = os.environ.get("GITHUB_TOKEN")
     downloader = None
-    if token and c.url and "github" in c.url:
-        downloader = pooch.HTTPDownloader(headers={"Authorization": f"Bearer {token}", "Accept": "application/octet-stream"})
+    if token and c.url and "api.github.com" in c.url:
+      downloader = pooch.HTTPDownloader(
+          headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/octet-stream",
+          }
+      )
+    else:
+      downloader = pooch.HTTPDownloader(headers={"User-Agent": "disscube"})
 
     known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
 
