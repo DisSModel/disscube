@@ -337,7 +337,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
     elif cfg.extent is not None:
         grid_id, bbox_geo = None, list(cfg.extent)
     else:
-        raise PipelineError(f"{pf.path.name}: cannot run without a [grid] or an `extent`")
+        grid_id, bbox_geo = None, None
     missing = [sid for sid in p.catalog_sources if cube.catalog.get_spatial_source(sid) is None]
     if missing:
         raise PipelineError(
@@ -451,33 +451,60 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
 def _register_source(
     cube, s: PlannedSource, raw: Path, bbox_geo: list[float] | None, base: Path
 ):
-  c = s.config
-  # ── Validação defensiva: apenas fontes dinâmicas em janela na nuvem precisam de bbox_geo ──
-  if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource)):
-    if bbox_geo is None:
-      raise PipelineError(
-          f"source {c.id!r} ({c.type}): windowed cloud sources require an"
-          " `extent` (or a [grid]) in the pipeline"
-      )
-    if isinstance(c, BdcSource):
-      return _register_bdc(cube, c, raw, bbox_geo)
-    if isinstance(c, MapbiomasSource):
-        from disscube.sources.mapbiomas import register_mapbiomas_source
+    c = s.config
+    # ── Validação defensiva: apenas fontes dinâmicas em janela na nuvem precisam de bbox_geo ──
+    if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource)):
+        if bbox_geo is None:
+            raise PipelineError(
+                f"source {c.id!r} ({c.type}): windowed cloud sources require an"
+                " `extent` (or a [grid]) in the pipeline"
+            )
+        if isinstance(c, BdcSource):
+            return _register_bdc(cube, c, raw, bbox_geo)
+        if isinstance(c, MapbiomasSource):
+            from disscube.sources.mapbiomas import register_mapbiomas_source
 
-        return register_mapbiomas_source(cube, c.id, _year_of(c), bbox_geo, raw, collection=c.collection,
-                                         resolution=c.resolution, url=c.url, name=c.name)
-    if isinstance(c, ProdesSource):
-        from disscube.sources import prodes
+            return register_mapbiomas_source(
+                cube,
+                c.id,
+                _year_of(c),
+                bbox_geo,
+                raw,
+                collection=c.collection,
+                resolution=c.resolution,
+                url=c.url,
+                name=c.name,
+            )
+        if isinstance(c, ProdesSource):
+            from disscube.sources import prodes
 
-        cache = (base / c.cache) if c.cache else None
-        files = prodes.download(c.url or prodes.DEFAULT_URL, cache)
-        return prodes.register_prodes_source(cube, c.id, _year_of(c), bbox_geo, raw, files=files, name=c.name)
-    if isinstance(c, ClassifiedSource):
-        from disscube.sources.classified import register_classified_map
+            cache = (base / c.cache) if c.cache else None
+            files = prodes.download(c.url or prodes.DEFAULT_URL, cache)
+            return prodes.register_prodes_source(
+                cube,
+                c.id,
+                _year_of(c),
+                bbox_geo,
+                raw,
+                files=files,
+                name=c.name,
+            )
+        if isinstance(c, ClassifiedSource):
+            from disscube.sources.classified import register_classified_map
 
-        legend = base / c.legend if isinstance(c.legend, str) else c.legend
-        return register_classified_map(cube, c.id, _resolve(base, c.path), bbox_geo, raw, legend=legend,
-                                       time=c.time, nodata=c.nodata, producer=c.producer, name=c.name)
+            legend = base / c.legend if isinstance(c.legend, str) else c.legend
+            return register_classified_map(
+                cube,
+                c.id,
+                _resolve(base, c.path),
+                bbox_geo,
+                raw,
+                legend=legend,
+                time=c.time,
+                nodata=c.nodata,
+                producer=c.producer,
+                name=c.name,
+            )
     if isinstance(c, UnionSource):
         return _register_union(cube, c, raw)
     return _register_file(cube, c, base, raw)
@@ -536,14 +563,14 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
     token = os.environ.get("GITHUB_TOKEN")
     downloader = None
     if token and c.url and "api.github.com" in c.url:
-      downloader = pooch.HTTPDownloader(
-          headers={
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/octet-stream",
-          }
-      )
+        downloader = pooch.HTTPDownloader(
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/octet-stream",
+            }
+        )
     else:
-      downloader = pooch.HTTPDownloader(headers={"User-Agent": "disscube"})
+        downloader = pooch.HTTPDownloader(headers={"User-Agent": "disscube"})
 
     known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
 
@@ -561,14 +588,20 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
             downloader=downloader,
         )
         with zipfile.ZipFile(downloaded_zip, "r") as zf:
+            target_stem = target_path.stem
+            extracted = False
             for member in zf.infolist():
                 if member.is_dir():
                     continue
-                if Path(member.filename).name == target_path.name or len(zf.namelist()) == 1:
+                mem_path = Path(member.filename)
+                if mem_path.name == target_path.name or len(zf.namelist()) == 1:
                     with zf.open(member) as src, open(target_path, "wb") as dst:
                         dst.write(src.read())
-                    break
-            else:
+                    extracted = True
+                elif target_path.suffix.lower() == ".shp" and mem_path.stem == target_stem:
+                    with zf.open(member) as src, open(target_path.parent / mem_path.name, "wb") as dst:
+                        dst.write(src.read())
+            if not extracted:
                 zf.extractall(target_path.parent)
         return target_path
 
@@ -583,18 +616,18 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
 
 def _raw_cache_dir() -> Path:
-  """Onde as fontes remotas (com url) são baixadas e cacheadas via Pooch."""
-  import pooch
+    """Onde as fontes remotas (com url) são baixadas e cacheadas via Pooch."""
+    import pooch
 
-  # Permite sobrescrever via variável de ambiente (útil para apontar para outro disco)
-  env_cache = os.environ.get("DISSCUBE_CACHE_DIR") or os.environ.get(
-      "DISSCUBE_CACHE"
-  )
-  if env_cache:
-    return Path(env_cache) / "raw"
+    # Permite sobrescrever via variável de ambiente (útil para apontar para outro disco)
+    env_cache = os.environ.get("DISSCUBE_CACHE_DIR") or os.environ.get(
+        "DISSCUBE_CACHE"
+    )
+    if env_cache:
+        return Path(env_cache) / "raw"
 
-  # Padrão oficial: ~/.cache/disscube/raw
-  return Path(pooch.os_cache("disscube")) / "raw"
+    # Padrão oficial: ~/.cache/disscube/raw
+    return Path(pooch.os_cache("disscube")) / "raw"
 
 
 def _register_file(cube, c: FileSource, base: Path, raw: Path):

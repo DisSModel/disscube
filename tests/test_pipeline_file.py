@@ -268,3 +268,44 @@ def test_cli_reports_errors(tmp_path, capsys):
     path = _toml(tmp_path, '[[derive]]\ntarget="x"\nsource="nope"\noperator="mean"\n')
     assert cli(["validate", str(path)]) == 2
     assert "unknown source" in capsys.readouterr().err
+
+
+def test_sources_only_pipeline_without_grid_or_extent(tmp_path):
+    tif = _raster(tmp_path / "raw.tif")
+    path = tmp_path / "sources_only.toml"
+    path.write_text(f"""schema = 1
+name = "Sources Only Pipeline"
+
+[[source]]
+id = "my_raster"
+type = "file"
+path = "{tif.name}"
+""", encoding="utf-8")
+
+    # Planning and running should succeed without [grid] or extent
+    p = plan(path)
+    assert p.grid is None
+    report = run(path, workspace=tmp_path / "ws")
+    assert report.grid_id is None
+    assert len(report.sources) == 1
+    assert report.sources[0]["id"] == "my_raster"
+
+    cube = CubeClient(catalog=str(tmp_path / "ws" / "catalog.db"), store=str(tmp_path / "ws" / "store"))
+    assert cube.catalog.get_spatial_source("my_raster") is not None
+
+
+def test_sources_only_windowed_source_without_extent_fails(tmp_path):
+    path = tmp_path / "invalid_sources.toml"
+    path.write_text("""schema = 1
+name = "Windowed Without Extent"
+
+[[source]]
+id = "mb"
+type = "mapbiomas"
+collection = "9"
+year = 2020
+""", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="needs `extent` \\(or a \\[grid\\]\\)"):
+        plan(path)
+
