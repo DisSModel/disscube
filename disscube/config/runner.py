@@ -298,6 +298,11 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         nodata=np.nan,
         compress="deflate",
     ) as dst:
+        dst.update_tags(
+            TIFFTAG_SOFTWARE="DisSCube 0.3.0",
+            GRID_ID=grid.name,
+            CONVENTIONS="CF-1.8",
+        )
         for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
             dst.write(arr, idx)
             dst.set_band_description(idx, var)

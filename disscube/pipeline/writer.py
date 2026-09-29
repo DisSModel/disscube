@@ -38,10 +38,31 @@ class VariableWriter(PipelineStage):
             da.attrs["grid_id"] = grid.id
             da.attrs["role"] = derivation.role
             da.attrs["spec_hash"] = spec_hash
+            da.attrs["conventions"] = "CF-1.8"
+            op_name = getattr(derivation, "operator", None)
+            if not op_name and hasattr(derivation, "variables"):
+                for v in derivation.variables:
+                    if getattr(v, "name", None) == var_name:
+                        op_name = getattr(v, "operator", None)
+                        break
+            if op_name:
+                da.attrs["operator"] = str(op_name)
+            if getattr(derivation, "source_id", None):
+                da.attrs["source_id"] = derivation.source_id
             if tile_id:
                 da.attrs["tile_id"] = tile_id
             if "spatial_ref" in da.coords:
                 da.attrs["crs"] = grid.crs
+
+            # Coordinate metadata (CF conventions)
+            if "x" in da.coords and not da.coords["x"].attrs.get("standard_name"):
+                is_geo = "4326" in str(grid.crs).lower() or "longlat" in str(grid.crs).lower()
+                da.coords["x"].attrs["standard_name"] = "longitude" if is_geo else "projection_x_coordinate"
+                da.coords["x"].attrs["units"] = "degrees_east" if is_geo else "m"
+            if "y" in da.coords and not da.coords["y"].attrs.get("standard_name"):
+                is_geo = "4326" in str(grid.crs).lower() or "longlat" in str(grid.crs).lower()
+                da.coords["y"].attrs["standard_name"] = "latitude" if is_geo else "projection_y_coordinate"
+                da.coords["y"].attrs["units"] = "degrees_north" if is_geo else "m"
             
             # Storage path: derived/{grid_id}/{tile_id or 'global'}/{spec_hash}/{var_name}.zarr
             partition = tile_id if tile_id else "global"
