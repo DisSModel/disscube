@@ -4,6 +4,8 @@ Storage layer for DisSCube assets (local and remote via fsspec).
 
 from __future__ import annotations
 
+import sys
+
 import fsspec
 
 
@@ -23,5 +25,8 @@ class AssetStore:
     def open(self, relative_path: str, mode: str = "rb"):
         return self.fs.open(f"{self.path}/{relative_path}", mode=mode)
 
+
+# Backward-compatibility alias for legacy code importing disscube.storage.local
+sys.modules[f"{__name__}.local"] = sys.modules[__name__]
 
 __all__ = ["AssetStore"]
