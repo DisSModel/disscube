@@ -56,7 +56,7 @@ class GridSpec(BaseModel):
     @property
     def transform(self) -> Affine:
         # North-up transform: origin at (minx, maxy), negative y-scale
-        return Affine.translation(self.bbox[0], self.bbox[3]) * Affine.scale(self.resolution, -self.resolution)
+        return Affine.translation(self.bbox[0], self.bbox[3]) @ Affine.scale(self.resolution, -self.resolution)
 
     @property
     def xs(self) -> np.ndarray:

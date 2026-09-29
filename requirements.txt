@@ -10,18 +10,32 @@ numpy
 pandas
 pyproj
 fsspec
-s3fs
-fastapi
-uvicorn
-python-multipart
 toml
 rioxarray
 affine
+pooch>=1.8.0
+dissmodel>=0.6.0,<0.7.0
 
-# Development & Documentation
-mkdocs-material
-pymdown-extensions
+# Optional: BDC
+fiona
+pystac-client
+
+# Optional: S3
+s3fs
+
+# Optional: API
+fastapi
+uvicorn
+python-multipart
+
+# Development & Testing
 pytest
-pytest-mock
-black
-flake8
+pytest-cov
+mypy>=1.13
+ruff>=0.16,<0.17
+httpx
+ipykernel
+
+# Documentation
+mkdocs>=1.6,<2
+mkdocs-material>=9.5
