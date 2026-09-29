@@ -1,4 +1,8 @@
-import os
+"""Backward-compatibility shim for API configuration."""
 
-CATALOG_PATH = os.getenv("DISSCUBE_CATALOG", "./catalog.db")
-STORE_PATH   = os.getenv("DISSCUBE_STORE",   "./data/")
+from __future__ import annotations
+
+from disscube.api.app import DEFAULT_CATALOG_PATH as CATALOG_PATH
+from disscube.api.app import DEFAULT_STORE_PATH as STORE_PATH
+
+__all__ = ["CATALOG_PATH", "STORE_PATH"]

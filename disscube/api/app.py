@@ -30,10 +30,13 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
         "The DisSCube HTTP API requires the optional 'api' extra: pip install \"disscube[api]\""
     ) from exc
 
+import os
+
 from disscube.client import CubeClient
 from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialSource
 
-from . import config
+DEFAULT_CATALOG_PATH = os.getenv("DISSCUBE_CATALOG", "./catalog.db")
+DEFAULT_STORE_PATH = os.getenv("DISSCUBE_STORE", "./data/")
 
 
 def get_cube(request: Request) -> CubeClient:
@@ -48,7 +51,7 @@ def create_app(catalog_path: str | None = None, store_path: str | None = None) -
     """
     Build the API application.
 
-    Parameters default to ``config.CATALOG_PATH`` / ``config.STORE_PATH``.
+    Parameters default to ``DEFAULT_CATALOG_PATH`` / ``DEFAULT_STORE_PATH``.
     The ``CubeClient`` is created in the application lifespan, so building
     the app has no side effects on disk.
     """
@@ -56,8 +59,8 @@ def create_app(catalog_path: str | None = None, store_path: str | None = None) -
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.cube = CubeClient(
-            catalog_path or config.CATALOG_PATH,
-            store_path or config.STORE_PATH,
+            catalog_path or DEFAULT_CATALOG_PATH,
+            store_path or DEFAULT_STORE_PATH,
         )
         yield
 
