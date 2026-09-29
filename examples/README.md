@@ -47,9 +47,16 @@ DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
 to the model repositories, where those dependencies live.
 
-## Utilities (`tools/`)
+## Exporting to GeoTIFF
 
-| Script | Purpose |
-|---|---|
-| `tools/zarr_to_tif.py` | Converts a derived Zarr to GeoTIFF |
-| `tools/import_bdc_tiles.py` | Registers the BDC tile grids in a catalog |
+Derived data cubes can be exported to multi-band GeoTIFFs using the CLI:
+
+```bash
+disscube export examples/pipelines/itaituba_fill.toml --output data/cellspace.tif
+```
+
+Or directly during execution:
+
+```bash
+disscube run examples/pipelines/itaituba_fill.toml --output data/cellspace.tif
+```

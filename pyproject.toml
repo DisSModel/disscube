@@ -105,7 +105,7 @@ exclude = ["docs", "site", "build"]
 
 [tool.mypy]
 python_version = "3.12"
-exclude = ["tests/", "docs/", "examples/", "tools/"]
+exclude = ["tests/", "docs/", "examples/"]
 
 [[tool.mypy.overrides]]
 # Third-party (or optional-extra) dependencies with no bundled type stubs.
