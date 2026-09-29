@@ -337,7 +337,8 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
     elif cfg.extent is not None:
         grid_id, bbox_geo = None, list(cfg.extent)
     else:
-        raise PipelineError(f"{pf.path.name}: cannot run without a [grid] or an `extent`")
+        grid_id, bbox_geo = None, None
+    
     missing = [sid for sid in p.catalog_sources if cube.catalog.get_spatial_source(sid) is None]
     if missing:
         raise PipelineError(
@@ -448,30 +449,66 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
     return g.name, [min(xs), min(ys), max(xs), max(ys)]
 
 
-def _register_source(cube, s: PlannedSource, raw: Path, bbox_geo: list[float], base: Path):
-    c = s.config
+def _register_source(
+    cube, s: PlannedSource, raw: Path, bbox_geo: list[float] | None, base: Path
+):
+  c = s.config
+  # ── Validação defensiva: apenas fontes dinâmicas em janela na nuvem precisam de bbox_geo ──
+  if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource)):
+    if bbox_geo is None:
+      raise PipelineError(
+          f"source {c.id!r} ({c.type}): windowed cloud sources require an"
+          " `extent` (or a [grid]) in the pipeline"
+      )
     if isinstance(c, BdcSource):
-        return _register_bdc(cube, c, raw, bbox_geo)
+      return _register_bdc(cube, c, raw, bbox_geo)
     if isinstance(c, MapbiomasSource):
-        from disscube.sources.mapbiomas import register_mapbiomas_source
+      from disscube.sources.mapbiomas import register_mapbiomas_source
 
-        return register_mapbiomas_source(cube, c.id, _year_of(c), bbox_geo, raw, collection=c.collection,
-                                         resolution=c.resolution, url=c.url, name=c.name)
+      return register_mapbiomas_source(
+          cube,
+          c.id,
+          _year_of(c),
+          bbox_geo,
+          raw,
+          collection=c.collection,
+          resolution=c.resolution,
+          url=c.url,
+          name=c.name,
+      )
     if isinstance(c, ProdesSource):
-        from disscube.sources import prodes
+      from disscube.sources import prodes
 
-        cache = (base / c.cache) if c.cache else None
-        files = prodes.download(c.url or prodes.DEFAULT_URL, cache)
-        return prodes.register_prodes_source(cube, c.id, _year_of(c), bbox_geo, raw, files=files, name=c.name)
+      cache = (base / c.cache) if c.cache else None
+      files = prodes.download(c.url or prodes.DEFAULT_URL, cache)
+      return prodes.register_prodes_source(
+          cube,
+          c.id,
+          _year_of(c),
+          bbox_geo,
+          raw,
+          files=files,
+          name=c.name,
+      )
     if isinstance(c, ClassifiedSource):
-        from disscube.sources.classified import register_classified_map
+      from disscube.sources.classified import register_classified_map
 
-        legend = base / c.legend if isinstance(c.legend, str) else c.legend
-        return register_classified_map(cube, c.id, _resolve(base, c.path), bbox_geo, raw, legend=legend,
-                                       time=c.time, nodata=c.nodata, producer=c.producer, name=c.name)
-    if isinstance(c, UnionSource):
-        return _register_union(cube, c, raw)
-    return _register_file(cube, c, base, raw)
+      legend = base / c.legend if isinstance(c.legend, str) else c.legend
+      return register_classified_map(
+          cube,
+          c.id,
+          _resolve(base, c.path),
+          bbox_geo,
+          raw,
+          legend=legend,
+          time=c.time,
+          nodata=c.nodata,
+          producer=c.producer,
+          name=c.name,
+      )
+  if isinstance(c, UnionSource):
+    return _register_union(cube, c, raw)
+  return _register_file(cube, c, base, raw)
 
 
 def _register_bdc(cube, c: BdcSource, raw: Path, bbox_geo: list[float]):
@@ -530,7 +567,8 @@ def _fetch_file_source(c: FileSource, target_path: Path) -> Path:
 
     known_hash = f"sha256:{c.sha256}" if c.sha256 and not c.sha256.startswith("sha256:") else c.sha256
 
-    if c.url and c.url.endswith(".zip") and not target_path.name.endswith(".zip"):
+    is_zip = c.archive == "zip" or (c.url and c.url.endswith(".zip"))
+    if c.url and is_zip and not target_path.name.endswith(".zip"):
         if target_path.exists() and target_path.stat().st_size > 0:
             return target_path
 

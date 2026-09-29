@@ -67,6 +67,16 @@ class FileSource(_SourceBase):
     time: int | None = None
     variable: str | None = None
     nodata: float | None = None
+    archive: Literal["zip"] | None = None
+    """
+    Declares that ``url`` serves a zip archive to download-once and extract,
+    regardless of what the URL string itself looks like. Without this, a zip
+    is only detected when ``url`` happens to end in ``.zip`` — which fails
+    for share links from Dropbox, Google Drive, institutional data portals,
+    etc. that serve a zip through a query-string or token URL. ``path`` is
+    still the member to extract (or, if no member matches, the whole archive
+    is extracted next to it).
+    """
     read: dict[str, Any] = Field(default_factory=dict)
 
 
