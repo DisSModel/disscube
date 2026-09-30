@@ -1,0 +1,48 @@
+# DisSCube — Quickstart pipeline (synthetic land use and elevation)
+#
+# Equivalent to examples/01_quickstart.py:
+#   - percentage: fraction of forest (class 3) in each 300 m cell
+#   - majority:   dominant land-use class in each 300 m cell
+#   - mean:       mean elevation in each 300 m cell
+#
+# Runs offline without external downloads:
+#
+#     disscube validate examples/pipelines/quickstart.toml
+#     disscube run      examples/pipelines/quickstart.toml --workspace outputs/quickstart
+
+schema = 1
+name = "Quickstart — Synthetic Land Use and Elevation"
+
+[grid]
+name = "demo/300m"
+crs = "EPSG:31983"
+bbox = [570000.0, 9708000.0, 582000.0, 9720000.0]
+resolution = 300
+
+[[source]]
+id = "landuse"
+type = "file"
+path = "../data/quickstart/landuse.tif"
+crs = "EPSG:31983"
+
+[[source]]
+id = "elevation"
+type = "file"
+path = "../data/quickstart/elevation.tif"
+crs = "EPSG:31983"
+
+[[derive]]
+target = "forest_pct"
+source = "landuse"
+operator = "percentage"
+class_code = 3
+
+[[derive]]
+target = "landuse_major"
+source = "landuse"
+operator = "majority"
+
+[[derive]]
+target = "elev_mean"
+source = "elevation"
+operator = "mean"

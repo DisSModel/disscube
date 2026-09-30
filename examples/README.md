@@ -1,62 +1,149 @@
 # DisSCube — Examples
 
-Self-contained, runnable examples. Examples 01–03 generate their own
-synthetic input data; examples 04–06 use real data bundled in
-[`data/terrame/`](data/terrame/); example 07 reads the Brazil Data Cube over
-the network, 08 reads MapBiomas and 09 downloads PRODES (≈130 MB, cached). All of them work in a temporary directory; 01–06 finish in a few
-seconds with no downloads:
+Self-contained, offline and lightweight examples illustrating the two ways of using DisSCube:
+the **Python API** and declarative **TOML pipelines**.
+
+All examples run in a few seconds without downloading external data:
 
 ```bash
 pip install -e .
 python examples/01_quickstart.py
 ```
 
-Pass a directory to keep the catalog, the raw inputs and the derived Zarr
-stores for inspection (e.g. in QGIS):
+Pass a directory as argument to keep the catalog and generated Zarr stores:
 
 ```bash
 python examples/01_quickstart.py ./scratch
 ```
 
+---
+
+## Two Ways to Use DisSCube
+
+DisSCube supports two equivalent, interoperable workflows for preparing spatial data cubes:
+
+````carousel
+```python
+# (a) Python API (CubeClient & Derivation)
+# examples/01_quickstart.py
+
+from disscube import CubeClient, Derivation, GridSpec, SpatialSource
+
+# 1. Initialize client
+cube = CubeClient("catalog.db", "store")
+
+# 2. Register grid (300 m cells, SIRGAS 2000 / UTM 23S)
+cube.register_grid(GridSpec(
+    id="demo/300m", type="local", crs="EPSG:31983", resolution=300.0,
+    bbox=[570000.0, 9708000.0, 582000.0, 9720000.0],
+))
+
+# 3. Register spatial sources
+cube.register_spatial_source(SpatialSource(
+    id="landuse", format="raster", asset_url="landuse.tif", crs="EPSG:31983",
+))
+cube.register_spatial_source(SpatialSource(
+    id="elevation", format="raster", asset_url="elevation.tif", crs="EPSG:31983",
+))
+
+# 4. Declarative derivations
+cube.derive_declarative(
+    Derivation(target="forest_pct", source_id="landuse", operator="percentage", class_code=3),
+    grid_id="demo/300m",
+)
+cube.derive_declarative(
+    Derivation(target="landuse_major", source_id="landuse", operator="majority"),
+    grid_id="demo/300m",
+)
+cube.derive_declarative(
+    Derivation(target="elev_mean", source_id="elevation", operator="mean"),
+    grid_id="demo/300m",
+)
+
+# 5. Load model-ready DataArrays
+forest = cube.load("forest_pct", grid_id="demo/300m")
+```
+<!-- slide -->
+```toml
+# (b) Declarative Pipeline (TOML)
+# examples/pipelines/quickstart.toml
+
+schema = 1
+name = "Quickstart — Synthetic Land Use and Elevation"
+
+[grid]
+name = "demo/300m"
+crs = "EPSG:31983"
+bbox = [570000.0, 9708000.0, 582000.0, 9720000.0]
+resolution = 300
+
+[[source]]
+id = "landuse"
+type = "file"
+path = "../data/quickstart/landuse.tif"
+crs = "EPSG:31983"
+
+[[source]]
+id = "elevation"
+type = "file"
+path = "../data/quickstart/elevation.tif"
+crs = "EPSG:31983"
+
+[[derive]]
+target = "forest_pct"
+source = "landuse"
+operator = "percentage"
+class_code = 3
+
+[[derive]]
+target = "landuse_major"
+source = "landuse"
+operator = "majority"
+
+[[derive]]
+target = "elev_mean"
+source = "elevation"
+operator = "mean"
+```
+````
+
+### Running the TOML Pipeline
+
+Validate without I/O or downloads:
+```bash
+disscube validate examples/pipelines/quickstart.toml
+```
+
+Execute and record provenance:
+```bash
+disscube run examples/pipelines/quickstart.toml --workspace outputs/quickstart
+```
+
+Export directly to multi-band GeoTIFF:
+```bash
+disscube export examples/pipelines/quickstart.toml --output outputs/cellspace.tif
+```
+
+---
+
+## Python API Examples
+
 | Example | What it shows |
 |---|---|
 | [`01_quickstart.py`](01_quickstart.py) | Grid, raster sources and declarative derivations: `percentage`, `majority`, `mean`; loading results; cache hits via `spec_hash` |
-| [`02_vector_drivers.py`](02_vector_drivers.py) | Drivers from vector layers: `min_distance`, `count`, `presence`, `attribute`; several variables per derivation |
-| [`03_time_series.py`](03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` (including `period`) |
-| [`04_terrame_fill_itaituba.py`](04_terrame_fill_itaituba.py) | TerraME's *Fill* tutorial on real data (Itaituba, Pará, 5 km): `mean`, `percentage` × `coverage_purity`, `min_distance`, compared cell by cell with TerraME's own output |
-| [`05_terrame_fill_emas.py`](05_terrame_fill_emas.py) | TerraME's Emas National Park example (500 m): `presence` of lines, `max` / `min` of a raster; a study area defined by a limit polygon |
-| [`06_terrame_fill_amazonia.py`](06_terrame_fill_amazonia.py) | TerraME's Brazilian Amazon example (50 km): PRODES coverage with a declared nodata, distances to roads and ports |
-| [`07_bdc_cube.py`](07_bdc_cube.py) | Brazil Data Cube: Landsat 16-day cube over Ilha do Maranhão via STAC (windowed reads), dry-season median, NDVI / MNDWI / open-water drivers on a 300 m BDC Albers grid. Needs network and `.[bdc]`; `--offline` runs a synthetic stand-in |
-| [`08_mapbiomas_land_use.py`](08_mapbiomas_land_use.py) | MapBiomas Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: windowed reads of the national files, code 0 as nodata, `majority` and `percentage` (urban, forest, mangrove) on the grid of 07, `(time, y, x)` series and `to_lucc_data()`. Needs network; `--offline` runs a synthetic stand-in |
-| [`09_prodes_deforestation.py`](09_prodes_deforestation.py) | PRODES in the LuccME Lab15 area (south of Santarém) at the end of 2008, 2016 and 2024: edition downloaded once and cached, legend read from its `.qml`, forest / deforested / other, `percentage` on a 500 m BDC grid. Needs network; `--offline` runs a synthetic stand-in |
+| [`02_vector_drivers.py`](02_vector_drivers.py) | Drivers from vector layers: `min_distance`, `count`, `presence`, `attribute`; multiple variables per derivation |
+| [`03_time_series.py`](03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` |
 
-All examples are executed by the test suite (`tests/test_examples.py`), so
-they are kept in sync with the API. The suite sets `DISSCUBE_OFFLINE=1`, so
-07, 08 and 09 run on their synthetic stand-ins there.
+All examples are tested automatically on CI (`tests/test_examples.py`).
 
-## Pipeline files
+---
 
-[`pipelines/`](pipelines/) has the same preparations declared as TOML files and
-run with `disscube run <file>`: TerraME's Itaituba Fill tutorial (offline,
-bundled data) and the BDC, MapBiomas and PRODES examples. See
-`docs/guides/pipeline_files.md`.
+## Real-World Cases and Recipes
 
-## Scope
+Real data workflows and parity benchmarks are maintained in the dedicated repository
+[**LambdaGeo/disscube-recipes**](https://github.com/LambdaGeo/disscube-recipes):
 
-DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
-Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
-to the model repositories, where those dependencies live.
-
-## Exporting to GeoTIFF
-
-Derived data cubes can be exported to multi-band GeoTIFFs using the CLI:
-
-```bash
-disscube export examples/pipelines/itaituba_fill.toml --output data/cellspace.tif
-```
-
-Or directly during execution:
-
-```bash
-disscube run examples/pipelines/itaituba_fill.toml --output data/cellspace.tif
-```
+- `cases/terrame_fill`: Cell-by-cell numerical parity against TerraME's C++ `fillCellularSpace` (Itaituba, Emas, Amazônia).
+- `cases/ilha_maranhao`: BDC Landsat-16D (STAC) and MapBiomas land-cover time series on a 300 m BDC Albers grid.
+- `cases/prodes_br163`: Multi-year PRODES deforestation along the BR-163 corridor (Pará).
+- `cases/luccme_br`: National LUCC reconstruction for Brazil (BigEarth).

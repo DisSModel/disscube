@@ -117,28 +117,31 @@ in one TOML file, the counterpart of a TerraME `fill` script, and run from the
 command line:
 
 ```bash
-disscube validate examples/pipelines/itaituba_fill.toml   # no downloads
-disscube run      examples/pipelines/itaituba_fill.toml --workspace outputs/itaituba
+disscube validate examples/pipelines/quickstart.toml   # no downloads
+disscube run      examples/pipelines/quickstart.toml --workspace outputs/quickstart
 ```
 
 ```toml
 schema = 1
+name = "Quickstart"
 
 [grid]
-name = "ilha_do_maranhao"
-bbox = [-44.35, -2.62, -44.20, -2.47]   # WGS84 → BDC Albers grid
+name = "demo/300m"
+crs = "EPSG:31983"
+bbox = [570000.0, 9708000.0, 582000.0, 9720000.0]
 resolution = 300
 
 [[source]]
-id = "lulc_{year}"
-type = "mapbiomas"
-years = [2000, 2020]
+id = "landuse"
+type = "file"
+path = "../data/quickstart/landuse.tif"
+crs = "EPSG:31983"
 
 [[derive]]
-target = "urban_pct"
-source = "lulc_{year}"
+target = "forest_pct"
+source = "landuse"
 operator = "percentage"
-class_code = 24
+class_code = 3
 ```
 
 See [`docs/guides/pipeline_files.md`](docs/guides/pipeline_files.md) and
@@ -146,33 +149,18 @@ See [`docs/guides/pipeline_files.md`](docs/guides/pipeline_files.md) and
 
 ## Examples
 
-[`examples/`](examples/) has runnable scripts; 01–06 need no downloads and run
-in seconds:
+[`examples/`](examples/) has runnable, self-contained examples that run offline in seconds:
 
-- **01–03, synthetic data** — a quickstart with raster operators, vector
-  drivers, and time series handed off to DisSModel.
-- **04–06, real data** — the three *Fill* examples shipped with TerraME
-  (Itaituba, Emas National Park, Brazilian Amazon), derived with DisSCube and
-  compared cell by cell with TerraME's own output. Data are bundled in
-  [`examples/data/terrame/`](examples/data/terrame/).
-- **07, Brazil Data Cube** — reads the Landsat 16-day data cube over Ilha do
-  Maranhão through the BDC STAC catalog (only the pixels of the area are
-  fetched) and derives NDVI, MNDWI and open-water drivers on a 300 m grid
-  snapped to the BDC Albers mesh. Needs network and `pip install -e ".[bdc]"`;
-  with `--offline` it runs on a synthetic stand-in.
-- **08, MapBiomas** — land use of Ilha do Maranhão in 2000 and 2020 (Collection
-  11, 30 m), read straight from the national files and aggregated on the same
-  grid as 07 (`majority`, urban/forest/mangrove `percentage`), then handed to
-  DisSModel with `to_lucc_data()`. Needs network; `--offline` runs a stand-in.
-- **09, PRODES** — deforestation in the LuccME Lab15 area (south of Santarém,
-  Pará) at the end of 2008, 2016 and 2024: the PRODES edition is downloaded
-  once and cached, its legend read from the `.qml`, and the maps aggregated on
-  a 500 m BDC grid. Needs network; `--offline` runs a stand-in.
+- **01–03, synthetic data** — a quickstart with raster operators, vector drivers, and time series handed off to DisSModel.
+- **quickstart.toml** — declarative pipeline equivalent to example 01.
 
 ```bash
 python examples/01_quickstart.py
-python examples/04_terrame_fill_itaituba.py
+disscube run examples/pipelines/quickstart.toml
 ```
+
+Real data workflows, TerraME parity benchmarks, and large-scale case studies are maintained in
+[**LambdaGeo/disscube-recipes**](https://github.com/LambdaGeo/disscube-recipes) (`cases/terrame_fill`, `cases/ilha_maranhao`, `cases/prodes_br163`, `cases/luccme_br`).
 
 See [`examples/README.md`](examples/README.md) for the full list, and
 [`docs/terrame_fill_correspondence.md`](docs/terrame_fill_correspondence.md)

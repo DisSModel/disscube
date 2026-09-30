@@ -1,23 +1,21 @@
 # Examples
 
 The [`examples/`](https://github.com/DisSModel/disscube/tree/main/examples)
-folder has runnable scripts that need nothing beyond `pip install -e .`: each
-one works in a temporary directory and finishes in a few seconds. Pass a
-directory to keep the catalog, the inputs and the derived Zarr stores for
-inspection (e.g. in QGIS):
+folder contains runnable, self-contained examples demonstrating the two primary modes of using DisSCube:
+the **Python API** (`CubeClient`, `Derivation`) and the **declarative TOML pipeline** (`disscube validate` / `disscube run`).
+
+All examples run offline, generate or consume tiny synthetic data (< 50 KB), and complete in seconds without downloading external assets:
 
 ```bash
 python examples/01_quickstart.py            # temporary workspace
-python examples/01_quickstart.py ./scratch  # keep the outputs
+python examples/01_quickstart.py ./scratch  # keep the outputs for inspection
 ```
 
-All examples are executed by the test suite (`tests/test_examples.py`), so
-they stay in sync with the API.
+All examples are executed by the test suite (`tests/test_examples.py`), ensuring they always stay in sync with the codebase.
 
-## Learning the API — synthetic data
+## Python API Examples (Synthetic Data)
 
-Examples 01–03 generate their own inputs, so every number they print can be
-checked by hand.
+Examples 01–03 generate their own inputs locally, allowing every calculated number to be verified directly:
 
 | Example | What it shows |
 |---|---|
@@ -25,66 +23,36 @@ checked by hand.
 | [`02_vector_drivers.py`](https://github.com/DisSModel/disscube/blob/main/examples/02_vector_drivers.py) | Drivers from points, lines and polygons: `min_distance`, `count`, `presence`, `attribute`; several variables per derivation |
 | [`03_time_series.py`](https://github.com/DisSModel/disscube/blob/main/examples/03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` (including `period`) |
 
-## Real data — TerraME's *Fill* examples
+## Declarative Pipeline Files (TOML)
 
-Examples 04–06 use the three *Fill* examples shipped with TerraME's `gis`
-package, bundled in
-[`examples/data/terrame/`](https://github.com/DisSModel/disscube/tree/main/examples/data/terrame)
-together with the cellular spaces TerraME produced. Each derives the same
-attributes with DisSCube and prints a cell-by-cell comparison with TerraME's
-own output.
+Pipelines can be declared in clean, version-controlled TOML files in
+[`examples/pipelines/`](https://github.com/DisSModel/disscube/tree/main/examples/pipelines):
 
-| Example | Cells | What it shows | Result |
-|---|---|---|---|
-| [`04_terrame_fill_itaituba.py`](https://github.com/DisSModel/disscube/blob/main/examples/04_terrame_fill_itaituba.py) | 620 × 5 km | TerraME's [Fill tutorial](https://github.com/TerraME/terrame/wiki/Fill): `mean`, `percentage` × `coverage_purity`, `min_distance` | averages and class coverage reproduce TerraME |
-| [`05_terrame_fill_emas.py`](https://github.com/DisSModel/disscube/blob/main/examples/05_terrame_fill_emas.py) | 5 514 × 500 m | `presence` of lines, `max` / `min` of a raster; a study area defined by a limit polygon | 98.4–99.7 % of cells identical |
-| [`06_terrame_fill_amazonia.py`](https://github.com/DisSModel/disscube/blob/main/examples/06_terrame_fill_amazonia.py) | 2 229 × 50 km | PRODES coverage with a declared nodata, distances to roads and ports | coverage identical wherever PRODES has data |
-
-What the differences mean — and which TerraME operations DisSCube does not
-support yet — is discussed in
-[TerraME Fill Cells Correspondence](terrame_fill_correspondence.md).
-
-## Real data — Brazil Data Cube
-
-Example 07 reads a satellite data cube straight from the Brazil Data Cube
-STAC catalog; see [BDC Integration](guides/bdc.md#reading-data-cubes-via-stac).
-
-| Example | Cells | What it shows |
+| Pipeline | What it shows | Execution |
 |---|---|---|
-| [`07_bdc_cube.py`](https://github.com/DisSModel/disscube/blob/main/examples/07_bdc_cube.py) | 58 × 59 × 300 m | `LANDSAT-16D-1` over Ilha do Maranhão: windowed reads, dry-season median, `mean` of NDVI and MNDWI, `percentage` of open water on a grid snapped to the BDC Albers mesh |
+| [`quickstart.toml`](https://github.com/DisSModel/disscube/blob/main/examples/pipelines/quickstart.toml) | Declarative counterpart of `01_quickstart.py`: derives `percentage`, `majority`, and `mean` on a 300 m grid | `disscube run examples/pipelines/quickstart.toml` |
 
-It needs network access and `pip install -e ".[bdc]"`. Without network, or
-with `--offline`, it runs on a synthetic scene with the same grid and value
-ranges and prints a warning that the numbers are not BDC data.
+Validate and execute:
+```bash
+disscube validate examples/pipelines/quickstart.toml
+disscube run examples/pipelines/quickstart.toml --workspace outputs/quickstart
+```
 
-## Real data — MapBiomas
+See [Pipeline files (TOML)](guides/pipeline_files.md) for full syntax and options.
 
-Example 08 reads the MapBiomas annual land-cover maps straight from the
-national files; see [MapBiomas](guides/mapbiomas.md).
+## Real Data & Case Studies (External Repository)
 
-| Example | Cells | What it shows |
-|---|---|---|
-| [`08_mapbiomas_land_use.py`](https://github.com/DisSModel/disscube/blob/main/examples/08_mapbiomas_land_use.py) | 58 × 59 × 300 m, 2 years | Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: `majority` and `percentage` (urban, forest, mangrove) on the grid of example 07, `(time, y, x)` series handed to DisSModel with `to_lucc_data()` |
+Real-world datasets, historical reproductions and large-scale case studies are maintained in the dedicated
+[**DisSCube Recipes and Case Studies**](https://github.com/LambdaGeo/disscube-recipes) repository:
 
-It needs network access. Without it, or with `--offline`, it runs on a
-synthetic scene with the same grid and class codes and says so.
-
-## Real data — PRODES
-
-Example 09 downloads the current PRODES edition once (≈130 MB, cached) and
-reads its legend from the `.qml` in the ZIP; see
-[Land-cover maps: PRODES and classified maps](guides/landcover.md).
-
-| Example | Cells | What it shows |
-|---|---|---|
-| [`09_prodes_deforestation.py`](https://github.com/DisSModel/disscube/blob/main/examples/09_prodes_deforestation.py) | 94 × 86 × 500 m, 3 years | The LuccME Lab15 area south of Santarém at the end of 2008, 2016 and 2024: forest / deforested / other, `percentage` of deforested and forest per cell |
-
-## Pipeline files (TOML)
-
-The same preparations can be declared as TOML files in
-[`examples/pipelines/`](https://github.com/DisSModel/disscube/tree/main/examples/pipelines)
-and run with `disscube run <file>` — including TerraME's Itaituba Fill
-tutorial, offline. See [Pipeline files](guides/pipeline_files.md).
+- **TerraME Fill Parity (`cases/terrame_fill`)**: Cell-by-cell numerical parity against TerraME's C++ `fillCellularSpace` across three reference areas:
+  - `itaituba`: 620 cells (5 km) with elevation, multi-class deforestation, and proximity drivers.
+  - `emas`: 5 514 cells (500 m) with firebreaks, rivers, and accumulation rasters.
+  - `amazonia`: 2 229 cells (50 km) with PRODES deforestation and indigenous territory area fractions.
+  - See [TerraME Fill Cells Correspondence](terrame_fill_correspondence.md).
+- **Ilha do Maranhão (`cases/ilha_maranhao`)**: Brazil Data Cube (Landsat-16D STAC) and MapBiomas land-cover series (2000, 2020) aligned on a 300 m BDC Albers grid with Python hand-off to DisSModel.
+- **PRODES BR-163 (`cases/prodes_br163`)**: Multi-year deforestation monitoring in the Mojuí dos Campos / BR-163 corridor (500 m grid).
+- **LUCCME-BR (`cases/luccme_br`)**: National-scale land-use change reconstruction for Brazil (BigEarth).
 
 ## Scope
 
