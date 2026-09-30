@@ -110,6 +110,10 @@ cube.export_geotiff(["forest_pct"], "forest.tif", grid_id="AC/5km")   # one band
 cube.export_netcdf(["forest_pct"], "cube.nc", grid_id="AC/5km")       # CF-1.8; pip install "disscube[netcdf]"
 ```
 
+Exports carry their provenance: each GeoTIFF band and netCDF variable records the
+`spec_hash`, the `content_hash` of the stored data and the `source_checksum` of the
+input it came from (`cube.provenance("forest_pct")` lists them per year).
+
 DisSCube does not need DisSModel. To hand a cube to a DisSModel model, install
 `disscube[dissmodel]` and use `cube.to_raster_backend(...)`, which returns a `RasterBackend`.
 

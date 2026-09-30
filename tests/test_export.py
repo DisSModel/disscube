@@ -1,5 +1,6 @@
 """The cube as an xarray Dataset, GeoTIFF/netCDF exports, and DisSModel being optional."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -41,10 +42,10 @@ def cube(tmp_path):
     for name, times, values in layers:
         uid = f"{name}_{'_'.join(map(str, times))}"
         path = tmp_path / "store" / f"{uid}.zarr"
-        _da(values, name, spec_hash=f"hash-{uid}").to_dataset(name=name).to_zarr(path, mode="w", consolidated=False)
+        _da(values, name, spec_hash=f"hash-{uid}", source_id=f"src-{uid}", source_checksum=f"sha256:src-{uid}").to_dataset(name=name).to_zarr(path, mode="w", consolidated=False)
         cube.catalog.save_derived(DerivedVariable(
             id=uid, name=name, grid_id="G1", role="driver", times=times, dtype="float32",
-            derivation_id=uid, spec_hash=f"hash-{uid}", tile_id=None, content_hash=None, asset_url=str(path)))
+            derivation_id=uid, spec_hash=f"hash-{uid}", tile_id=None, content_hash=f"sha256:zarr-{uid}", asset_url=str(path)))
     return cube
 
 
@@ -77,6 +78,10 @@ def test_geotiff_one_band_per_variable_and_year(cube, tmp_path):
         assert src.transform.f == 100.0
         assert src.tags(2)["YEAR"] == "2010"
         assert src.tags(2)["SPEC_HASH"] == "hash-forest_2010"
+        assert src.tags(3)["SPEC_HASH"] == "hash-forest_2020"          # each year its own slice
+        assert src.tags(3)["SOURCE_CHECKSUM"] == "sha256:src-forest_2020"
+        assert src.tags(3)["CONTENT_HASH"] == "sha256:zarr-forest_2020"
+        assert src.tags(1)["SOURCE_ID"] == "src-elev_"
         assert src.tags()["BANDS"] == "elev,forest_2010,forest_2020"
         assert src.read(2)[0, 1] == pytest.approx(0.8)
 
@@ -106,7 +111,14 @@ def test_netcdf_roundtrip_keeps_time_crs_and_mask(cube, tmp_path):
         assert [str(t)[:10] for t in ds["time"].values] == ["2010-01-01", "2020-01-01"]
         assert ds["forest"].dims == ("time", "y", "x")
         assert float(ds["forest"].isel(time=0).mean()) == pytest.approx(0.8)
-        assert ds["forest"].attrs["spec_hash"].startswith("hash-forest")
+        assert "spec_hash" not in ds["forest"].attrs                      # one per year: see provenance
+        assert ds["elev"].attrs["spec_hash"] == "hash-elev_"
+        assert ds["elev"].attrs["source_checksum"] == "sha256:src-elev_"
+        prov = json.loads(ds.attrs["disscube_provenance"])["variables"]
+        assert [(r["time"], r["source_checksum"]) for r in prov["forest"]] == [
+            (2010, "sha256:src-forest_2010"), (2020, "sha256:src-forest_2020")]
+        assert prov["forest"][1]["content_hash"] == "sha256:zarr-forest_2020"
+        assert "exported" in ds.attrs["history"] and ds.attrs["source"].startswith("DisSCube")
         assert (ds["mask"].values[:, 0] == 0).all()  # kept as a variable, not applied
         assert ds.rio.crs.to_epsg() == 31982
 
@@ -173,3 +185,34 @@ def test_export_table_format_overrides_suffix(tmp_path):
     runner._export(Fake(), ["v"], tmp_path / "x.nc", "g")
     runner._export(Fake(), ["v"], tmp_path / "x.tif", "g")
     assert calls == ["nc", "nc", "tif"]
+
+
+def test_provenance_lists_slices_in_time_order(cube):
+    records = cube.provenance("forest", grid_id="G1")
+    assert [r["time"] for r in records] == [2010, 2020]
+    assert records[0]["spec_hash"] == "hash-forest_2010"
+    (static,) = cube.provenance("elev", grid_id="G1")
+    assert static["time"] is None and static["source_id"] == "src-elev_"
+
+
+def test_provenance_tolerates_products_without_source_checksum(cube, tmp_path):
+    # a zarr written before source_checksum was recorded
+    path = tmp_path / "store" / "old.zarr"
+    da = _da(np.ones((N, N)), "old", spec_hash="h-old")
+    da.to_dataset(name="old").to_zarr(path, mode="w", consolidated=False)
+    cube.catalog.save_derived(DerivedVariable(
+        id="old", name="old", grid_id="G1", role="driver", times=[], dtype="float32",
+        derivation_id="h-old", spec_hash="h-old", tile_id=None, content_hash=None, asset_url=str(path)))
+    (rec,) = cube.provenance("old", grid_id="G1")
+    assert rec == {"time": None, "spec_hash": "h-old"}
+
+
+def test_pipeline_export_records_the_pipeline_and_source_checksums(tmp_path):
+    out = tmp_path / "q.tif"
+    run(QUICKSTART, workspace=tmp_path / "ws", export_geotiff=out)
+    with rasterio.open(out) as src:
+        tags = src.tags()
+        assert tags["PIPELINE_FILE"] == "quickstart.toml"
+        assert tags["PIPELINE_CHECKSUM"].startswith("sha256:")
+        assert src.tags(1)["SOURCE_CHECKSUM"].startswith("sha256:")
+        assert len(src.tags(1)["CONTENT_HASH"]) >= 32

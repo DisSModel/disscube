@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, Literal
@@ -48,14 +49,22 @@ def geotiff_bands(arrays: Mapping[str, xr.DataArray]) -> list[tuple[str, xr.Data
     return bands
 
 
+_BAND_TAGS = (("spec_hash", "SPEC_HASH"), ("content_hash", "CONTENT_HASH"),
+              ("source_checksum", "SOURCE_CHECKSUM"), ("source_id", "SOURCE_ID"))
+
+
 def write_geotiff(arrays: Mapping[str, xr.DataArray], output: str | os.PathLike[str], *,
-                  crs=None, transform=None) -> Path:
+                  crs=None, transform=None,
+                  provenance: Mapping[str, list[dict[str, Any]]] | None = None,
+                  attrs: Mapping[str, str] | None = None) -> Path:
     """Write ``arrays`` (``(y, x)`` or ``(time, y, x)``) to a multi-band GeoTIFF.
 
     If ``arrays`` has a ``mask`` variable, cells where it is 0 become NaN in every
     other band (and ``mask`` itself becomes 1 inside, NaN outside). Pixels are
-    written as float64 with ``nodata=NaN``. Each band carries ``VARIABLE``,
-    ``YEAR`` (when temporal) and ``SPEC_HASH`` tags.
+    written as float64 with ``nodata=NaN``. Each band carries ``VARIABLE`` and ``YEAR``
+    (when temporal) tags, plus the ``SPEC_HASH``, ``CONTENT_HASH``, ``SOURCE_CHECKSUM``
+    and ``SOURCE_ID`` of its slice found in ``provenance`` (``{variable: [records]}``,
+    as returned by ``CubeClient.provenance``). ``attrs`` become file-level tags.
     """
     import rasterio
 
@@ -88,7 +97,10 @@ def write_geotiff(arrays: Mapping[str, xr.DataArray], output: str | os.PathLike[
                        dtype="float64", crs=crs, transform=transform, nodata=np.nan,
                        compress="deflate") as dst:
         dst.update_tags(TIFFTAG_SOFTWARE=software_tag(), CONVENTIONS="CF-1.8",
+                        TIFFTAG_DATETIME=datetime.now(UTC).strftime("%Y:%m:%d %H:%M:%S"),
                         BANDS=",".join(name for name, _, _ in bands))
+        if attrs:
+            dst.update_tags(**{str(k).upper(): str(v) for k, v in attrs.items()})
         grid_ids = {da.attrs["grid_id"] for da in arrays.values() if "grid_id" in da.attrs}
         if len(grid_ids) == 1:
             dst.update_tags(GRID_ID=grid_ids.pop())
@@ -102,8 +114,10 @@ def write_geotiff(arrays: Mapping[str, xr.DataArray], output: str | os.PathLike[
             tags = {"VARIABLE": var}
             if year is not None:
                 tags["YEAR"] = str(year)
-            if "spec_hash" in arrays[var].attrs:
-                tags["SPEC_HASH"] = str(arrays[var].attrs["spec_hash"])
+            record = next((r for r in (provenance or {}).get(var, []) if r.get("time") == year), {})
+            for key, tag in _BAND_TAGS:
+                if record.get(key) is not None:
+                    tags[tag] = str(record[key])
             dst.update_tags(idx, **tags)
     return out_path
 
@@ -122,10 +136,13 @@ def _netcdf_engine() -> Literal["h5netcdf", "netcdf4"]:
         raise ImportError("export_netcdf() needs a netCDF backend: pip install 'disscube[netcdf]'") from None
 
 
-def write_netcdf(ds: xr.Dataset, output: str | os.PathLike[str]) -> Path:
+def write_netcdf(ds: xr.Dataset, output: str | os.PathLike[str], *,
+                 attrs: Mapping[str, str] | None = None) -> Path:
     """Write a cube Dataset to a compressed CF-1.8 netCDF file.
 
-    An integer-year ``time`` axis becomes ``datetime64`` (``YYYY-01-01``).
+    An integer-year ``time`` axis becomes ``datetime64`` (``YYYY-01-01``). Global
+    attributes get ``Conventions``, ``source`` (the DisSCube version), ``history``
+    (when it was written) and whatever is in ``attrs``.
     """
     engine = _netcdf_engine()
     ds = ds.copy()
@@ -133,7 +150,10 @@ def write_netcdf(ds: xr.Dataset, output: str | os.PathLike[str]) -> Path:
         years = ds["time"].values.astype("int64")
         ds = ds.assign_coords(time=np.array([f"{y:04d}-01-01" for y in years], dtype="datetime64[ns]"))
         ds["time"].attrs.update(standard_name="time", long_name="time (year of the slice)")
-    ds.attrs.update(Conventions="CF-1.8", source=software_tag())
+    ds.attrs.update(Conventions="CF-1.8", source=software_tag(),
+                    history=f"{datetime.now(UTC).isoformat(timespec='seconds')} {software_tag()}: exported")
+    if attrs:
+        ds.attrs.update({str(k): str(v) for k, v in attrs.items()})
 
     encoding: dict[str, dict[str, Any]] = {
         str(name): {"zlib": True, "complevel": 4, "_FillValue": np.nan}

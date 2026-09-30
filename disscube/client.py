@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
@@ -25,6 +27,9 @@ if TYPE_CHECKING:
     from disscube.models import Derivation
 
 log = logging.getLogger("disscube.client.cube_client")
+
+# Attributes that describe one stored slice: per-variable only when it has a single slice.
+_SLICE_ATTRS = ("spec_hash", "content_hash", "source_id", "source_checksum")
 
 
 def _filter_period(da: xr.DataArray, period: tuple[str, str]) -> xr.DataArray:
@@ -178,6 +183,23 @@ class CubeClient:
         For temporal variables (DerivedVariable.times is non-empty), returns
         a DataArray with dims (time, y, x). For static variables, returns (y, x).
         """
+        selected = self._select(variable_id, tile_id, grid_id)
+        if selected[0].times:
+            # Stack temporal slices along the time axis
+            slices = []
+            time_coords: list[int] = []
+            for d in selected:
+                slices.append(xr.open_zarr(d.asset_url, consolidated=False)[d.name])
+                time_coords.extend(d.times)
+            return xr.concat(slices, dim=xr.DataArray(time_coords, dims="time"))
+
+        # Static
+        derived = selected[0]
+        return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+
+    def _select(self, variable_id: str, tile_id: str | None, grid_id: str | None) -> list[DerivedVariable]:
+        """The catalog entries that make up a variable: its temporal slices sorted by
+        time, or its single static entry. Entries whose files are gone are skipped."""
         matches = []
         for d in self.catalog.search_derived_variables(tile_id=tile_id, grid_id=grid_id):
             if d.id == variable_id or d.name == variable_id:
@@ -218,24 +240,49 @@ class CubeClient:
         static = [d for d in matches if not d.times and _exists(d)]
 
         if temporal:
-            # Stack temporal slices along time axis sorted by first time value
-            temporal_sorted = sorted(temporal, key=lambda d: d.times[0])
-            slices = []
-            time_coords = []
-            for d in temporal_sorted:
-                da = xr.open_zarr(d.asset_url, consolidated=False)[d.name]
-                slices.append(da)
-                time_coords.extend(d.times)
-            return xr.concat(slices, dim=xr.DataArray(time_coords, dims="time"))
+            return sorted(temporal, key=lambda d: d.times[0])
 
-        # Static — original behaviour
         if not static:
             msg = f"Derived variable not found on disk: {variable_id}"
             if grid_id:
                 msg += f" on grid {grid_id}"
             raise ValueError(msg)
-        derived = static[0]
-        return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+        return [static[0]]
+
+    def provenance(self, variable_id: str, grid_id: str | None = None,
+                   tile_id: str | None = None) -> list[dict[str, Any]]:
+        """Where each slice of a variable came from: one record per time slice (a single
+        record for a static variable), ordered by time.
+
+        Each record has ``time`` (year or ``None``), ``spec_hash`` and ``content_hash``
+        (SHA-256 of the stored Zarr), plus ``source_id`` and ``source_checksum`` (the
+        checksum of the input the slice was derived from) when they were recorded.
+        Variables derived before ``source_checksum`` was stored simply lack that key.
+        """
+        records: list[dict[str, Any]] = []
+        for d in self._select(variable_id, tile_id, grid_id):
+            attrs = xr.open_zarr(d.asset_url, consolidated=False)[d.name].attrs
+            record: dict[str, Any] = {
+                "time": d.times[0] if d.times else None,
+                "spec_hash": d.spec_hash,
+                "content_hash": d.content_hash,
+                "source_id": attrs.get("source_id"),
+                "source_checksum": attrs.get("source_checksum"),
+            }
+            records.append({k: v for k, v in record.items() if v is not None or k == "time"})
+        return records
+
+    def _provenance_of(self, arrays: Mapping[str, xr.DataArray],
+                       grid_id: str | None) -> dict[str, list[dict[str, Any]]]:
+        """Provenance records for loaded arrays, keeping only the slices they hold."""
+        out: dict[str, list[dict[str, Any]]] = {}
+        for name, da in arrays.items():
+            records = self.provenance(name, grid_id=grid_id)
+            if "time" in da.dims:
+                years = {int(t) for t in da.coords["time"].values}
+                records = [r for r in records if r["time"] in years]
+            out[name] = records
+        return out
 
     # ------------------------------------------------------------------
     # Cube output: xarray Dataset (primary), exports, DisSModel adapter
@@ -321,11 +368,21 @@ class CubeClient:
         """
         arrays = self._load_variables(variables, grid_id=grid_id, period=period)
 
+        provenance = self._provenance_of(arrays, grid_id)
         clean = {}
         for name, da in arrays.items():
             extra = [c for c in da.coords if c not in da.dims and c != "spatial_ref"]
-            clean[name] = da.drop_vars(extra) if extra else da
+            da = da.drop_vars(extra) if extra else da
+            attrs = {k: v for k, v in da.attrs.items() if k not in _SLICE_ATTRS}
+            if "time" not in da.dims and provenance[name]:
+                # One slice: its provenance is the variable's. A temporal variable
+                # has one per year, so it lives only in ``disscube_provenance``.
+                attrs.update({k: v for k, v in provenance[name][0].items() if k in _SLICE_ATTRS})
+            da = da.copy(deep=False)
+            da.attrs = attrs
+            clean[name] = da
         ds = xr.Dataset(clean)
+        ds.attrs["disscube_provenance"] = json.dumps({"variables": provenance}, sort_keys=True)
 
         crs = self._detect_crs(arrays)
         if crs:
@@ -341,6 +398,7 @@ class CubeClient:
         output: str | os.PathLike[str],
         grid_id: str | None = None,
         period: tuple[str, str] | None = None,
+        attrs: Mapping[str, str] | None = None,
     ) -> None:
         """
         Write variables to a multi-band GeoTIFF.
@@ -349,12 +407,17 @@ class CubeClient:
         one band per year, named ``<variable>_<year>`` and ordered by year. If a
         ``mask`` variable is among ``variables`` (fraction of the cell inside the
         territory), cells where it is 0 are set to NaN in every other band.
+
+        Each band is tagged with the provenance of its slice (``SPEC_HASH``,
+        ``CONTENT_HASH``, ``SOURCE_CHECKSUM``, ``SOURCE_ID``). ``attrs`` adds
+        file-level tags (keys upper-cased), e.g. the pipeline that produced the cube.
         """
         from disscube.export import write_geotiff
 
         arrays = self._load_variables(variables, grid_id=grid_id, period=period)
         transform = self._grid_transform(grid_id, variables)
-        write_geotiff(arrays, output, crs=self._detect_crs(arrays), transform=transform)
+        write_geotiff(arrays, output, crs=self._detect_crs(arrays), transform=transform,
+                      provenance=self._provenance_of(arrays, grid_id), attrs=attrs)
 
     def export_netcdf(
         self,
@@ -362,6 +425,7 @@ class CubeClient:
         output: str | os.PathLike[str],
         grid_id: str | None = None,
         period: tuple[str, str] | None = None,
+        attrs: Mapping[str, str] | None = None,
     ) -> None:
         """
         Write the cube (see :meth:`to_dataset`) to a CF-1.8 netCDF file.
@@ -370,10 +434,16 @@ class CubeClient:
         integer-year ``time`` axis is written as ``YYYY-01-01`` dates; variables
         keep their attributes (``spec_hash``, ``operator``, ``source_id``...) and
         ``mask`` is kept as a variable, not applied to the data.
+
+        Provenance: a variable with a single slice carries ``spec_hash``,
+        ``content_hash``, ``source_id`` and ``source_checksum`` as attributes; for
+        every variable the global attribute ``disscube_provenance`` holds them per
+        slice as JSON. ``history`` records the export; ``attrs`` adds global
+        attributes (e.g. the pipeline file and its checksum).
         """
         from disscube.export import write_netcdf
 
-        write_netcdf(self.to_dataset(variables, grid_id=grid_id, period=period), output)
+        write_netcdf(self.to_dataset(variables, grid_id=grid_id, period=period), output, attrs=attrs)
 
     def to_raster_backend(
         self,

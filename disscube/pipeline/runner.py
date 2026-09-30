@@ -241,17 +241,26 @@ class ExportReport:
     grid_id: str
 
 
-def _export(cube, variables: list[str], out_path: Path, grid_id: str, fmt: str | None = None) -> None:
+def _pipeline_attrs(pf: PipelineFile, name: str | None) -> dict[str, str]:
+    """File-level provenance for an export: which pipeline file (and content) made the cube."""
+    attrs = {"pipeline_file": pf.path.name, "pipeline_checksum": pf.checksum}
+    if name:
+        attrs["pipeline_name"] = name
+    return attrs
+
+
+def _export(cube, variables: list[str], out_path: Path, grid_id: str, fmt: str | None = None,
+            attrs: dict[str, str] | None = None) -> None:
     """Write ``variables`` to ``out_path``.
 
     ``fmt`` (``"geotiff"`` or ``"netcdf"``) wins when the caller gives one; otherwise
     a ``.nc`` suffix means netCDF and anything else GeoTIFF.
     """
     if fmt == "netcdf" or (fmt is None and out_path.suffix.lower() in (".nc", ".nc4", ".cdf")):
-        cube.export_netcdf(variables, out_path, grid_id=grid_id)
+        cube.export_netcdf(variables, out_path, grid_id=grid_id, attrs=attrs)
         log.info("exported netCDF to %s (%d variables)", out_path, len(variables))
     else:
-        cube.export_geotiff(variables, out_path, grid_id=grid_id)
+        cube.export_geotiff(variables, out_path, grid_id=grid_id, attrs=attrs)
         log.info("exported GeoTIFF to %s (%d variables)", out_path, len(variables))
 
 
@@ -327,7 +336,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
 
         out_path = Path(target_export)
         fmt = export.format if isinstance(export, ExportConfig) and export_geotiff is None else None
-        _export(cube, vars_to_export, out_path, grid_id, fmt)
+        _export(cube, vars_to_export, out_path, grid_id, fmt, _pipeline_attrs(pf, cfg.name))
         report.exported = out_path
 
     record = {
@@ -375,7 +384,7 @@ def export_cube(pipeline: PipelineFile | Plan | str | Path,
         raise PipelineError("no variables found to export (pass --variables or declare [[derive]] in pipeline)")
 
     out_path = Path(output)
-    _export(cube, target_vars, out_path, grid_id)
+    _export(cube, target_vars, out_path, grid_id, attrs=_pipeline_attrs(p.file, cfg.name))
     return ExportReport(workspace=ws, output=out_path, variables=target_vars, grid_id=grid_id)
 
 

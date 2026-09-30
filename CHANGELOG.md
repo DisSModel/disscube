@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CubeClient.export_netcdf()` (extra `disscube[netcdf]`): CF-1.8 netCDF with a
   real `time` axis, per-variable attributes (`spec_hash`, `operator`, ...) and
   `mask` kept as a variable.
+- **Provenance in the exports.** The writer now stores `source_checksum` (the input the
+  slice came from) with each new variable, and `CubeClient.provenance()` lists, per time
+  slice, `spec_hash`, `content_hash`, `source_id` and `source_checksum`. netCDF files carry
+  it as the global JSON attribute `disscube_provenance` (and as plain attributes on
+  single-slice variables), plus `history`; GeoTIFF bands carry `SPEC_HASH`, `CONTENT_HASH`,
+  `SOURCE_CHECKSUM` and `SOURCE_ID` tags. Exports made by a pipeline also record
+  `pipeline_file`, `pipeline_checksum` and `pipeline_name`. Variables derived by earlier
+  versions lack `source_checksum` until they are derived again.
 - `CubeClient.export_geotiff()`: one band per variable, and per year for temporal
   ones (`<variable>_<year>`), with `VARIABLE`/`YEAR`/`SPEC_HASH` band tags.
   Pipelines and `disscube run/export` write netCDF when the output ends in `.nc`
