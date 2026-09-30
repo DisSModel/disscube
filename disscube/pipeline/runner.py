@@ -15,7 +15,7 @@ from typing import Any, Literal
 import numpy as np
 from pydantic import ValidationError
 
-from disscube.config.schema import (
+from disscube.pipeline.schema import (
     BdcSource,
     ClassifiedSource,
     DeriveConfig,
@@ -27,7 +27,7 @@ from disscube.config.schema import (
     ProdesSource,
     UnionSource,
 )
-from disscube.utils.files import sha256_file
+from disscube.utils import sha256_file
 
 log = logging.getLogger(__name__)
 

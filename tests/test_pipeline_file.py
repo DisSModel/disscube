@@ -18,8 +18,7 @@ from rasterio.transform import from_origin
 
 from disscube import CubeClient, GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.cli import main as cli
-from disscube.config import load, plan, run
-from disscube.config.runner import PipelineError
+from disscube.pipeline import PipelineError, load, plan, run
 from disscube.sources import Window2D
 
 ROOT = Path(__file__).resolve().parents[1]

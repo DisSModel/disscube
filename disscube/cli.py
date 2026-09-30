@@ -43,8 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     p_exp.add_argument("-v", "--verbose", action="store_true", help="log each step")
 
     args = parser.parse_args(argv)
-    from disscube.config import plan, run
-    from disscube.config.runner import PipelineError
+    from disscube.pipeline import PipelineError, plan, run
 
     logging.basicConfig(level=logging.INFO if getattr(args, "verbose", False) else logging.WARNING,
                         format="%(levelname)s %(name)s: %(message)s")
@@ -54,8 +53,8 @@ def main(argv: list[str] | None = None) -> int:
         if not is_json:
             print(p.summary())
         if args.command == "fetch":
-            from disscube.config.runner import _fetch_file_source, _local_file, _raw_cache_dir, _resolve
-            from disscube.config.schema import FileSource
+            from disscube.pipeline.runner import _fetch_file_source, _local_file, _raw_cache_dir, _resolve
+            from disscube.pipeline.schema import FileSource
             raw = _raw_cache_dir()
             raw.mkdir(parents=True, exist_ok=True)
             fetched = 0
@@ -97,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[dry-run] Plan is valid. Would process {len(p.sources)} sources and derive {len(p.derives)} variables.")
             return 0
         if args.command == "export":
-            from disscube.config.runner import export_cube
+            from disscube.pipeline import export_cube
             exp = export_cube(p, output=args.output, workspace=args.workspace, variables=args.variables)
             if is_json:
                 import json
