@@ -1088,12 +1088,12 @@ TerraME script that builds a cellular space and fills it with
 <code>cells:fill{...}</code>: the same information, as data instead of code, validated
 before anything is downloaded, and recorded in the provenance of every
 product.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>disscube<span class="w"> </span>validate<span class="w"> </span>examples/pipelines/itaituba_fill.toml<span class="w">    </span><span class="c1"># check the file, no downloads</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>disscube<span class="w"> </span>run<span class="w">      </span>examples/pipelines/itaituba_fill.toml<span class="w"> </span>--workspace<span class="w"> </span>outputs/itaituba
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>disscube<span class="w"> </span>validate<span class="w"> </span>examples/pipelines/quickstart.toml<span class="w">    </span><span class="c1"># check the file, no downloads</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>disscube<span class="w"> </span>run<span class="w">      </span>examples/pipelines/quickstart.toml<span class="w"> </span>--workspace<span class="w"> </span>outputs/quickstart
 </code></pre></div>
 <h2 id="from-fill-to-derive">From <code>fill</code> to <code>[[derive]]</code></h2>
-<p>TerraME's Fill tutorial (<code>examples/data/terrame/itaituba/itaituba.lua</code>) and
-its pipeline file (<code>examples/pipelines/itaituba_fill.toml</code>), side by side:</p>
+<p>TerraME's Fill tutorial (see <code>cases/terrame_fill</code> in the recipes repository) and
+its DisSCube pipeline representation, side by side:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- TerraME</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">itaitubaCells</span><span class="p">:</span><span class="py">fill</span><span class="p">{</span><span class="nv">operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"average"</span><span class="p">,</span><span class="w">  </span><span class="nv">layer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"elevation"</span><span class="p">,</span><span class="w">     </span><span class="nv">attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"elevation"</span><span class="p">}</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nv">itaitubaCells</span><span class="p">:</span><span class="py">fill</span><span class="p">{</span><span class="nv">operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"coverage"</span><span class="p">,</span><span class="w"> </span><span class="nv">layer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"deforestation"</span><span class="p">,</span><span class="w"> </span><span class="nv">attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"defor"</span><span class="p">}</span>
@@ -1311,29 +1311,13 @@ file that declared it.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>examples/pipelines/itaituba_fill.toml</code></td>
-<td>TerraME's Fill tutorial</td>
-<td>nothing (bundled data)</td>
-</tr>
-<tr>
-<td><code>examples/pipelines/ilha_bdc.toml</code></td>
-<td>example 07: BDC NDVI and MNDWI</td>
-<td>network, <code>.[bdc]</code></td>
-</tr>
-<tr>
-<td><code>examples/pipelines/ilha_mapbiomas.toml</code></td>
-<td>example 08: MapBiomas 2000 and 2020</td>
-<td>network</td>
-</tr>
-<tr>
-<td><code>examples/pipelines/lab15_prodes.toml</code></td>
-<td>example 09: PRODES 2008, 2016, 2024</td>
-<td>network</td>
+<td><code>examples/pipelines/quickstart.toml</code></td>
+<td>Quickstart: synthetic land-use &amp; elevation (<code>percentage</code>, <code>majority</code>, <code>mean</code>)</td>
+<td>nothing (offline)</td>
 </tr>
 </tbody>
 </table>
-<p>All of them are validated by the test suite; the Itaituba one is also run and
-compared with the same derivations made through the Python API.</p>
+<p>For full real-world case studies and TerraME parity benchmarks, see the <a href="https://github.com/LambdaGeo/disscube-recipes">DisSCube Recipes</a> repository (<code>cases/terrame_fill</code>, <code>cases/ilha_maranhao</code>, <code>cases/prodes_br163</code>, <code>cases/luccme_br</code>).</p>
 
 
 

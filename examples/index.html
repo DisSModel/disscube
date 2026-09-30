@@ -408,10 +408,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#learning-the-api-synthetic-data" class="md-nav__link">
+  <a href="#python-api-examples-synthetic-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Learning the API — synthetic data
+        Python API Examples (Synthetic Data)
       
     </span>
   </a>
@@ -419,10 +419,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-data-terrames-fill-examples" class="md-nav__link">
+  <a href="#declarative-pipeline-files-toml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real data — TerraME's Fill examples
+        Declarative Pipeline Files (TOML)
       
     </span>
   </a>
@@ -430,43 +430,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-data-brazil-data-cube" class="md-nav__link">
+  <a href="#real-data-case-studies-external-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real data — Brazil Data Cube
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-data-mapbiomas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real data — MapBiomas
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-data-prodes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real data — PRODES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pipeline-files-toml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pipeline files (TOML)
+        Real Data &amp; Case Studies (External Repository)
       
     </span>
   </a>
@@ -941,10 +908,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#learning-the-api-synthetic-data" class="md-nav__link">
+  <a href="#python-api-examples-synthetic-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Learning the API — synthetic data
+        Python API Examples (Synthetic Data)
       
     </span>
   </a>
@@ -952,10 +919,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-data-terrames-fill-examples" class="md-nav__link">
+  <a href="#declarative-pipeline-files-toml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real data — TerraME's Fill examples
+        Declarative Pipeline Files (TOML)
       
     </span>
   </a>
@@ -963,43 +930,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-data-brazil-data-cube" class="md-nav__link">
+  <a href="#real-data-case-studies-external-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real data — Brazil Data Cube
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-data-mapbiomas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real data — MapBiomas
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-data-prodes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real data — PRODES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pipeline-files-toml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pipeline files (TOML)
+        Real Data &amp; Case Studies (External Repository)
       
     </span>
   </a>
@@ -1044,18 +978,15 @@
 
 <h1 id="examples">Examples</h1>
 <p>The <a href="https://github.com/DisSModel/disscube/tree/main/examples"><code>examples/</code></a>
-folder has runnable scripts that need nothing beyond <code>pip install -e .</code>: each
-one works in a temporary directory and finishes in a few seconds. Pass a
-directory to keep the catalog, the inputs and the derived Zarr stores for
-inspection (e.g. in QGIS):</p>
+folder contains runnable, self-contained examples demonstrating the two primary modes of using DisSCube:
+the <strong>Python API</strong> (<code>CubeClient</code>, <code>Derivation</code>) and the <strong>declarative TOML pipeline</strong> (<code>disscube validate</code> / <code>disscube run</code>).</p>
+<p>All examples run offline, generate or consume tiny synthetic data (&lt; 50 KB), and complete in seconds without downloading external assets:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>examples/01_quickstart.py<span class="w">            </span><span class="c1"># temporary workspace</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>examples/01_quickstart.py<span class="w"> </span>./scratch<span class="w">  </span><span class="c1"># keep the outputs</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>examples/01_quickstart.py<span class="w"> </span>./scratch<span class="w">  </span><span class="c1"># keep the outputs for inspection</span>
 </code></pre></div>
-<p>All examples are executed by the test suite (<code>tests/test_examples.py</code>), so
-they stay in sync with the API.</p>
-<h2 id="learning-the-api-synthetic-data">Learning the API — synthetic data</h2>
-<p>Examples 01–03 generate their own inputs, so every number they print can be
-checked by hand.</p>
+<p>All examples are executed by the test suite (<code>tests/test_examples.py</code>), ensuring they always stay in sync with the codebase.</p>
+<h2 id="python-api-examples-synthetic-data">Python API Examples (Synthetic Data)</h2>
+<p>Examples 01–03 generate their own inputs locally, allowing every calculated number to be verified directly:</p>
 <table>
 <thead>
 <tr>
@@ -1078,114 +1009,43 @@ checked by hand.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="real-data-terrames-fill-examples">Real data — TerraME's <em>Fill</em> examples</h2>
-<p>Examples 04–06 use the three <em>Fill</em> examples shipped with TerraME's <code>gis</code>
-package, bundled in
-<a href="https://github.com/DisSModel/disscube/tree/main/examples/data/terrame"><code>examples/data/terrame/</code></a>
-together with the cellular spaces TerraME produced. Each derives the same
-attributes with DisSCube and prints a cell-by-cell comparison with TerraME's
-own output.</p>
+<h2 id="declarative-pipeline-files-toml">Declarative Pipeline Files (TOML)</h2>
+<p>Pipelines can be declared in clean, version-controlled TOML files in
+<a href="https://github.com/DisSModel/disscube/tree/main/examples/pipelines"><code>examples/pipelines/</code></a>:</p>
 <table>
 <thead>
 <tr>
-<th>Example</th>
-<th>Cells</th>
+<th>Pipeline</th>
 <th>What it shows</th>
-<th>Result</th>
+<th>Execution</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/04_terrame_fill_itaituba.py"><code>04_terrame_fill_itaituba.py</code></a></td>
-<td>620 × 5 km</td>
-<td>TerraME's <a href="https://github.com/TerraME/terrame/wiki/Fill">Fill tutorial</a>: <code>mean</code>, <code>percentage</code> × <code>coverage_purity</code>, <code>min_distance</code></td>
-<td>averages and class coverage reproduce TerraME</td>
-</tr>
-<tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/05_terrame_fill_emas.py"><code>05_terrame_fill_emas.py</code></a></td>
-<td>5 514 × 500 m</td>
-<td><code>presence</code> of lines, <code>max</code> / <code>min</code> of a raster; a study area defined by a limit polygon</td>
-<td>98.4–99.7 % of cells identical</td>
-</tr>
-<tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/06_terrame_fill_amazonia.py"><code>06_terrame_fill_amazonia.py</code></a></td>
-<td>2 229 × 50 km</td>
-<td>PRODES coverage with a declared nodata, distances to roads and ports</td>
-<td>coverage identical wherever PRODES has data</td>
+<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/pipelines/quickstart.toml"><code>quickstart.toml</code></a></td>
+<td>Declarative counterpart of <code>01_quickstart.py</code>: derives <code>percentage</code>, <code>majority</code>, and <code>mean</code> on a 300 m grid</td>
+<td><code>disscube run examples/pipelines/quickstart.toml</code></td>
 </tr>
 </tbody>
 </table>
-<p>What the differences mean — and which TerraME operations DisSCube does not
-support yet — is discussed in
-<a href="../terrame_fill_correspondence/">TerraME Fill Cells Correspondence</a>.</p>
-<h2 id="real-data-brazil-data-cube">Real data — Brazil Data Cube</h2>
-<p>Example 07 reads a satellite data cube straight from the Brazil Data Cube
-STAC catalog; see <a href="../guides/bdc/#reading-data-cubes-via-stac">BDC Integration</a>.</p>
-<table>
-<thead>
-<tr>
-<th>Example</th>
-<th>Cells</th>
-<th>What it shows</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/07_bdc_cube.py"><code>07_bdc_cube.py</code></a></td>
-<td>58 × 59 × 300 m</td>
-<td><code>LANDSAT-16D-1</code> over Ilha do Maranhão: windowed reads, dry-season median, <code>mean</code> of NDVI and MNDWI, <code>percentage</code> of open water on a grid snapped to the BDC Albers mesh</td>
-</tr>
-</tbody>
-</table>
-<p>It needs network access and <code>pip install -e ".[bdc]"</code>. Without network, or
-with <code>--offline</code>, it runs on a synthetic scene with the same grid and value
-ranges and prints a warning that the numbers are not BDC data.</p>
-<h2 id="real-data-mapbiomas">Real data — MapBiomas</h2>
-<p>Example 08 reads the MapBiomas annual land-cover maps straight from the
-national files; see <a href="../guides/mapbiomas/">MapBiomas</a>.</p>
-<table>
-<thead>
-<tr>
-<th>Example</th>
-<th>Cells</th>
-<th>What it shows</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/08_mapbiomas_land_use.py"><code>08_mapbiomas_land_use.py</code></a></td>
-<td>58 × 59 × 300 m, 2 years</td>
-<td>Collection 11 (30 m) over Ilha do Maranhão in 2000 and 2020: <code>majority</code> and <code>percentage</code> (urban, forest, mangrove) on the grid of example 07, <code>(time, y, x)</code> series handed to DisSModel with <code>to_lucc_data()</code></td>
-</tr>
-</tbody>
-</table>
-<p>It needs network access. Without it, or with <code>--offline</code>, it runs on a
-synthetic scene with the same grid and class codes and says so.</p>
-<h2 id="real-data-prodes">Real data — PRODES</h2>
-<p>Example 09 downloads the current PRODES edition once (≈130 MB, cached) and
-reads its legend from the <code>.qml</code> in the ZIP; see
-<a href="../guides/landcover/">Land-cover maps: PRODES and classified maps</a>.</p>
-<table>
-<thead>
-<tr>
-<th>Example</th>
-<th>Cells</th>
-<th>What it shows</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/DisSModel/disscube/blob/main/examples/09_prodes_deforestation.py"><code>09_prodes_deforestation.py</code></a></td>
-<td>94 × 86 × 500 m, 3 years</td>
-<td>The LuccME Lab15 area south of Santarém at the end of 2008, 2016 and 2024: forest / deforested / other, <code>percentage</code> of deforested and forest per cell</td>
-</tr>
-</tbody>
-</table>
-<h2 id="pipeline-files-toml">Pipeline files (TOML)</h2>
-<p>The same preparations can be declared as TOML files in
-<a href="https://github.com/DisSModel/disscube/tree/main/examples/pipelines"><code>examples/pipelines/</code></a>
-and run with <code>disscube run &lt;file&gt;</code> — including TerraME's Itaituba Fill
-tutorial, offline. See <a href="../guides/pipeline_files/">Pipeline files</a>.</p>
+<p>Validate and execute:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>disscube<span class="w"> </span>validate<span class="w"> </span>examples/pipelines/quickstart.toml
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>disscube<span class="w"> </span>run<span class="w"> </span>examples/pipelines/quickstart.toml<span class="w"> </span>--workspace<span class="w"> </span>outputs/quickstart
+</code></pre></div></p>
+<p>See <a href="../guides/pipeline_files/">Pipeline files (TOML)</a> for full syntax and options.</p>
+<h2 id="real-data-case-studies-external-repository">Real Data &amp; Case Studies (External Repository)</h2>
+<p>Real-world datasets, historical reproductions and large-scale case studies are maintained in the dedicated
+<a href="https://github.com/LambdaGeo/disscube-recipes"><strong>DisSCube Recipes and Case Studies</strong></a> repository:</p>
+<ul>
+<li><strong>TerraME Fill Parity (<code>cases/terrame_fill</code>)</strong>: Cell-by-cell numerical parity against TerraME's C++ <code>fillCellularSpace</code> across three reference areas:</li>
+<li><code>itaituba</code>: 620 cells (5 km) with elevation, multi-class deforestation, and proximity drivers.</li>
+<li><code>emas</code>: 5 514 cells (500 m) with firebreaks, rivers, and accumulation rasters.</li>
+<li><code>amazonia</code>: 2 229 cells (50 km) with PRODES deforestation and indigenous territory area fractions.</li>
+<li>See <a href="../terrame_fill_correspondence/">TerraME Fill Cells Correspondence</a>.</li>
+<li><strong>Ilha do Maranhão (<code>cases/ilha_maranhao</code>)</strong>: Brazil Data Cube (Landsat-16D STAC) and MapBiomas land-cover series (2000, 2020) aligned on a 300 m BDC Albers grid with Python hand-off to DisSModel.</li>
+<li><strong>PRODES BR-163 (<code>cases/prodes_br163</code>)</strong>: Multi-year deforestation monitoring in the Mojuí dos Campos / BR-163 corridor (500 m grid).</li>
+<li><strong>LUCCME-BR (<code>cases/luccme_br</code>)</strong>: National-scale land-use change reconstruction for Brazil (BigEarth).</li>
+</ul>
 <h2 id="scope">Scope</h2>
 <p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
