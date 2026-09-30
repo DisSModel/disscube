@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -21,9 +22,9 @@ if TYPE_CHECKING:
     # circular import; dissmodel is only needed by to_lucc_data().
     from dissmodel.geo.raster.backend import RasterBackend
 
-    from disscube.derivation import Derivation
+    from disscube.models import Derivation
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("disscube.client.cube_client")
 
 
 class CubeClient:
@@ -198,7 +199,7 @@ class CubeClient:
             return ok
 
         temporal = [d for d in matches if d.times and _exists(d)]
-        static   = [d for d in matches if not d.times and _exists(d)]
+        static = [d for d in matches if not d.times and _exists(d)]
 
         if temporal:
             # Stack temporal slices along time axis sorted by first time value
@@ -363,3 +364,9 @@ class CubeClient:
             "checksum": derived.content_hash,
             "type": "local" if derived.asset_url.startswith("/") else "s3"
         }
+
+
+# Backward-compatibility alias for legacy code importing disscube.client.cube_client
+sys.modules[f"{__name__}.cube_client"] = sys.modules[__name__]
+
+__all__ = ["CubeClient"]

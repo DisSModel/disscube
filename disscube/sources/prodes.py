@@ -39,7 +39,7 @@ from urllib.parse import urljoin, urlparse
 
 from disscube.sources._categorical import read_qml_legend, reclassify, strip_code
 from disscube.sources._raster import Window2D, read_window, register_raster
-from disscube.utils.files import sha256_file
+from disscube.utils import sha256_file
 
 log = logging.getLogger(__name__)
 

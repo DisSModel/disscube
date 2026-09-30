@@ -7,11 +7,13 @@ Field names are chosen to be compatible with STAC conventions where natural:
   ``end_datetime`` (and ``datetime`` for the static/instant case).
   No STAC logic is implemented here; the alignment is naming-only.
 - ``bbox`` (optional, reserved) follows the STAC bounding-box field order:
-  [xmin, ymin, xmax, ymax] in EPSG:4326.  The field is not populated
+  [xmin, ymin, xmax, ymax] in EPSG:4326. The field is not populated
   from data and is not used in execution.
 
 No STAC code, catalog, API, or export is implemented in this module.
 """
+
+from __future__ import annotations
 
 import hashlib
 import json
@@ -28,7 +30,7 @@ class Derivation(BaseModel):
     Declarative description of a single derivation intent.
 
     Acts as a thin, additive front-end over the existing
-    ``SpatialDerivation`` / ``Variable`` machinery.  Instantiation validates
+    ``SpatialDerivation`` / ``Variable`` machinery. Instantiation validates
     the operator name and operator-specific field requirements so that errors
     surface before any I/O (fail-fast).
 
@@ -49,18 +51,18 @@ class Derivation(BaseModel):
         Defaults to ``"driver"``.
     valid_from : str | None
         Start of the temporal validity window (ISO 8601 or year string).
-        Aligns with STAC ``start_datetime``.  ``None`` means no lower bound.
+        Aligns with STAC ``start_datetime``. ``None`` means no lower bound.
     valid_until : str | None
         End of the temporal validity window (ISO 8601 or year string).
-        Aligns with STAC ``end_datetime``.  ``None`` means no upper bound.
+        Aligns with STAC ``end_datetime``. ``None`` means no upper bound.
         Both ``None`` → static variable (aligns with STAC ``datetime``).
     purity_threshold : float | None
-        Reserved for future purity-masking logic.  Included in
+        Reserved for future purity-masking logic. Included in
         ``spec_hash()`` so that two derivations with different thresholds
-        are always distinct products.  Currently unused in execution.
+        are always distinct products. Currently unused in execution.
     bbox : list[float] | None
         Optional bounding box ``[xmin, ymin, xmax, ymax]`` in EPSG:4326.
-        Aligns with the STAC ``bbox`` field.  Reserved — not used in
+        Aligns with the STAC ``bbox`` field. Reserved — not used in
         execution and excluded from ``spec_hash()``.
     params : dict
         Operator options, e.g. ``{"crs": "EPSG:5880"}`` for ``distance`` or
@@ -84,7 +86,7 @@ class Derivation(BaseModel):
     fill: Literal["nearest"] | None = None
 
     @model_validator(mode="after")
-    def _validate_operator(self) -> "Derivation":
+    def _validate_operator(self) -> Derivation:
         available = sorted(OPERATOR_REGISTRY)
         if self.operator not in OPERATOR_REGISTRY:
             raise ValueError(
@@ -157,7 +159,7 @@ class Derivation(BaseModel):
         Deterministic SHA-256 hash of the derivation spec.
 
         Delegates to ``SpatialDerivation.spec_hash()`` for the base fields,
-        then folds in ``purity_threshold`` when it is set.  ``bbox`` is
+        then folds in ``purity_threshold`` when it is set. ``bbox`` is
         excluded because it is descriptive metadata and does not affect
         what is computed.
 
@@ -165,7 +167,7 @@ class Derivation(BaseModel):
         ----------
         grid_id : str
             Grid identifier used for the underlying
-            ``SpatialDerivation.spec_hash()``.  Defaults to ``"__global__"``
+            ``SpatialDerivation.spec_hash()``. Defaults to ``"__global__"``
             for grid-agnostic comparisons.
 
         Returns

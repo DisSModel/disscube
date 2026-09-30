@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-from disscube.config.runner import _fetch_file_source
-from disscube.config.schema import FileSource
+from disscube.pipeline.runner import _fetch_file_source
+from disscube.pipeline.schema import FileSource
 
 
 def test_fetch_file_source_calls_pooch(tmp_path):

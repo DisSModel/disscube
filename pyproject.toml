@@ -103,9 +103,13 @@ line-length = 120
 target-version = "py311"
 exclude = ["docs", "site", "build"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["disscube"]
+
+
 [tool.mypy]
 python_version = "3.12"
-exclude = ["tests/", "docs/", "examples/", "tools/"]
+exclude = ["tests/", "docs/", "examples/"]
 
 [[tool.mypy.overrides]]
 # Third-party (or optional-extra) dependencies with no bundled type stubs.

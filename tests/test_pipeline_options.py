@@ -20,8 +20,7 @@ from rasterio.transform import from_origin
 from shapely.geometry import LineString, Point, box
 
 from disscube import CubeClient, Derivation, GridSpec, SpatialDerivation, SpatialSource, Variable
-from disscube.config import plan, run
-from disscube.config.runner import PipelineError
+from disscube.pipeline import PipelineError, plan, run
 
 GEO = GridSpec(id="geo", type="local", crs="EPSG:4326", resolution=0.1, bbox=[-50.0, -10.0, -49.0, -9.0])
 UTM = GridSpec(id="utm", type="local", crs="EPSG:31983", resolution=300, bbox=[0, 0, 3000, 3000])

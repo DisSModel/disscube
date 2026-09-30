@@ -18,8 +18,7 @@ from rasterio.transform import from_origin
 
 from disscube import CubeClient, GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.cli import main as cli
-from disscube.config import load, plan, run
-from disscube.config.runner import PipelineError
+from disscube.pipeline import PipelineError, load, plan, run
 from disscube.sources import Window2D
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -268,6 +267,71 @@ def test_cli_reports_errors(tmp_path, capsys):
     path = _toml(tmp_path, '[[derive]]\ntarget="x"\nsource="nope"\noperator="mean"\n')
     assert cli(["validate", str(path)]) == 2
     assert "unknown source" in capsys.readouterr().err
+
+
+def test_cli_validate_json(capsys):
+    assert cli(["validate", str(ITAITUBA), "--json"]) == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["status"] == "ok"
+    assert data["grid"] == "itaituba/5km"
+    assert "elevation" in data["derives"]
+    assert "elevation" in data["sources"]
+
+
+def test_cli_validate_json_error(tmp_path, capsys):
+    path = _toml(tmp_path, '[[derive]]\ntarget="x"\nsource="nope"\noperator="mean"\n')
+    assert cli(["validate", str(path), "--json"]) == 2
+    err = capsys.readouterr().err
+    data = json.loads(err)
+    assert data["status"] == "error"
+    assert "unknown source" in data["error"]
+
+
+def test_cli_run_dry_run(capsys):
+    assert cli(["run", str(ITAITUBA), "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "[dry-run]" in out
+    assert "Plan is valid" in out
+
+
+def test_cli_run_dry_run_json(capsys):
+    assert cli(["run", str(ITAITUBA), "--dry-run", "--json"]) == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["status"] == "ok"
+    assert data["dry_run"] is True
+    assert data["grid"] == "itaituba/5km"
+    assert any(s["id"] == "elevation" for s in data["sources"])
+    assert any(d["target"] == "elevation" for d in data["derives"])
+
+
+def test_cli_run_json(tmp_path, capsys):
+    ws = tmp_path / "ws_json"
+    assert cli(["run", str(ITAITUBA), "--workspace", str(ws), "--json"]) == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["status"] == "ok"
+    assert data["workspace"] == str(ws)
+    assert data["grid_id"] == "itaituba/5km"
+    assert len(data["derived"]) == 5
+    assert (ws / "run.json").exists()
+
+
+def test_cli_export_json(tmp_path, capsys):
+    ws = tmp_path / "ws_export"
+    assert cli(["run", str(ITAITUBA), "--workspace", str(ws)]) == 0
+    capsys.readouterr()
+    out_tif = tmp_path / "exported.tif"
+    assert cli(["export", str(ITAITUBA), "--workspace", str(ws), "--output", str(out_tif), "--json"]) == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["status"] == "ok"
+    assert data["workspace"] == str(ws)
+    assert data["grid_id"] == "itaituba/5km"
+    assert "elevation" in data["variables"]
+    assert data["output"] == str(out_tif)
+    assert out_tif.exists()
 
 
 def test_sources_only_pipeline_without_grid_or_extent(tmp_path):

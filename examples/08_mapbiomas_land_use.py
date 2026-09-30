@@ -39,7 +39,7 @@ from rasterio.transform import from_origin
 from disscube import CubeClient, Derivation
 from disscube.sources import Window2D, register_raster
 from disscube.sources.mapbiomas import CLASSES, MAPBIOMAS_NODATA, register_mapbiomas_source
-from disscube.utils.grids import register_local_grid
+from disscube.utils import register_local_grid
 
 YEARS = (2000, 2020)
 BBOX = (-44.35, -2.62, -44.20, -2.47)      # São Luís, Ilha do Maranhão (WGS84)

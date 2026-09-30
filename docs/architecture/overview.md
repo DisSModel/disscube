@@ -28,7 +28,7 @@ SpatialSource ──► SpatialDerivation ──► Variable ──► DerivedVa
 
 **Declarative (recommended):**
 ```python
-from disscube.derivation import Derivation
+from disscube.models import Derivation
 
 d = Derivation(
     target="forest_pct",

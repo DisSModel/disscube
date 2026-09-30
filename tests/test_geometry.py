@@ -18,7 +18,7 @@ def test_gridspec_properties():
     assert grid.cols == 10
     
     # North-up transform: origin at (0, 1000), dx=100, dy=-100
-    expected_transform = Affine.translation(0, 1000) * Affine.scale(100, -100)
+    expected_transform = Affine.translation(0, 1000) @ Affine.scale(100, -100)
     assert grid.transform == expected_transform
     
     # xs should be [50, 150, ..., 950]

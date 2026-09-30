@@ -336,7 +336,7 @@ class GridAligner(PipelineStage):
         # Fine transform shares the target grid origin (north-up).
         fine_transform = (
             Affine.translation(grid.bbox[0], grid.bbox[3])
-            * Affine.scale(fine_res, -fine_res)
+            @ Affine.scale(fine_res, -fine_res)
         )
 
         nodata = _source_nodata(band)

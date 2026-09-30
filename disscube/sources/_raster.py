@@ -25,8 +25,7 @@ from rasterio.crs import CRS
 from rasterio.warp import transform_bounds
 from rasterio.windows import Window, from_bounds
 
-from disscube.utils.files import sha256_file
-from disscube.utils.grids import BDC_CRS
+from disscube.utils import BDC_CRS, sha256_file
 
 log = logging.getLogger(__name__)
 

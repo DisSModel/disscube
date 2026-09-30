@@ -194,3 +194,20 @@ def test_temporal_variable_roundtrip(tmp_path, cube):
     )
     assert "time" in da.dims
     assert list(da.coords["time"].values) == [2020]
+
+
+def test_cf_conventions_metadata_roundtrip(tmp_path, cube):
+    """Zarr storage enriches derived variables with CF-1.8 metadata and coordinates."""
+    src = np.ones((2, 2), dtype=np.float32)
+    tif = _write_tif(tmp_path / "cf_test.tif", src)
+
+    _derive(cube, tif, operator="mean", var_name="cf_var")
+
+    da = cube.load("cf_var", grid_id="G")
+    assert da.attrs.get("conventions") == "CF-1.8"
+    assert da.attrs.get("operator") == "mean"
+    assert da.attrs.get("source_id") == "S"
+    assert da.attrs.get("grid_mapping") == "spatial_ref"
+    assert da.coords["x"].attrs.get("standard_name") == "projection_x_coordinate"
+    assert da.coords["y"].attrs.get("standard_name") == "projection_y_coordinate"
+

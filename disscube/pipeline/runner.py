@@ -15,7 +15,7 @@ from typing import Any, Literal
 import numpy as np
 from pydantic import ValidationError
 
-from disscube.config.schema import (
+from disscube.pipeline.schema import (
     BdcSource,
     ClassifiedSource,
     DeriveConfig,
@@ -27,7 +27,7 @@ from disscube.config.schema import (
     ProdesSource,
     UnionSource,
 )
-from disscube.utils.files import sha256_file
+from disscube.utils import sha256_file
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class PlannedDerive:
     fill: str | None = None
 
     def derivation(self):
-        from disscube.derivation import Derivation
+        from disscube.models import Derivation
 
         return Derivation(target=self.target, source_id=self.source, operator=self.operator,
                           class_code=self.class_code, role=self.role, params=self.params, fill=self.fill)
@@ -298,6 +298,11 @@ def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, 
         nodata=np.nan,
         compress="deflate",
     ) as dst:
+        dst.update_tags(
+            TIFFTAG_SOFTWARE="DisSCube 0.3.0",
+            GRID_ID=grid.name,
+            CONVENTIONS="CF-1.8",
+        )
         for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
             dst.write(arr, idx)
             dst.set_band_description(idx, var)
@@ -433,7 +438,7 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
     from pyproj import Transformer
 
     from disscube.models import GridSpec
-    from disscube.utils.grids import register_local_grid
+    from disscube.utils import register_local_grid
 
     min_x, min_y, max_x, max_y = g.bbox
     if g.crs is None:
