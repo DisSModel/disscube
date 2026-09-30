@@ -26,7 +26,7 @@ import numpy as np
 
 from disscube.sources._categorical import read_legend
 from disscube.sources._raster import read_window, register_raster
-from disscube.utils.files import sha256_file
+from disscube.utils import sha256_file
 
 
 def register_classified_map(

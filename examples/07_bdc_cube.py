@@ -39,8 +39,7 @@ from rasterio.transform import from_origin
 
 from disscube import CubeClient, Derivation, SpatialSource
 from disscube.sources import Window2D, register_raster
-from disscube.utils.files import sha256_file
-from disscube.utils.grids import BDC_CRS, register_local_grid
+from disscube.utils import BDC_CRS, register_local_grid, sha256_file
 
 COLLECTION = "LANDSAT-16D-1"
 PERIOD = "2020-07-01/2020-09-30"           # dry season

@@ -35,7 +35,7 @@ from rasterio.transform import from_origin
 
 from disscube import CubeClient, Derivation
 from disscube.sources import prodes
-from disscube.utils.grids import register_local_grid
+from disscube.utils import register_local_grid
 
 YEARS = (2008, 2016, 2024)
 BBOX = (-54.842, -3.587, -54.459, -3.168)   # LuccME Lab15 cellular space (cs_moju)

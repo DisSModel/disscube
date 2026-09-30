@@ -438,7 +438,7 @@ def _register_grid(cube, g: GridConfig) -> tuple[str, list[float]]:
     from pyproj import Transformer
 
     from disscube.models import GridSpec
-    from disscube.utils.grids import register_local_grid
+    from disscube.utils import register_local_grid
 
     min_x, min_y, max_x, max_y = g.bbox
     if g.crs is None:
