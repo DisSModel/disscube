@@ -16,7 +16,7 @@ import rasterio
 from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
-from disscube import CubeClient, Derivation, GridSpec, SpatialDerivation, SpatialSource, Variable
+from disscube import CubeClient, Derivation, GridSpec, SpatialSource
 from disscube.cli import main as cli
 from disscube.pipeline import PipelineError, load, plan, run
 from disscube.sources import Window2D
