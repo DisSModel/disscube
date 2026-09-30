@@ -35,8 +35,9 @@ how faithful they are — but the engineering around them:
   `PROJCS["unknown"]` round-trip problems.
 
 A TerraME fill script can also be written as a DisSCube pipeline file —
-see [Pipeline files (TOML)](guides/pipeline_files.md) and
-`examples/pipelines/itaituba_fill.toml`, the tutorial below as TOML.
+see [Pipeline files (TOML)](guides/pipeline_files.md),
+the [quickstart pipeline](https://github.com/DisSModel/disscube/blob/main/examples/pipelines/quickstart.toml),
+and the parity cases in the recipes repository (`cases/terrame_fill`).
 
 ## Strategy → operator correspondence
 
@@ -82,12 +83,13 @@ Amazônia — each with its input layers, the Lua script and the cellular space
 TerraME produced. Those outputs are the reference: the same inputs are derived
 with DisSCube on the same grid and compared cell by cell.
 
-The data are bundled in `examples/data/terrame/` (provenance, license and
-checksums in its README). The comparison runs in CI in
-`tests/test_terrame_parity.py` — passing tests pin the parity below, strict
-`xfail` tests record the known gaps — and examples
-`04_terrame_fill_itaituba.py`, `05_terrame_fill_emas.py` and
-`06_terrame_fill_amazonia.py` print the comparison for each dataset.
+The full parity benchmark suite is maintained and executed on CI in the
+[DisSCube Case Studies and Recipes](https://github.com/LambdaGeo/disscube-recipes)
+repository (`cases/terrame_fill`), where input datasets are fetched from TerraME
+with cryptographic checksum verification (`./run.sh all <dataset>`).
+
+Below is the summary of the correspondences and cell-by-cell numerical parity
+verified across the datasets.
 
 ### Itaituba — 620 cells, 5 km
 

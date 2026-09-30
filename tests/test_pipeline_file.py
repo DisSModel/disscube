@@ -16,14 +16,14 @@ import rasterio
 from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
-from disscube import CubeClient, GridSpec, SpatialDerivation, SpatialSource, Variable
+from disscube import CubeClient, Derivation, GridSpec, SpatialDerivation, SpatialSource, Variable
 from disscube.cli import main as cli
 from disscube.pipeline import PipelineError, load, plan, run
 from disscube.sources import Window2D
 
 ROOT = Path(__file__).resolve().parents[1]
 PIPELINES = sorted((ROOT / "examples" / "pipelines").glob("*.toml"))
-ITAITUBA = ROOT / "examples" / "pipelines" / "itaituba_fill.toml"
+QUICKSTART = ROOT / "examples" / "pipelines" / "quickstart.toml"
 
 GRID = """
 schema = 1
@@ -53,7 +53,7 @@ def _raster(path, value=1.0, dtype="float32"):
 # ---------------------------------------------------------------------------
 
 def test_example_pipelines_are_discovered():
-    assert len(PIPELINES) >= 4
+    assert len(PIPELINES) >= 1
 
 
 @pytest.mark.parametrize("path", PIPELINES, ids=lambda p: p.name)
@@ -64,39 +64,39 @@ def test_example_pipelines_validate(path):
     assert p.sources
 
 
-def test_itaituba_pipeline_matches_the_python_api(tmp_path):
-    report = run(ITAITUBA, workspace=tmp_path / "toml")
-    assert len(report.derived) == 5
+def test_quickstart_pipeline_matches_the_python_api(tmp_path):
+    report = run(QUICKSTART, workspace=tmp_path / "toml")
+    assert len(report.derived) == 3
 
-    data = ROOT / "examples" / "data" / "terrame" / "itaituba"
+    data = ROOT / "examples" / "data" / "quickstart"
     cube = CubeClient(catalog=str(tmp_path / "api.db"), store=str(tmp_path / "api"))
-    cfg = load(ITAITUBA).config.grid
+    cfg = load(QUICKSTART).config.grid
     cube.register_grid(GridSpec(id="api", type="local", crs=cfg.crs, resolution=cfg.resolution, bbox=cfg.bbox))
-    cube.register_spatial_source(SpatialSource(id="elev", name="e", format="raster", crs=cfg.crs,
-                                               asset_url=str(data / "itaituba-elevation.tif")))
-    cube.register_spatial_source(SpatialSource(id="roads", name="r", format="vector", crs=cfg.crs,
-                                               asset_url=f"zip://{data / 'itaituba-roads.zip'}"))
-    cube.derive(SpatialDerivation(source_id="elev", grid_id="api", role="driver",
-                                  variables=[Variable(name="elevation", operator="mean")]))
-    cube.derive(SpatialDerivation(source_id="roads", grid_id="api", role="driver",
-                                  variables=[Variable(name="distroad", operator="min_distance")]))
+    cube.register_spatial_source(SpatialSource(id="landuse", name="lu", format="raster", crs=cfg.crs,
+                                               asset_url=str(data / "landuse.tif")))
+    cube.register_spatial_source(SpatialSource(id="elevation", name="el", format="raster", crs=cfg.crs,
+                                               asset_url=str(data / "elevation.tif")))
+    cube.derive_declarative(Derivation(target="forest_pct", source_id="landuse", operator="percentage", class_code=3),
+                            grid_id="api")
+    cube.derive_declarative(Derivation(target="elev_mean", source_id="elevation", operator="mean"),
+                            grid_id="api")
 
     toml_cube = CubeClient(catalog=str(tmp_path / "toml" / "catalog.db"), store=str(tmp_path / "toml" / "store"))
-    for name in ("elevation", "distroad"):
+    for name in ("forest_pct", "elev_mean"):
         a = toml_cube.load(name, grid_id=report.grid_id).values
         b = cube.load(name, grid_id="api").values
         assert np.allclose(a, b, equal_nan=True), name
 
 
 def test_run_writes_record_and_annotates_provenance(tmp_path):
-    report = run(ITAITUBA, workspace=tmp_path / "ws")
+    report = run(QUICKSTART, workspace=tmp_path / "ws")
     record = json.loads(report.record.read_text())
-    checksum = load(ITAITUBA).checksum
+    checksum = load(QUICKSTART).checksum
     assert record["pipeline"]["checksum"] == checksum
-    assert {d["target"] for d in record["derived"]} == {"elevation", "defor_87", "defor_167",
-                                                        "distroad", "distlocal"}
-    prov = json.loads((tmp_path / "ws" / "raw" / "roads.provenance.json").read_text())
+    assert {d["target"] for d in record["derived"]} == {"forest_pct", "landuse_major", "elev_mean"}
+    prov = json.loads((tmp_path / "ws" / "raw" / "landuse.provenance.json").read_text())
     assert prov["pipeline"]["checksum"] == checksum and prov["checksum"].startswith("sha256:")
+
 
 
 # ---------------------------------------------------------------------------
@@ -257,9 +257,9 @@ operator = "mean"
 # ---------------------------------------------------------------------------
 
 def test_cli_validate_and_run(tmp_path, capsys):
-    assert cli(["validate", str(ITAITUBA)]) == 0
+    assert cli(["validate", str(QUICKSTART)]) == 0
     assert "OK" in capsys.readouterr().out
-    assert cli(["run", str(ITAITUBA), "--workspace", str(tmp_path / "ws")]) == 0
+    assert cli(["run", str(QUICKSTART), "--workspace", str(tmp_path / "ws")]) == 0
     assert (tmp_path / "ws" / "run.json").exists()
 
 
@@ -270,12 +270,12 @@ def test_cli_reports_errors(tmp_path, capsys):
 
 
 def test_cli_validate_json(capsys):
-    assert cli(["validate", str(ITAITUBA), "--json"]) == 0
+    assert cli(["validate", str(QUICKSTART), "--json"]) == 0
     out = capsys.readouterr().out
     data = json.loads(out)
     assert data["status"] == "ok"
-    assert data["grid"] == "itaituba/5km"
-    assert "elevation" in data["derives"]
+    assert data["grid"] == "demo/300m"
+    assert "elev_mean" in data["derives"]
     assert "elevation" in data["sources"]
 
 
@@ -289,47 +289,47 @@ def test_cli_validate_json_error(tmp_path, capsys):
 
 
 def test_cli_run_dry_run(capsys):
-    assert cli(["run", str(ITAITUBA), "--dry-run"]) == 0
+    assert cli(["run", str(QUICKSTART), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "[dry-run]" in out
     assert "Plan is valid" in out
 
 
 def test_cli_run_dry_run_json(capsys):
-    assert cli(["run", str(ITAITUBA), "--dry-run", "--json"]) == 0
+    assert cli(["run", str(QUICKSTART), "--dry-run", "--json"]) == 0
     out = capsys.readouterr().out
     data = json.loads(out)
     assert data["status"] == "ok"
     assert data["dry_run"] is True
-    assert data["grid"] == "itaituba/5km"
+    assert data["grid"] == "demo/300m"
     assert any(s["id"] == "elevation" for s in data["sources"])
-    assert any(d["target"] == "elevation" for d in data["derives"])
+    assert any(d["target"] == "elev_mean" for d in data["derives"])
 
 
 def test_cli_run_json(tmp_path, capsys):
     ws = tmp_path / "ws_json"
-    assert cli(["run", str(ITAITUBA), "--workspace", str(ws), "--json"]) == 0
+    assert cli(["run", str(QUICKSTART), "--workspace", str(ws), "--json"]) == 0
     out = capsys.readouterr().out
     data = json.loads(out)
     assert data["status"] == "ok"
     assert data["workspace"] == str(ws)
-    assert data["grid_id"] == "itaituba/5km"
-    assert len(data["derived"]) == 5
+    assert data["grid_id"] == "demo/300m"
+    assert len(data["derived"]) == 3
     assert (ws / "run.json").exists()
 
 
 def test_cli_export_json(tmp_path, capsys):
     ws = tmp_path / "ws_export"
-    assert cli(["run", str(ITAITUBA), "--workspace", str(ws)]) == 0
+    assert cli(["run", str(QUICKSTART), "--workspace", str(ws)]) == 0
     capsys.readouterr()
     out_tif = tmp_path / "exported.tif"
-    assert cli(["export", str(ITAITUBA), "--workspace", str(ws), "--output", str(out_tif), "--json"]) == 0
+    assert cli(["export", str(QUICKSTART), "--workspace", str(ws), "--output", str(out_tif), "--json"]) == 0
     out = capsys.readouterr().out
     data = json.loads(out)
     assert data["status"] == "ok"
     assert data["workspace"] == str(ws)
-    assert data["grid_id"] == "itaituba/5km"
-    assert "elevation" in data["variables"]
+    assert data["grid_id"] == "demo/300m"
+    assert "elev_mean" in data["variables"]
     assert data["output"] == str(out_tif)
     assert out_tif.exists()
 
