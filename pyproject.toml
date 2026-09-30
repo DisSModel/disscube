@@ -57,7 +57,6 @@ dev = [
     "pytest-cov",
     "mypy>=1.13",
     "ruff>=0.16,<0.17",
-    "httpx",
     "ipykernel",
 ]
 bdc = [
@@ -77,11 +76,6 @@ dissmodel = [               # CubeClient.to_raster_backend(): hand-off to DisSMo
 docs = [                    # documentation site (mkdocs.yml, .github/workflows/docs.yml)
     "mkdocs>=1.6,<2",       # MkDocs 2.0 drops the plugin/theme system Material relies on
     "mkdocs-material>=9.5",
-]
-api = [                     # experimental HTTP API (disscube.api)
-    "fastapi",
-    "uvicorn",
-    "python-multipart",
 ]
 
 [project.urls]
@@ -139,8 +133,6 @@ module = [
     "h5netcdf.*",          # optional [netcdf] extra
     "h5py.*",              # optional [netcdf] extra
     "netCDF4.*",           # optional netCDF backend (export_netcdf)
-    "fastapi.*",           # optional [api] extra
-    "uvicorn.*",           # optional [api] extra
 ]
 ignore_missing_imports = true
 

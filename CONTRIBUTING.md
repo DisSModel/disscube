@@ -84,7 +84,7 @@ pip install -e ".[dev]"
 Tests that need optional packages are skipped, not failed, when the package is missing. To run all of them, install the extras too:
 
 ```bash
-pip install -e ".[dev,bdc,api]"
+pip install -e ".[dev,bdc,netcdf,dissmodel]"
 ```
 
 ### 4. Running the Test Suite

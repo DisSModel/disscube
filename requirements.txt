@@ -29,17 +29,11 @@ h5py
 # Optional: DisSModel hand-off (to_raster_backend)
 dissmodel>=0.6.0,<0.7.0
 
-# Optional: API
-fastapi
-uvicorn
-python-multipart
-
 # Development & Testing
 pytest
 pytest-cov
 mypy>=1.13
 ruff>=0.16,<0.17
-httpx
 ipykernel
 
 # Documentation
