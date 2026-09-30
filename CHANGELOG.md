@@ -8,10 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-First public release (`0.2.0`). DisSCube is a declarative spatial layer for
-dynamic models: it aligns heterogeneous geospatial sources onto a common grid,
-derives variables with registered operators, and catalogs every result with a
-`spec_hash` so a derived layer can be traced back to exactly how it was made.
+### Changed
+- **Slimmed `examples/` and migrated real-data cases**: Real-world datasets, bundled GIS assets (~12 MB), and TerraME parity benchmarks were moved to the dedicated [LambdaGeo/disscube-recipes](https://github.com/LambdaGeo/disscube-recipes) repository (`cases/terrame_fill`, `cases/ilha_maranhao`, `cases/prodes_br163`). The core `examples/` directory now contains strictly lightweight, offline, self-contained examples with tests for both the Python API (`01_quickstart.py`, `02_vector_drivers.py`, `03_time_series.py`) and declarative TOML pipelines (`examples/pipelines/quickstart.toml`).
 
 ### Added
 - **Declarative derivations.** A `Derivation` names a source, a target grid and
