@@ -1149,7 +1149,7 @@
 <li><code>times = [2020]</code> → 2020 time slice</li>
 </ul>
 <p><code>CubeClient.load()</code> automatically detects whether there are multiple slices and stacks them into <code>(time, y, x)</code>, ordered by the first value of <code>times</code>.</p>
-<p><code>CubeClient.to_lucc_data()</code> accepts <code>period=("2000", "2020")</code> to keep only the slices within the interval.</p>
+<p><code>CubeClient.to_dataset()</code> (and <code>to_raster_backend()</code>) accept <code>period=("2000", "2020")</code> to keep only the slices within the interval.</p>
 <h2 id="querying-the-catalog">Querying the catalog</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># By grid and role</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">cube</span><span class="o">.</span><span class="n">catalog</span><span class="o">.</span><span class="n">search_derived_variables</span><span class="p">(</span><span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"driver"</span><span class="p">)</span>

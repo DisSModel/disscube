@@ -1005,7 +1005,7 @@ the <strong>Python API</strong> (<code>CubeClient</code>, <code>Derivation</code
 </tr>
 <tr>
 <td><a href="https://github.com/DisSModel/disscube/blob/main/examples/03_time_series.py"><code>03_time_series.py</code></a></td>
-<td>Time-stamped sources, <code>(time, y, x)</code> loading, and the hand-off to DisSModel with <code>to_lucc_data()</code> (including <code>period</code>)</td>
+<td>Time-stamped sources, <code>(time, y, x)</code> loading, and the hand-off to DisSModel with <code>to_dataset()</code> and <code>to_raster_backend()</code> (including <code>period</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -1047,7 +1047,7 @@ the <strong>Python API</strong> (<code>CubeClient</code>, <code>Derivation</code
 <li><strong>LUCCME-BR (<code>cases/luccme_br</code>)</strong>: National-scale land-use change reconstruction for Brazil (BigEarth).</li>
 </ul>
 <h2 id="scope">Scope</h2>
-<p>DisSCube prepares data for models; it stops at <code>CubeClient.to_lucc_data()</code>.
+<p>DisSCube prepares data for models; it stops at <code>CubeClient.to_dataset()</code> (or <code>to_raster_backend()</code> for DisSModel).
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
 to the model repositories, where those dependencies live.</p>
 
