@@ -1,5 +1,5 @@
 """
-03 — Time series and hand-off to DisSModel.
+03 — Time series, exports and the optional DisSModel hand-off.
 
 LUCC models consume a mix of time-varying variables (land use observed in
 several years) and static drivers. This example derives:
@@ -8,9 +8,11 @@ several years) and static drivers. This example derives:
     registered as a source with its own ``time``
   - ``dist_road``  a static driver from a vector layer
 
-``load()`` stacks the temporal slices into a ``(time, y, x)`` DataArray, and
-``to_lucc_data()`` packs everything into a DisSModel ``RasterBackend``,
-optionally restricted to a period.
+``load()`` stacks the temporal slices into a ``(time, y, x)`` DataArray;
+``to_dataset()`` returns the whole cube as an ``xarray.Dataset`` (optionally
+restricted to a period) and ``export_geotiff()`` writes it out. If DisSModel is
+installed (``pip install "disscube[dissmodel]"``), ``to_raster_backend()`` hands
+the cube to a model.
 
     python examples/03_time_series.py            # temporary workspace
     python examples/03_time_series.py ./scratch  # keep the outputs
@@ -94,22 +96,33 @@ def main(workspace: Path) -> None:
     for year in YEARS:
         print(f"  forest cover {year}: {float(forest.sel(time=year).mean()):.0%}")
 
-    # Hand-off to DisSModel: a RasterBackend with all requested variables.
-    backend = cube.to_lucc_data(["forest_pct", "dist_road"], grid_id=grid_id)
-    print(f"\nRasterBackend   : temporal={backend.temporal_band_names()}  static={backend.static_band_names()}")
-    print(f"  forest_pct time axis: {backend.time_axis('forest_pct').tolist()}")
+    # The cube as an xarray Dataset: (time, y, x) temporal and (y, x) static variables.
+    ds = cube.to_dataset(["forest_pct", "dist_road"], grid_id=grid_id)
+    print(f"\nDataset         : {dict(ds.sizes)}  variables={list(ds.data_vars)}")
 
     # A model reads each variable by name (and year, if temporal).
-    loss = backend.get("forest_pct", time=2010) - backend.get("forest_pct", time=2020)
-    dist_km = backend.get("dist_road") / 1_000
+    loss = (ds["forest_pct"].sel(time=2010) - ds["forest_pct"].sel(time=2020)).values
+    dist_km = ds["dist_road"].values / 1_000
     print("  mean forest loss 2010→2020 by distance to the road:")
     for lo, hi in ((0, 3), (3, 6), (6, 12)):
         band = (dist_km >= lo) & (dist_km < hi)
         print(f"    {lo:>2}–{hi:<2} km : {loss[band].mean():.0%}")
 
     # `period` keeps only the slices inside the interval.
-    recent = cube.to_lucc_data(["forest_pct"], grid_id=grid_id, period=("2015", "2020"))
-    print(f"\nperiod 2015–2020: forest_pct time axis = {recent.time_axis('forest_pct').tolist()}")
+    recent = cube.to_dataset(["forest_pct"], grid_id=grid_id, period=("2015", "2020"))
+    print(f"\nperiod 2015–2020: forest_pct time axis = {recent['time'].values.tolist()}")
+
+    # Export: one GeoTIFF band per variable and year, or a CF netCDF with the time axis.
+    cube.export_geotiff(["forest_pct", "dist_road"], workspace / "cube.tif", grid_id=grid_id)
+    print(f"\nGeoTIFF         : {workspace / 'cube.tif'} (bands forest_pct_2010, ..., dist_road)")
+
+    # Optional hand-off to DisSModel (pip install "disscube[dissmodel]").
+    try:
+        backend = cube.to_raster_backend(["forest_pct", "dist_road"], grid_id=grid_id)
+    except ImportError:
+        print("\nDisSModel not installed: skipping the RasterBackend hand-off")
+    else:
+        print(f"\nRasterBackend   : temporal={backend.temporal_band_names()}  static={backend.static_band_names()}")
 
 
 if __name__ == "__main__":

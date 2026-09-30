@@ -49,6 +49,8 @@ class VariableWriter(PipelineStage):
                 da.attrs["operator"] = str(op_name)
             if getattr(derivation, "source_id", None):
                 da.attrs["source_id"] = derivation.source_id
+            if getattr(derivation, "source_checksum", None):
+                da.attrs["source_checksum"] = derivation.source_checksum
             if tile_id:
                 da.attrs["tile_id"] = tile_id
             if "spatial_ref" in da.coords:

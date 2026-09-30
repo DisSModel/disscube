@@ -3,7 +3,7 @@ Tests for the options a pipeline can declare instead of preparing its inputs in
 a script: operator ``params`` (``distance`` in another CRS, ``subcells``), the
 ``area`` operator, ``fill = "nearest"``, file sources with ``read`` options,
 ``nodata`` and a NetCDF ``variable``, ``union`` sources, and the grid's
-transform on ``to_lucc_data``.
+transform on ``to_raster_backend``.
 """
 
 from __future__ import annotations
@@ -385,14 +385,15 @@ params = { subcells = 4 }
 
 
 # ---------------------------------------------------------------------------
-# to_lucc_data
+# to_raster_backend
 # ---------------------------------------------------------------------------
 
-def test_to_lucc_data_carries_the_grid_transform(cube, tmp_path):
+def test_to_raster_backend_carries_the_grid_transform(cube, tmp_path):
+    pytest.importorskip("dissmodel")
     _vector(cube, tmp_path, "town", [Point(-49.55, -9.45)], "EPSG:4326")
     _derive(cube, "geo", "town", "distance")
     for grid_id in ("geo", None):
-        backend = cube.to_lucc_data(["v"], grid_id=grid_id)
+        backend = cube.to_raster_backend(["v"], grid_id=grid_id)
         assert backend.transform == GEO.transform
 
 

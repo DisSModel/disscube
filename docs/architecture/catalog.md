@@ -79,7 +79,7 @@ The `times` field of `DerivedVariable` is a list of integers (years):
 
 `CubeClient.load()` automatically detects whether there are multiple slices and stacks them into `(time, y, x)`, ordered by the first value of `times`.
 
-`CubeClient.to_lucc_data()` accepts `period=("2000", "2020")` to keep only the slices within the interval.
+`CubeClient.to_dataset()` (and `to_raster_backend()`) accept `period=("2000", "2020")` to keep only the slices within the interval.
 
 ## Querying the catalog
 

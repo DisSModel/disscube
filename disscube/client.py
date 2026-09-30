@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
@@ -19,12 +21,31 @@ from disscube.storage import AssetStore
 
 if TYPE_CHECKING:
     # Type-only imports: Derivation is imported lazily at runtime to avoid a
-    # circular import; dissmodel is only needed by to_lucc_data().
+    # circular import; dissmodel is optional and only needed by to_raster_backend().
     from dissmodel.geo.raster.backend import RasterBackend
 
     from disscube.models import Derivation
 
 log = logging.getLogger("disscube.client.cube_client")
+
+# Attributes that describe one stored slice: per-variable only when it has a single slice.
+_SLICE_ATTRS = ("spec_hash", "content_hash", "source_id", "source_checksum")
+
+
+def _filter_period(da: xr.DataArray, period: tuple[str, str]) -> xr.DataArray:
+    """Keep the time slices of ``da`` whose value lies within ``period`` (inclusive)."""
+    start, end = period
+    time_vals = da.coords["time"].values
+    start_val: int | str
+    end_val: int | str
+    if len(time_vals) > 0 and isinstance(time_vals[0], (int, np.integer)):
+        try:
+            start_val, end_val = int(start), int(end)
+        except ValueError:
+            start_val, end_val = start, end
+    else:
+        start_val, end_val = start, end
+    return da.isel(time=(time_vals >= start_val) & (time_vals <= end_val))
 
 
 class CubeClient:
@@ -162,6 +183,23 @@ class CubeClient:
         For temporal variables (DerivedVariable.times is non-empty), returns
         a DataArray with dims (time, y, x). For static variables, returns (y, x).
         """
+        selected = self._select(variable_id, tile_id, grid_id)
+        if selected[0].times:
+            # Stack temporal slices along the time axis
+            slices = []
+            time_coords: list[int] = []
+            for d in selected:
+                slices.append(xr.open_zarr(d.asset_url, consolidated=False)[d.name])
+                time_coords.extend(d.times)
+            return xr.concat(slices, dim=xr.DataArray(time_coords, dims="time"))
+
+        # Static
+        derived = selected[0]
+        return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+
+    def _select(self, variable_id: str, tile_id: str | None, grid_id: str | None) -> list[DerivedVariable]:
+        """The catalog entries that make up a variable: its temporal slices sorted by
+        time, or its single static entry. Entries whose files are gone are skipped."""
         matches = []
         for d in self.catalog.search_derived_variables(tile_id=tile_id, grid_id=grid_id):
             if d.id == variable_id or d.name == variable_id:
@@ -202,43 +240,117 @@ class CubeClient:
         static = [d for d in matches if not d.times and _exists(d)]
 
         if temporal:
-            # Stack temporal slices along time axis sorted by first time value
-            temporal_sorted = sorted(temporal, key=lambda d: d.times[0])
-            slices = []
-            time_coords = []
-            for d in temporal_sorted:
-                da = xr.open_zarr(d.asset_url, consolidated=False)[d.name]
-                slices.append(da)
-                time_coords.extend(d.times)
-            return xr.concat(slices, dim=xr.DataArray(time_coords, dims="time"))
+            return sorted(temporal, key=lambda d: d.times[0])
 
-        # Static — original behaviour
         if not static:
             msg = f"Derived variable not found on disk: {variable_id}"
             if grid_id:
                 msg += f" on grid {grid_id}"
             raise ValueError(msg)
-        derived = static[0]
-        return xr.open_zarr(derived.asset_url, consolidated=False)[derived.name]
+        return [static[0]]
 
-    def to_lucc_data(
+    def provenance(self, variable_id: str, grid_id: str | None = None,
+                   tile_id: str | None = None) -> list[dict[str, Any]]:
+        """Where each slice of a variable came from: one record per time slice (a single
+        record for a static variable), ordered by time.
+
+        Each record has ``time`` (year or ``None``), ``spec_hash`` and ``content_hash``
+        (SHA-256 of the stored Zarr), plus ``source_id`` and ``source_checksum`` (the
+        checksum of the input the slice was derived from) when they were recorded.
+        Variables derived before ``source_checksum`` was stored simply lack that key.
+        """
+        records: list[dict[str, Any]] = []
+        for d in self._select(variable_id, tile_id, grid_id):
+            attrs = xr.open_zarr(d.asset_url, consolidated=False)[d.name].attrs
+            record: dict[str, Any] = {
+                "time": d.times[0] if d.times else None,
+                "spec_hash": d.spec_hash,
+                "content_hash": d.content_hash,
+                "source_id": attrs.get("source_id"),
+                "source_checksum": attrs.get("source_checksum"),
+            }
+            records.append({k: v for k, v in record.items() if v is not None or k == "time"})
+        return records
+
+    def _provenance_of(self, arrays: Mapping[str, xr.DataArray],
+                       grid_id: str | None) -> dict[str, list[dict[str, Any]]]:
+        """Provenance records for loaded arrays, keeping only the slices they hold."""
+        out: dict[str, list[dict[str, Any]]] = {}
+        for name, da in arrays.items():
+            records = self.provenance(name, grid_id=grid_id)
+            if "time" in da.dims:
+                years = {int(t) for t in da.coords["time"].values}
+                records = [r for r in records if r["time"] in years]
+            out[name] = records
+        return out
+
+    # ------------------------------------------------------------------
+    # Cube output: xarray Dataset (primary), exports, DisSModel adapter
+    # ------------------------------------------------------------------
+
+    def _load_variables(
         self,
         variables: list[str],
         grid_id: str | None = None,
         period: tuple[str, str] | None = None,
-    ) -> RasterBackend:
+    ) -> dict[str, xr.DataArray]:
+        """Load ``variables`` as DataArrays, applying the ``period`` filter.
+
+        Static variables are ``(y, x)``; temporal ones are ``(time, y, x)`` with an
+        integer-year ``time`` coordinate. A temporal variable with no slice inside
+        ``period`` is skipped with a warning; static variables ignore ``period``.
         """
-        Standard integration point for the DisSModel ecosystem.
-        Returns a RasterBackend containing all requested variables, with
-        the grid's CRS and affine transform (``backend.crs``,
-        ``backend.transform``), so it can be written back as a GeoTIFF.
+        loaded: dict[str, xr.DataArray] = {}
+        for var_name in variables:
+            da = self.load(var_name, grid_id=grid_id)
 
-        Static variables are stored as (y, x) arrays — identical to the
-        previous behaviour; existing executors require no changes.
+            if da.ndim == 3 and "time" in da.dims:
+                if period is not None:
+                    da = _filter_period(da, period)
+                if da.sizes.get("time", 0) == 0:
+                    log.warning("%s: no data in period %s, skipped", var_name, period)
+                    continue
+                da = da.transpose("time", "y", "x")
+            else:
+                da = da.transpose("y", "x")
+            loaded[var_name] = da
 
-        Temporal variables are stored as (time, y, x) arrays with an
-        explicit time axis in ``backend.time_coords``. CA models retrieve
-        a 2D slice via ``backend.get(name, time=step)``.
+        if not loaded:
+            raise ValueError(f"No variables could be loaded: {variables}")
+        return loaded
+
+    @staticmethod
+    def _detect_crs(arrays):
+        """The CRS of the first array that declares one (``crs`` attribute or ``spatial_ref``)."""
+        for var_name, da in arrays.items():
+            crs = da.attrs.get("crs")
+            if not crs and "spatial_ref" in da.coords:
+                try:
+                    crs = da.rio.crs
+                except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
+                    log.debug("Could not read CRS from %s spatial_ref", var_name)
+            if crs:
+                return crs
+        return None
+
+    def to_dataset(
+        self,
+        variables: list[str],
+        grid_id: str | None = None,
+        period: tuple[str, str] | None = None,
+    ) -> xr.Dataset:
+        """
+        The cube as an ``xarray.Dataset`` — the primary, dependency-free output.
+
+        Static variables have dimensions ``(y, x)``; temporal variables
+        ``(time, y, x)`` with an integer-year ``time`` coordinate shared by the
+        whole Dataset (a variable that lacks a year present in another is NaN
+        there). The grid's CRS and affine transform are written with rioxarray
+        (``ds.rio.crs``, ``ds.rio.transform()``). Variables stay lazy (Zarr-backed).
+
+        Auxiliary quality layers stored as extra coordinates of a variable
+        (e.g. purity of a ``majority``) are not carried into the Dataset;
+        ``load()`` still returns them.
 
         Parameters
         ----------
@@ -248,92 +360,129 @@ class CubeClient:
             Restrict search to a specific grid. Required when the same
             variable name exists on multiple grids.
         period : tuple[str, str] | None
-            Optional ``(start, end)`` filter for temporal variables.
-            Only time slices whose value falls within [start, end] are loaded.
-            Static variables are unaffected.
-            Example: ``period=("2000", "2014")``
-
-        Notes
-        -----
-        CONTRACT decisions (open — to be resolved before 1.0):
-
-        1. Canonical temporal type: ``valid_from`` / ``valid_until`` accept
-           year strings ("2020") or ISO dates ("2020-01-01");
-           ``DerivedVariable.times`` stores ``list[int]`` (years only).
-           Open: validate year-only format at model construction time so
-           callers cannot silently store wrong temporal metadata.
-
-        2. Missing-time behavior: a temporal variable whose slices are all
-           outside ``period`` is skipped with ``log.warning`` and absent from
-           the returned backend. The caller cannot distinguish "variable was
-           static (period ignored)" from "existed but outside the range".
-           Open: raise ``ValueError``, return a NaN slice, or keep skip.
-
-        3. Empty-period backend: when every requested variable is filtered
-           out by ``period``, ``RasterBackend`` is initialized but holds no
-           data arrays. The caller receives a valid-looking but empty backend.
-           Open: raise before returning when no variable was stored.
+            Optional ``(start, end)`` filter for temporal variables; only time
+            slices whose value falls within [start, end] are kept (e.g.
+            ``period=("2000", "2014")``). Static variables are unaffected.
+            A temporal variable with no slice in the range is skipped with a
+            warning; if nothing is left, ``ValueError`` is raised.
         """
-        from dissmodel.geo.raster.backend import RasterBackend
+        arrays = self._load_variables(variables, grid_id=grid_id, period=period)
 
-        detected_crs = None
-        backend = None
+        provenance = self._provenance_of(arrays, grid_id)
+        clean = {}
+        for name, da in arrays.items():
+            extra = [c for c in da.coords if c not in da.dims and c != "spatial_ref"]
+            da = da.drop_vars(extra) if extra else da
+            attrs = {k: v for k, v in da.attrs.items() if k not in _SLICE_ATTRS}
+            if "time" not in da.dims and provenance[name]:
+                # One slice: its provenance is the variable's. A temporal variable
+                # has one per year, so it lives only in ``disscube_provenance``.
+                attrs.update({k: v for k, v in provenance[name][0].items() if k in _SLICE_ATTRS})
+            da = da.copy(deep=False)
+            da.attrs = attrs
+            clean[name] = da
+        ds = xr.Dataset(clean)
+        ds.attrs["disscube_provenance"] = json.dumps({"variables": provenance}, sort_keys=True)
 
-        for var_name in variables:
-            da = self.load(var_name, grid_id=grid_id)
+        crs = self._detect_crs(arrays)
+        if crs:
+            ds = ds.rio.write_crs(crs)
+        transform = self._grid_transform(grid_id, variables)
+        if transform is not None:
+            ds = ds.rio.write_transform(transform)
+        return ds
 
-            # CRS detection — run once
-            if detected_crs is None:
-                detected_crs = da.attrs.get("crs")
-                if not detected_crs and "spatial_ref" in da.coords:
-                    try:
-                        detected_crs = da.rio.crs
-                    except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
-                        log.debug("Could not read CRS from %s spatial_ref", var_name)
+    def export_geotiff(
+        self,
+        variables: list[str],
+        output: str | os.PathLike[str],
+        grid_id: str | None = None,
+        period: tuple[str, str] | None = None,
+        attrs: Mapping[str, str] | None = None,
+    ) -> None:
+        """
+        Write variables to a multi-band GeoTIFF.
 
-            if backend is None:
-                rows, cols = da.sizes["y"], da.sizes["x"]
-                backend = RasterBackend(shape=(rows, cols))
+        Static variables give one band named after the variable; temporal ones
+        one band per year, named ``<variable>_<year>`` and ordered by year. If a
+        ``mask`` variable is among ``variables`` (fraction of the cell inside the
+        territory), cells where it is 0 are set to NaN in every other band.
 
-            if da.ndim == 3 and "time" in da.dims:
-                # Temporal variable — optionally filter by period
-                if period is not None:
-                    start, end = period
-                    time_vals = da.coords["time"].values
-                    start_val: int | str
-                    end_val: int | str
-                    if len(time_vals) > 0 and isinstance(time_vals[0], (int, np.integer)):
-                        try:
-                            start_val, end_val = int(start), int(end)
-                        except ValueError:
-                            start_val, end_val = start, end
-                    else:
-                        start_val, end_val = start, end
+        Each band is tagged with the provenance of its slice (``SPEC_HASH``,
+        ``CONTENT_HASH``, ``SOURCE_CHECKSUM``, ``SOURCE_ID``). ``attrs`` adds
+        file-level tags (keys upper-cased), e.g. the pipeline that produced the cube.
+        """
+        from disscube.export import write_geotiff
 
-                    mask = (time_vals >= start_val) & (time_vals <= end_val)
-                    da = da.isel(time=mask)
+        arrays = self._load_variables(variables, grid_id=grid_id, period=period)
+        transform = self._grid_transform(grid_id, variables)
+        write_geotiff(arrays, output, crs=self._detect_crs(arrays), transform=transform,
+                      provenance=self._provenance_of(arrays, grid_id), attrs=attrs)
 
-                if da.sizes.get("time", 0) == 0:
-                    log.warning("%s: no data in period %s, skipped", var_name, period)
-                    continue
+    def export_netcdf(
+        self,
+        variables: list[str],
+        output: str | os.PathLike[str],
+        grid_id: str | None = None,
+        period: tuple[str, str] | None = None,
+        attrs: Mapping[str, str] | None = None,
+    ) -> None:
+        """
+        Write the cube (see :meth:`to_dataset`) to a CF-1.8 netCDF file.
 
-                time_coords = da.coords["time"].values
-                arr = da.transpose("time", "y", "x").values
-                backend.set(var_name, arr, time=time_coords)
+        Requires the ``netcdf`` extra (``pip install disscube[netcdf]``). The
+        integer-year ``time`` axis is written as ``YYYY-01-01`` dates; variables
+        keep their attributes (``spec_hash``, ``operator``, ``source_id``...) and
+        ``mask`` is kept as a variable, not applied to the data.
 
+        Provenance: a variable with a single slice carries ``spec_hash``,
+        ``content_hash``, ``source_id`` and ``source_checksum`` as attributes; for
+        every variable the global attribute ``disscube_provenance`` holds them per
+        slice as JSON. ``history`` records the export; ``attrs`` adds global
+        attributes (e.g. the pipeline file and its checksum).
+        """
+        from disscube.export import write_netcdf
+
+        write_netcdf(self.to_dataset(variables, grid_id=grid_id, period=period), output, attrs=attrs)
+
+    def to_raster_backend(
+        self,
+        variables: list[str],
+        grid_id: str | None = None,
+        period: tuple[str, str] | None = None,
+    ) -> RasterBackend:
+        """
+        Adapter to the DisSModel ecosystem (requires ``pip install disscube[dissmodel]``).
+
+        Returns a ``RasterBackend`` with the requested variables, the grid's CRS and
+        affine transform (``backend.crs``, ``backend.transform``). Static variables
+        are ``(y, x)`` arrays; temporal ones ``(time, y, x)`` with the axis in
+        ``backend.time_coords``, and each keeps its own time axis (no NaN alignment).
+        CA models get a 2D slice via ``backend.get(name, time=step)``.
+
+        ``grid_id`` and ``period`` behave as in :meth:`to_dataset`.
+        """
+        try:
+            from dissmodel.geo.raster.backend import RasterBackend
+        except ImportError as exc:
+            raise ImportError(
+                "to_raster_backend() needs DisSModel: pip install 'disscube[dissmodel]'"
+            ) from exc
+
+        arrays = self._load_variables(variables, grid_id=grid_id, period=period)
+        first = next(iter(arrays.values()))
+        backend = RasterBackend(shape=(first.sizes["y"], first.sizes["x"]))
+        for var_name, da in arrays.items():
+            if "time" in da.dims:
+                backend.set(var_name, da.values, time=da.coords["time"].values)
             else:
-                # Static variable — backward-compatible path
-                arr = da.transpose("y", "x").values
-                backend.set(var_name, arr)
+                backend.set(var_name, da.values)
 
-        if backend is None:
-            raise ValueError(f"No variables could be loaded: {variables}")
-
-        if backend.crs is None and detected_crs:
-            backend.crs = detected_crs
+        crs = self._detect_crs(arrays)
+        if backend.crs is None and crs:
+            backend.crs = crs
         if backend.transform is None:
             backend.transform = self._grid_transform(grid_id, variables)
-
         return backend
 
     def _grid_transform(self, grid_id: str | None, variables: list[str]):

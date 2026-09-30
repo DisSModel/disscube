@@ -1,6 +1,6 @@
 """
 Tests for the temporal path: writer time extraction, load() shape consistency,
-and to_lucc_data period-filter logging.
+and to_raster_backend period-filter logging.
 """
 
 import logging
@@ -132,7 +132,7 @@ def test_load_single_temporal_slice_returns_3d(tmp_path):
     """load() must return (time, y, x) even when only one temporal slice exists.
 
     Regression guard: previously returned 2D (y, x) for single-slice variables,
-    causing to_lucc_data to treat them as static.
+    causing to_raster_backend to treat them as static.
     """
     cube = CubeClient(str(tmp_path / "cat.db"), str(tmp_path / "store"))
     grid = _grid()
@@ -145,7 +145,7 @@ def test_load_single_temporal_slice_returns_3d(tmp_path):
     result = cube.load("v", grid_id="G1")
     assert result.ndim == 3, (
         f"Expected 3D (time, y, x) for a single temporal slice, got {result.ndim}D. "
-        "to_lucc_data would silently treat this as a static variable."
+        "to_raster_backend would silently treat this as a static variable."
     )
     assert "time" in result.dims
     assert list(result.coords["time"].values) == [2020]
@@ -176,10 +176,10 @@ def test_load_multiple_temporal_slices_are_sorted(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# to_lucc_data: period filter emits log.warning (not print)
+# to_raster_backend: period filter emits log.warning (not print)
 # --------------------------------------------------------------------------- #
 
-def test_to_lucc_data_period_skip_logs_warning(tmp_path, caplog):
+def test_to_raster_backend_period_skip_logs_warning(tmp_path, caplog):
     """A temporal variable outside the requested period logs a warning.
 
     Verifies the fix from print() to log.warning() so the message is
@@ -202,7 +202,7 @@ def test_to_lucc_data_period_skip_logs_warning(tmp_path, caplog):
                  uid="hs_s")
 
     with caplog.at_level(logging.WARNING, logger="disscube.client.cube_client"):
-        cube.to_lucc_data(["v", "s"], grid_id="G1", period=("2010", "2020"))
+        cube.to_raster_backend(["v", "s"], grid_id="G1", period=("2010", "2020"))
 
     warning_messages = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert any("v" in m for m in warning_messages), (

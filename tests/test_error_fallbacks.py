@@ -57,13 +57,14 @@ def test_align_fine_falls_back_to_grid_resolution():
     assert aligned.shape == (grid.rows, grid.cols)
 
 
-def test_to_lucc_data_ignores_malformed_spatial_ref(tmp_path):
+def test_to_raster_backend_ignores_malformed_spatial_ref(tmp_path):
+    pytest.importorskip("dissmodel")
     da = _raster(n=4).drop_vars("spatial_ref").assign_coords(spatial_ref=0)
     da.spatial_ref.attrs["crs_wkt"] = "not a WKT string"
     cube = CubeClient(str(tmp_path / "catalog.db"), str(tmp_path / "store"))
 
     with patch.object(CubeClient, "load", return_value=da):
-        backend = cube.to_lucc_data(["v"], grid_id="g")
+        backend = cube.to_raster_backend(["v"], grid_id="g")
 
     assert backend.crs is None
     np.testing.assert_array_equal(backend.get("v"), da.values)

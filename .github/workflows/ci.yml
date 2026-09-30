@@ -47,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,bdc,api]"
+          pip install -e ".[dev,bdc,netcdf,dissmodel]"
 
       # Coverage XML is produced but not uploaded anywhere yet.
       - name: Run tests with coverage
@@ -61,7 +61,8 @@ jobs:
 
   test-minimal:
     # Core install without optional extras: checks that tests depending on
-    # optional packages (fiona via disscube[bdc], fastapi via disscube[api])
+    # optional packages (fiona via disscube[bdc], h5py via disscube[netcdf], DisSModel via
+    # disscube[dissmodel])
     # are skipped, not failed.
     name: test (core install, no extras)
     runs-on: ubuntu-latest

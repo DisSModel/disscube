@@ -241,71 +241,28 @@ class ExportReport:
     grid_id: str
 
 
-def _save_geotiff_from_backend(backend, variables: list[str], grid: GridConfig, out_path: Path) -> None:
-    """Directly writes a multi-band GeoTIFF using rasterio from a RasterBackend instance,
+def _pipeline_attrs(pf: PipelineFile, name: str | None) -> dict[str, str]:
+    """File-level provenance for an export: which pipeline file (and content) made the cube."""
+    attrs = {"pipeline_file": pf.path.name, "pipeline_checksum": pf.checksum}
+    if name:
+        attrs["pipeline_name"] = name
+    return attrs
 
-    applying the territorial boundary mask and setting pixels outside Brazil to NaN.
+
+def _export(cube, variables: list[str], out_path: Path, grid_id: str, fmt: str | None = None,
+            attrs: dict[str, str] | None = None) -> None:
+    """Write ``variables`` to ``out_path``.
+
+    ``fmt`` (``"geotiff"`` or ``"netcdf"``) wins when the caller gives one; otherwise
+    a ``.nc`` suffix means netCDF and anything else GeoTIFF.
     """
-    import rasterio
-    from rasterio.transform import from_origin
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    crs = getattr(backend, "crs", None) or grid.crs
-    transform = getattr(backend, "transform", None)
-    shape = getattr(backend, "shape", None)
-
-    if transform is None or shape is None:
-        minx, miny, maxx, maxy = grid.bbox
-        res = grid.resolution
-        width = round((maxx - minx) / res)
-        height = round((maxy - miny) / res)
-        transform = from_origin(minx, maxy, res, res)
+    if fmt == "netcdf" or (fmt is None and out_path.suffix.lower() in (".nc", ".nc4", ".cdf")):
+        cube.export_netcdf(variables, out_path, grid_id=grid_id, attrs=attrs)
+        log.info("exported netCDF to %s (%d variables)", out_path, len(variables))
     else:
-        height, width = shape
+        cube.export_geotiff(variables, out_path, grid_id=grid_id, attrs=attrs)
+        log.info("exported GeoTIFF to %s (%d variables)", out_path, len(variables))
 
-    # 1. Recupera a máscara oficial do território brasileiro (se presente)
-    mask_arr = None
-    try:
-        raw_mask = backend.get("mask")
-        if raw_mask is not None:
-            # Considera célula ativa qualquer uma com fração de terra > 0
-            mask_arr = np.asarray(raw_mask, dtype=np.float64) > 0.0
-    except (KeyError, ValueError, LookupError) as exc:
-        log.debug("no 'mask' variable available for export: %s", exc)
-
-    # 2. Converte os pixels fora do Brasil para NaN
-    arrays = []
-    for var in variables:
-        arr = np.asarray(backend.get(var), dtype=np.float64).copy()
-        if mask_arr is not None:
-            if var == "mask":
-                arr = np.where(mask_arr, 1.0, np.nan)
-            else:
-                arr[~mask_arr] = np.nan  # Mar, cantos e exterior viram NaN
-        arrays.append(arr)
-
-    # 3. Grava o GeoTIFF declarando nodata=np.nan
-    with rasterio.open(
-        out_path,
-        "w",
-        driver="GTiff",
-        height=height,
-        width=width,
-        count=len(arrays),
-        dtype=arrays[0].dtype,
-        crs=crs,
-        transform=transform,
-        nodata=np.nan,
-        compress="deflate",
-    ) as dst:
-        dst.update_tags(
-            TIFFTAG_SOFTWARE="DisSCube 0.3.0",
-            GRID_ID=grid.name,
-            CONVENTIONS="CF-1.8",
-        )
-        for idx, (var, arr) in enumerate(zip(variables, arrays), start=1):
-            dst.write(arr, idx)
-            dst.set_band_description(idx, var)
 
 def resolve_workspace(p: Plan, workspace: str | Path | None = None) -> Path:
     """
@@ -377,11 +334,10 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
         if isinstance(export, ExportConfig) and export.variables:
             vars_to_export = export.variables
 
-        backend = cube.to_lucc_data(vars_to_export, grid_id=grid_id)
-        out_tif = Path(target_export)
-        _save_geotiff_from_backend(backend, vars_to_export, p.grid, out_tif)
-        report.exported = out_tif
-        log.info("exported GeoTIFF to %s (%d bands)", out_tif, len(vars_to_export))
+        out_path = Path(target_export)
+        fmt = export.format if isinstance(export, ExportConfig) and export_geotiff is None else None
+        _export(cube, vars_to_export, out_path, grid_id, fmt, _pipeline_attrs(pf, cfg.name))
+        report.exported = out_path
 
     record = {
         "pipeline": pipeline_info,
@@ -405,7 +361,7 @@ def export_cube(pipeline: PipelineFile | Plan | str | Path,
                 output: str | Path,
                 workspace: str | Path | None = None,
                 variables: list[str] | None = None) -> ExportReport:
-    """Export derived variables from an existing data cube workspace to a multi-band GeoTIFF."""
+    """Export derived variables from an existing data cube workspace (GeoTIFF, or netCDF for ``.nc`` outputs)."""
     from disscube import CubeClient
 
     p = pipeline if isinstance(pipeline, Plan) else plan(pipeline)
@@ -428,9 +384,7 @@ def export_cube(pipeline: PipelineFile | Plan | str | Path,
         raise PipelineError("no variables found to export (pass --variables or declare [[derive]] in pipeline)")
 
     out_path = Path(output)
-    backend = cube.to_lucc_data(target_vars, grid_id=grid_id)
-    _save_geotiff_from_backend(backend, target_vars, p.grid, out_path)
-    log.info("exported GeoTIFF to %s (%d bands)", out_path, len(target_vars))
+    _export(cube, target_vars, out_path, grid_id, attrs=_pipeline_attrs(p.file, cfg.name))
     return ExportReport(workspace=ws, output=out_path, variables=target_vars, grid_id=grid_id)
 
 

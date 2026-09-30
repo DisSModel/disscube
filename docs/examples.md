@@ -21,7 +21,7 @@ Examples 01–03 generate their own inputs locally, allowing every calculated nu
 |---|---|
 | [`01_quickstart.py`](https://github.com/DisSModel/disscube/blob/main/examples/01_quickstart.py) | Grid, raster sources and declarative derivations: `percentage`, `majority`, `mean`; loading results; cache hits via `spec_hash` |
 | [`02_vector_drivers.py`](https://github.com/DisSModel/disscube/blob/main/examples/02_vector_drivers.py) | Drivers from points, lines and polygons: `min_distance`, `count`, `presence`, `attribute`; several variables per derivation |
-| [`03_time_series.py`](https://github.com/DisSModel/disscube/blob/main/examples/03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` (including `period`) |
+| [`03_time_series.py`](https://github.com/DisSModel/disscube/blob/main/examples/03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_dataset()` and `to_raster_backend()` (including `period`) |
 
 ## Declarative Pipeline Files (TOML)
 
@@ -56,6 +56,6 @@ Real-world datasets, historical reproductions and large-scale case studies are m
 
 ## Scope
 
-DisSCube prepares data for models; it stops at `CubeClient.to_lucc_data()`.
+DisSCube prepares data for models; it stops at `CubeClient.to_dataset()` (or `to_raster_backend()` for DisSModel).
 Examples that run simulations with the prepared data (BR-MANGUE, LUCC) belong
 to the model repositories, where those dependencies live.
