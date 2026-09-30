@@ -133,7 +133,6 @@ disscube export examples/pipelines/quickstart.toml --output outputs/cellspace.ti
 | [`01_quickstart.py`](01_quickstart.py) | Grid, raster sources and declarative derivations: `percentage`, `majority`, `mean`; loading results; cache hits via `spec_hash` |
 | [`02_vector_drivers.py`](02_vector_drivers.py) | Drivers from vector layers: `min_distance`, `count`, `presence`, `attribute`; multiple variables per derivation |
 | [`03_time_series.py`](03_time_series.py) | Time-stamped sources, `(time, y, x)` loading, and the hand-off to DisSModel with `to_lucc_data()` |
-| [`09_prodes_deforestation.py`](09_prodes_deforestation.py) | PRODES deforestation in the BR-163 corridor (500 m BDC grid, `--offline` synthetic stand-in) |
 
 All examples are tested automatically on CI (`tests/test_examples.py`).
 

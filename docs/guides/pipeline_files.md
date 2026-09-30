@@ -178,6 +178,5 @@ file that declared it.
 | File | What it does | Needs |
 |---|---|---|
 | `examples/pipelines/quickstart.toml` | Quickstart: synthetic land-use & elevation (`percentage`, `majority`, `mean`) | nothing (offline) |
-| `examples/pipelines/lab15_prodes.toml` | PRODES deforestation (2008, 2016, 2024) in BR-163 / Lab15 | network |
 
 For full real-world case studies and TerraME parity benchmarks, see the [DisSCube Recipes](https://github.com/LambdaGeo/disscube-recipes) repository (`cases/terrame_fill`, `cases/ilha_maranhao`, `cases/prodes_br163`, `cases/luccme_br`).

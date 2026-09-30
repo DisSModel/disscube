@@ -153,7 +153,6 @@ See [`docs/guides/pipeline_files.md`](docs/guides/pipeline_files.md) and
 
 - **01–03, synthetic data** — a quickstart with raster operators, vector drivers, and time series handed off to DisSModel.
 - **quickstart.toml** — declarative pipeline equivalent to example 01.
-- **09, PRODES** — deforestation in the BR-163 corridor (south of Santarém, Pará) at the end of 2008, 2016 and 2024. Runs on a synthetic stand-in in `--offline` mode.
 
 ```bash
 python examples/01_quickstart.py
