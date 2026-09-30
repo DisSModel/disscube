@@ -14,7 +14,6 @@ toml
 rioxarray
 affine
 pooch>=1.8.0
-dissmodel>=0.6.0,<0.7.0
 
 # Optional: BDC
 fiona
@@ -22,6 +21,13 @@ pystac-client
 
 # Optional: S3
 s3fs
+
+# Optional: netCDF export
+h5netcdf
+h5py
+
+# Optional: DisSModel hand-off (to_raster_backend)
+dissmodel>=0.6.0,<0.7.0
 
 # Optional: API
 fastapi

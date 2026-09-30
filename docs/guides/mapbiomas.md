@@ -28,7 +28,7 @@ for year in (2000, 2020):
 ```
 
 Each year becomes a source with `time=year`, so derivations from several years
-load as a `(time, y, x)` series and go to DisSModel with `to_lucc_data()`:
+load as a `(time, y, x)` series and go to DisSModel with `to_raster_backend()` (`pip install "disscube[dissmodel]"`):
 
 ```python
 from disscube import Derivation
@@ -39,7 +39,7 @@ for year in (2000, 2020):
     cube.derive_declarative(Derivation(target="urban_pct", source_id=f"lulc_{year}",
                                        operator="percentage", class_code=24), grid_id=grid.id)
 
-backend = cube.to_lucc_data(["landuse", "urban_pct"], grid_id=grid.id)
+backend = cube.to_raster_backend(["landuse", "urban_pct"], grid_id=grid.id)
 ```
 
 ## Code 0 is nodata

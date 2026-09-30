@@ -4,7 +4,7 @@ Experimental HTTP API for DisSCube.
 Scope: remote *orchestration* of the catalog — register grids and sources,
 trigger derivations, and query what has been derived. It does **not** serve
 raster data: models read derived variables in-process through
-``CubeClient.load()`` / ``CubeClient.to_lucc_data()``, from the same Zarr
+``CubeClient.load()`` / ``CubeClient.to_dataset()``, from the same Zarr
 store (local or S3 via fsspec) that the API writes to.
 
 Requires the optional ``api`` extra::

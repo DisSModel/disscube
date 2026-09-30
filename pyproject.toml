@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "disscube"
-version = "0.3.0"
-description = "Declarative Spatial Layer for Dynamic Models"
+version = "0.4.0"
+description = "Declarative spatial data cubes: describe sources, grid and derived variables in TOML; get a cataloged, reproducible cube."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -46,7 +46,6 @@ dependencies = [
     "rioxarray",
     "affine",
     "pooch>=1.8.0",
-    "dissmodel>=0.6.0,<0.7.0",
 ]
 
 [project.scripts]
@@ -67,6 +66,13 @@ bdc = [
 ]
 s3 = [
     "s3fs",
+]
+netcdf = [                  # CubeClient.export_netcdf()
+    "h5netcdf",
+    "h5py",
+]
+dissmodel = [               # CubeClient.to_raster_backend(): hand-off to DisSModel models
+    "dissmodel>=0.6.0,<0.7.0",
 ]
 docs = [                    # documentation site (mkdocs.yml, .github/workflows/docs.yml)
     "mkdocs>=1.6,<2",       # MkDocs 2.0 drops the plugin/theme system Material relies on
@@ -130,6 +136,9 @@ module = [
     "fiona.*",             # optional [bdc] extra
     "pystac_client.*",     # optional [bdc] extra
     "s3fs.*",              # optional [s3] extra
+    "h5netcdf.*",          # optional [netcdf] extra
+    "h5py.*",              # optional [netcdf] extra
+    "netCDF4.*",           # optional netCDF backend (export_netcdf)
     "fastapi.*",           # optional [api] extra
     "uvicorn.*",           # optional [api] extra
 ]

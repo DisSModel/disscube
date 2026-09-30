@@ -100,15 +100,18 @@ da = cube.load("forest_pct", grid_id="AC/5km")
 print(da.shape)   # (rows, cols)
 ```
 
-### 6. Hand off to DisSModel
+### 6. Get the cube out
 
 ```python
-backend = cube.to_lucc_data(
-    ["forest_pct", "dist_roads"],
-    grid_id="AC/5km",
-    period=("2015", "2020"),
-)
+ds = cube.to_dataset(["forest_pct", "dist_roads"], grid_id="AC/5km", period=("2015", "2020"))
+# xarray.Dataset: (y, x) static and (time, y, x) temporal variables, CRS and transform via ds.rio
+
+cube.export_geotiff(["forest_pct"], "forest.tif", grid_id="AC/5km")   # one band per variable and year
+cube.export_netcdf(["forest_pct"], "cube.nc", grid_id="AC/5km")       # CF-1.8; pip install "disscube[netcdf]"
 ```
+
+DisSCube does not need DisSModel. To hand a cube to a DisSModel model, install
+`disscube[dissmodel]` and use `cube.to_raster_backend(...)`, which returns a `RasterBackend`.
 
 ## Pipeline files (TOML)
 
@@ -280,7 +283,7 @@ DISSCUBE_CATALOG=./catalog.db DISSCUBE_STORE=./data/ uvicorn disscube.api.app:ap
 | `GET /catalog?grid=&role=` | List derived variables |
 | `GET /variables/{id}` | Metadata of one derived variable, including its Zarr `asset_url` |
 
-The API does **not** serve raster data. Models load derived variables in-process with `CubeClient.load()` / `CubeClient.to_lucc_data()`, reading the same Zarr store (local, or S3 via fsspec) that the API writes to. Interactive docs are available at `/docs` once the server is running.
+The API does **not** serve raster data. Models load derived variables in-process with `CubeClient.load()` / `CubeClient.to_dataset()`, reading the same Zarr store (local, or S3 via fsspec) that the API writes to. Interactive docs are available at `/docs` once the server is running.
 
 ## Known limitations
 
@@ -311,9 +314,9 @@ If you use DisSCube in your research, dynamic modeling, or spatial data pipeline
 ```bibtex
 @software{costa_disscube_2026,
   author       = {Costa, S{\'e}rgio Souza},
-  title        = {{DisSCube: Declarative Spatial Layer for Dynamic Models}},
+  title        = {{DisSCube: Declarative spatial data cubes}},
   year         = {2026},
-  version      = {0.3.0},
+  version      = {0.4.0},
   url          = {https://github.com/DisSModel/disscube}
 }
 ```

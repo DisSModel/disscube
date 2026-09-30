@@ -29,14 +29,14 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("file")
     p_run.add_argument("--workspace", help="output folder (default: the file's 'workspace', "
                                            "else a folder named after the file)")
-    p_run.add_argument("--output", "-o", help="export derived variables to a multi-band GeoTIFF")
+    p_run.add_argument("--output", "-o", help="export derived variables (GeoTIFF; netCDF if the file ends in .nc)")
     p_run.add_argument("--dry-run", action="store_true", help="simulate plan execution without downloading or computing")
     p_run.add_argument("--json", action="store_true", help="output execution report as JSON")
     p_run.add_argument("-v", "--verbose", action="store_true", help="log each step")
 
-    p_exp = sub.add_parser("export", help="export derived variables from an existing data cube to GeoTIFF")
+    p_exp = sub.add_parser("export", help="export derived variables from an existing data cube to GeoTIFF or netCDF")
     p_exp.add_argument("file", help="pipeline TOML file")
-    p_exp.add_argument("--output", "-o", required=True, help="output GeoTIFF file path (e.g. data/cellspace.tif)")
+    p_exp.add_argument("--output", "-o", required=True, help="output file: GeoTIFF, or netCDF if it ends in .nc (e.g. data/cellspace.tif)")
     p_exp.add_argument("--workspace", help="workspace folder (default: data/cube or from pipeline)")
     p_exp.add_argument("--variables", nargs="*", help="specific variables to export (default: all derived)")
     p_exp.add_argument("--json", action="store_true", help="output export result as JSON")
