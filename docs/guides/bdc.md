@@ -89,7 +89,7 @@ or scale) produces a new file, a new checksum and a new product, while
 re-fetching the same data is a cache hit. For a layer computed from several
 assets — an index such as MNDWI — build the `Window2D` yourself and call
 `disscube.sources.register_raster(cube, source_id, window, out_dir, provenance)`; see
-`examples/07_bdc_cube.py`.
+the `ilha_maranhao` case study in the recipes repository (`cases/ilha_maranhao`).
 
 What the reader does for you:
 

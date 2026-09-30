@@ -8,14 +8,14 @@ before anything is downloaded, and recorded in the provenance of every
 product.
 
 ```bash
-disscube validate examples/pipelines/itaituba_fill.toml    # check the file, no downloads
-disscube run      examples/pipelines/itaituba_fill.toml --workspace outputs/itaituba
+disscube validate examples/pipelines/quickstart.toml    # check the file, no downloads
+disscube run      examples/pipelines/quickstart.toml --workspace outputs/quickstart
 ```
 
 ## From `fill` to `[[derive]]`
 
-TerraME's Fill tutorial (`examples/data/terrame/itaituba/itaituba.lua`) and
-its pipeline file (`examples/pipelines/itaituba_fill.toml`), side by side:
+TerraME's Fill tutorial (see `cases/terrame_fill` in the recipes repository) and
+its DisSCube pipeline representation, side by side:
 
 ```lua
 -- TerraME
@@ -177,10 +177,7 @@ file that declared it.
 
 | File | What it does | Needs |
 |---|---|---|
-| `examples/pipelines/itaituba_fill.toml` | TerraME's Fill tutorial | nothing (bundled data) |
-| `examples/pipelines/ilha_bdc.toml` | example 07: BDC NDVI and MNDWI | network, `.[bdc]` |
-| `examples/pipelines/ilha_mapbiomas.toml` | example 08: MapBiomas 2000 and 2020 | network |
-| `examples/pipelines/lab15_prodes.toml` | example 09: PRODES 2008, 2016, 2024 | network |
+| `examples/pipelines/quickstart.toml` | Quickstart: synthetic land-use & elevation (`percentage`, `majority`, `mean`) | nothing (offline) |
+| `examples/pipelines/lab15_prodes.toml` | PRODES deforestation (2008, 2016, 2024) in BR-163 / Lab15 | network |
 
-All of them are validated by the test suite; the Itaituba one is also run and
-compared with the same derivations made through the Python API.
+For full real-world case studies and TerraME parity benchmarks, see the [DisSCube Recipes](https://github.com/LambdaGeo/disscube-recipes) repository (`cases/terrame_fill`, `cases/ilha_maranhao`, `cases/prodes_br163`, `cases/luccme_br`).
