@@ -125,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
                 "record": str(report.record),
             }, indent=2, default=str))
             return 0
-    except PipelineError as exc:
+    except (PipelineError, ImportError) as exc:  # ImportError: a missing optional extra names itself
         if is_json:
             import json
             print(json.dumps({"status": "error", "error": str(exc)}, indent=2), file=sys.stderr)

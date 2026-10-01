@@ -216,3 +216,14 @@ def test_pipeline_export_records_the_pipeline_and_source_checksums(tmp_path):
         assert tags["PIPELINE_CHECKSUM"].startswith("sha256:")
         assert src.tags(1)["SOURCE_CHECKSUM"].startswith("sha256:")
         assert len(src.tags(1)["CONTENT_HASH"]) >= 32
+
+
+def test_cli_reports_a_missing_netcdf_backend_without_a_traceback(tmp_path, monkeypatch, capsys):
+    from disscube.cli import main as cli
+
+    for name in ("h5netcdf", "h5py", "netCDF4"):
+        monkeypatch.setitem(sys.modules, name, None)
+    code = cli(["run", str(QUICKSTART), "--workspace", str(tmp_path / "ws"), "-o", str(tmp_path / "q.nc")])
+    err = capsys.readouterr().err
+    assert code == 2
+    assert err.startswith("error:") and "disscube[netcdf]" in err and "Traceback" not in err
