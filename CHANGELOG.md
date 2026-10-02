@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`type = "osm"` source**: ways from OpenStreetMap through the Overpass API, clipped to the grid
+  plus a `margin`, registered as a vector source with checksum and provenance (request, server,
+  time retrieved, `timestamp_osm_base`, ODbL). The answer is cached by request, so a pipeline reads
+  the same data (and gets the same `spec_hash`) on every run; `date` asks for an older snapshot
+  (`date = "{year}-07-01"` with `years`); several public servers are tried with retries; HTTP 406
+  points to `OSM_CONTACT`. Replaces the OpenStreetMap download script of the Lab15 reconstruction.
+
+## [0.4.0] - 2026-09-30
+
 ### Changed
 - **DisSModel is now optional.** DisSCube no longer depends on it: install
   `disscube[dissmodel]` only to hand a cube to a model. `CubeClient.to_lucc_data()`

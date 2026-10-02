@@ -71,7 +71,7 @@ resolution = 300
 
 [[source]]                    # one block per source; see the types below
 id = "…"
-type = "file" | "bdc" | "mapbiomas" | "prodes" | "classified" | "union"
+type = "file" | "bdc" | "mapbiomas" | "prodes" | "classified" | "osm" | "union"
 
 [[derive]]                    # one block per derived variable
 target = "urban_pct"
@@ -97,6 +97,7 @@ relative to the pipeline file, so a folder with its TOML and data is portable.
 | `mapbiomas` | `year`, `collection` (11), `resolution` (30), `url` | `disscube.sources.mapbiomas` |
 | `prodes` | `year`, `url`, `cache` | `disscube.sources.prodes` |
 | `classified` | `path`, `legend` (table or `.qml`/`.json`/`.csv` file), `time`, `nodata`, `producer` | `disscube.sources.classified` |
+| `osm` | `query`, `margin`, `date`, `endpoints`, `cache`, `time` (see [OpenStreetMap](osm.md)) | `disscube.sources.osm` |
 | `union` | `of` (ids of vector sources declared before it) | their features in one GeoPackage under `raw/` |
 
 Every source block also accepts `name` and `years`.
