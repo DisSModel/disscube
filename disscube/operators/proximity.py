@@ -70,8 +70,10 @@ class DistanceOperator(Operator):
     geometry, and the source is not clipped to the grid, so features outside
     it — a town 50 km away, a road beyond the edge — count. Distances are in
     the grid CRS units (degrees on a geographic grid), measured from cell
-    centres; TerraME's ``distance`` fill measures from the cell polygon, so
-    it is smaller by up to half a cell diagonal.
+    centres. TerraME 2.0.1's ``distance`` fill measures from the cell centre to
+    the nearest *vertex* of the feature: identical to this for points, and
+    larger for lines wherever a line passes between vertices (this measures to
+    the segment).
 
     With ``params = {"crs": ...}`` the cell centres and the features are
     projected to that CRS and the distance is measured there — metres on a

@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`date = "{year}-07-01"` with `years`); several public servers are tried with retries; HTTP 406
   points to `OSM_CONTACT`. Replaces the OpenStreetMap download script of the Lab15 reconstruction.
 
+### Changed
+- **TerraME parity documented against the TerraME 2.0.1 goldens** (`LambdaGeo/luccme-goldens`)
+  instead of an earlier reference of unrecorded provenance. TerraME 2.0.1 divides coverage by the
+  valid pixels, so `percentage` matches it with no `coverage_purity` correction (Itaituba max 0.0064,
+  Amazônia identical), and it measures distance from the cell centre to the nearest *vertex*:
+  `distance` is identical for points and smaller for lines where a line passes between vertices.
+  The notes saying TerraME measures from the cell polygon and divides by the whole cell were removed,
+  and so was the "half a cell diagonal" remark in the `DistanceOperator` docstring.
+
 ## [0.4.0] - 2026-09-30
 
 ### Changed
