@@ -51,6 +51,7 @@ operator = "min_distance"
 | `distance` | `distance` (exact, from the cell centre) or `min_distance` (raster approximation) |
 | `area` | `area` (share of the cell covered by polygons) |
 | `presence`, `count`, `sum`, `minimum`, `maximum`, `stdev` | `presence`, `count`, `sum`, `min`, `max`, `std` |
+| `sum` with `area = true` | `sum` with `params = {area = true}` |
 
 How faithful each operator is to TerraME — and what is not supported yet — is
 measured in [TerraME Fill Cells Correspondence](../terrame_fill_correspondence.md).
@@ -145,7 +146,10 @@ of = ["state_paved", "federal_paved"]
 | Operator | `params` | Meaning |
 |---|---|---|
 | `distance` | `crs` | measure in this CRS — e.g. a projected one, for metres on a geographic grid |
-| `percentage`, `majority`, `minority`, `std` | `subcells` | at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90) |
+| `percentage`, `majority`, `minority`, `std`, `median` | `subcells` | at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90) |
+| `sum` | `area` | vector polygons: share the value in proportion to the intersected area (default `false`) |
+| `sum` | `column` | vector: numeric column to sum (default: the target name) |
+| `std` | `ddof` | `0` (default, population) or `1` (sample standard deviation) |
 
 An unknown key fails the plan. `fill = "nearest"` gives the cells an
 operator leaves without a value (NaN — e.g. a coastal cell a raster does not

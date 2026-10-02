@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`sum` over vector sources**, with `params = {area = true}` for areal weighting: each polygon's
+  attribute (e.g. census population) is shared among the cells in proportion to the intersected
+  area, conserving the total. Reproduces TerraME's `sum` with `area = true` on Itaituba in all 620
+  cells (max error 4×10⁻⁷). Without `area`, every feature adds its whole value to each cell it
+  touches (a point to its own cell). `params = {column = …}` picks the column (default: the target
+  name). Vector sources are no longer clipped to the grid for `sum`, so a polygon crossing the border
+  keeps its full denominator.
+- **`median` operator**: per-cell median of the valid pixels, from the fine-aligned source.
+- **`std` `ddof` param** (`0` default, `1` for the sample estimate). The default is unchanged, so
+  existing `spec_hash`es hold.
 - **`type = "dem"` source**: elevation, or slope in degrees or percent, from SRTM, Copernicus GLO-30
   or TOPODATA (or your own `tiles`), read over the grid plus a `margin` and registered as a raster
   source with checksum and provenance. The slope is computed on a metric (UTM) grid by central

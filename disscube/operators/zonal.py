@@ -192,6 +192,7 @@ def _continuous_reduce(
     nodata: float | None,
     grid: GridSpec,
     stat: str,
+    ddof: int = 0,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Reduce a fine continuous array into the target grid by real windows.
@@ -208,8 +209,11 @@ def _continuous_reduce(
         Sentinel marking invalid fine pixels.
     grid : GridSpec
         Target grid.
-    stat : {"std", "mean", "sum", "min", "max"}
+    stat : {"std", "mean", "sum", "min", "max", "median"}
         Statistic to compute per target cell over valid pixels.
+    ddof : int
+        Delta degrees of freedom for ``std`` (0 = population, 1 = sample). A
+        cell with ``n_valid <= ddof`` valid pixels gets NaN.
 
     Returns
     -------
@@ -244,7 +248,10 @@ def _continuous_reduce(
                 continue
             vals = block[mask]
             if stat == "std":
-                value[ti, tj] = float(np.std(vals))
+                if n_valid > ddof:
+                    value[ti, tj] = float(np.std(vals, ddof=ddof))
+            elif stat == "median":
+                value[ti, tj] = float(np.median(vals))
             elif stat == "mean":
                 value[ti, tj] = float(np.mean(vals))
             elif stat == "sum":
@@ -272,13 +279,107 @@ class MeanOperator(Operator):
 
 
 class SumOperator(Operator):
+    """
+    Sum per cell.
+
+    *Raster source*: the sum of the pixels in the cell.
+
+    *Vector source* (TerraME's ``sum``): the numeric column named like the
+    target (or ``params = {column = ...}``) is summed over the features that
+    reach each cell.
+
+    - ``area = false`` (default): every feature adds its whole value to each
+      cell it touches (points: to the cell containing them).
+    - ``area = true``: areal weighting for polygons — each cell receives
+      ``value × area(cell ∩ polygon) / area(polygon)``, so the total is
+      conserved (census counts, herds, GDP). Polygon area is measured in the
+      grid CRS; use a projected grid for exact ratios. The source is not
+      clipped to the grid, so a polygon crossing the border keeps its full
+      denominator and only the part inside the grid is distributed.
+    """
+
     name = "sum"
     _resampling = Resampling.sum
+    clip_to_grid = False   # area weighting needs the whole polygon; rasters are unaffected
+    params: ClassVar[dict[str, str]] = {
+        "area": "vector polygons: distribute the value in proportion to the intersected area (default false)",
+        "column": "vector: numeric column to sum (default: the target name)",
+    }
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             return _passthrough(data)
-        raise TypeError(f"'sum' requires a raster source, got {type(data).__name__}")
+        if isinstance(data, gpd.GeoDataFrame):
+            return _wrap(_vector_sum(data, var, grid), grid)
+        raise TypeError(f"'sum' got unexpected type {type(data).__name__}")
+
+
+def _vector_sum(data: gpd.GeoDataFrame, var: Variable, grid: GridSpec) -> np.ndarray:
+    import shapely
+
+    column = var.params.get("column", var.name)
+    if column not in data.columns:
+        raise ValueError(f"'sum' needs a numeric column {column!r} in the vector source; it has {sorted(data.columns)}")
+    area = bool(var.params.get("area", False))
+    values = np.asarray(data[column], dtype=np.float64)
+    ok = data.geometry.notna().to_numpy() & ~data.geometry.is_empty.to_numpy() & np.isfinite(values)
+    geoms = shapely.make_valid(np.asarray(data.geometry.values[ok], dtype=object))
+    values = values[ok]
+    res = grid.resolution
+    total = np.zeros(grid.rows * grid.cols)
+    kinds = shapely.get_type_id(geoms)
+
+    if area:
+        # Only polygons have an area to share; ignoring others silently would lose mass.
+        if np.any(~np.isin(kinds, (3, 6))):
+            raise ValueError("'sum' with area = true needs polygon features only")
+        areas = shapely.area(geoms)
+        keep = areas > 0
+        geoms, values, areas = geoms[keep], values[keep], areas[keep]
+        pieces, owner = [], []
+        for k, g in enumerate(geoms):
+            for part in shapely.get_parts(g):
+                for q in _quarters(part, res):
+                    pieces.append(q)
+                    owner.append(k)
+        if not pieces:
+            return total.reshape(grid.rows, grid.cols)
+        pieces_arr = np.empty(len(pieces), dtype=object)
+        pieces_arr[:] = pieces
+        owner_arr = np.asarray(owner)
+        cells = _cell_boxes(grid)
+        tree = shapely.STRtree(cells)
+        piece_idx, cell_idx = tree.query(pieces_arr, predicate="intersects")
+        inter = shapely.area(shapely.intersection(pieces_arr[piece_idx], cells[cell_idx]))
+        k = owner_arr[piece_idx]
+        total += np.bincount(cell_idx, weights=values[k] * inter / areas[k], minlength=total.size)
+        return total.reshape(grid.rows, grid.cols)
+
+    # area = false: whole value to every cell reached
+    is_point = kinds == 0
+    if is_point.any():
+        px, py = shapely.get_x(geoms[is_point]), shapely.get_y(geoms[is_point])
+        col = np.floor((px - grid.bbox[0]) / res).astype(int)
+        row = np.floor((grid.bbox[3] - py) / res).astype(int)
+        inb = (col >= 0) & (col < grid.cols) & (row >= 0) & (row < grid.rows)
+        total += np.bincount(row[inb] * grid.cols + col[inb], weights=values[is_point][inb], minlength=total.size)
+    rest = ~is_point
+    if rest.any():
+        cells = _cell_boxes(grid)
+        tree = shapely.STRtree(cells)
+        g_idx, cell_idx = tree.query(geoms[rest], predicate="intersects")
+        total += np.bincount(cell_idx, weights=values[rest][g_idx], minlength=total.size)
+    return total.reshape(grid.rows, grid.cols)
+
+
+def _cell_boxes(grid: GridSpec) -> np.ndarray:
+    """The grid cells as boxes, row-major (index = row * cols + col)."""
+    import shapely
+
+    res = grid.resolution
+    xmin, ymax = np.meshgrid(grid.bbox[0] + np.arange(grid.cols) * res,
+                             grid.bbox[3] - np.arange(grid.rows) * res)
+    return shapely.box(xmin.ravel(), (ymax - res).ravel(), (xmin + res).ravel(), ymax.ravel())
 
 
 class StdOperator(Operator):
@@ -287,15 +388,42 @@ class StdOperator(Operator):
     # real per-cell window pass, so this operator uses fine alignment.
     _resampling = Resampling.nearest
     needs_fine_alignment = True
+    params: ClassVar[dict[str, str]] = {
+        "subcells": "at most this many fine pixels per cell along each axis (memory bound)",
+        "ddof": "delta degrees of freedom: 0 (default, population) or 1 (sample standard deviation)",
+    }
+
+    def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
+        if isinstance(data, xr.DataArray):
+            ddof = var.params.get("ddof", 0)
+            if ddof not in (0, 1):
+                raise ValueError(f"'std' param ddof must be 0 or 1, got {ddof!r}")
+            fine, nodata = _fine_array(data)
+            value, cov = _continuous_reduce(fine, nodata, grid, "std", ddof=ddof)
+            da = xr.DataArray(value, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
+            return da.assign_coords(coverage_purity=(("y", "x"), cov))
+        raise TypeError(f"'std' requires a raster source, got {type(data).__name__}")
+
+
+class MedianOperator(Operator):
+    """
+    Median of the valid pixels in each cell (robust to outliers and unmasked
+    clouds). Like ``std`` it needs the sub-cell pixels, so the source is
+    aligned to a fine grid first: the median of per-cell means would not be the
+    median of the pixels.
+    """
+    name = "median"
+    _resampling = Resampling.nearest
+    needs_fine_alignment = True
     params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             fine, nodata = _fine_array(data)
-            value, cov = _continuous_reduce(fine, nodata, grid, "std")
+            value, cov = _continuous_reduce(fine, nodata, grid, "median")
             da = xr.DataArray(value, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
             return da.assign_coords(coverage_purity=(("y", "x"), cov))
-        raise TypeError(f"'std' requires a raster source, got {type(data).__name__}")
+        raise TypeError(f"'median' requires a raster source, got {type(data).__name__}")
 
 
 class MinOperator(Operator):

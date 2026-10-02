@@ -53,10 +53,12 @@ and the parity cases in the recipes repository (`cases/terrame_fill`).
 | `distance` | `min_distance` | **approximation — semantics differ** | Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so `min_distance` overestimates it by up to about one cell (see the benchmarks). |
 | `average` / `mean` | `mean` | implemented; **parity verified** | Mean value per cell (continuous, area-weighted resampling). |
 | `sum` (raster) | `sum` | implemented | Sum per cell (continuous). |
-| `sum` with `area = true` (polygons) | — | **not implemented** | Distributes a polygon attribute (e.g. census population) over cells in proportion to the intersected area. `sum` accepts raster sources only. |
+| `sum` (vector, `area = false`) | `sum` | implemented | Adds the numeric column named like the target (or `params = {column = …}`) over the features that reach each cell: a point to the cell containing it, any other geometry to every cell it touches. |
+| `sum` with `area = true` (polygons) | `sum`, `params = {area = true}` | implemented; **parity verified** (Itaituba) | Distributes a polygon attribute (e.g. census population) over cells in proportion to the intersected area, so the total is conserved. Reproduces TerraME's `population` within 4×10⁻⁷ in all 620 cells. Polygons are not clipped to the grid: one that crosses the border distributes only its inside share. |
 | `minimum` | `min` | implemented; parity measured (Emas) | Minimum per cell. Matches TerraME in 99.0 % of cells: pixels that straddle a cell border count for both cells, while TerraME assigns each pixel to the cell containing its centre. |
 | `maximum` | `max` | implemented; parity measured (Emas) | Maximum per cell. Matches TerraME in 98.7 % of cells, for the same reason as `min`. |
-| `stdev` / `standardDeviation` | `std` | implemented (window-based) | True per-cell standard deviation over valid pixels. |
+| `stdev` / `standardDeviation` | `std` | implemented (window-based) | True per-cell standard deviation over valid pixels. Population (`ddof = 0`) by default; `params = {ddof = 1}` gives the sample estimate (NaN for a cell with a single valid pixel). |
+| `median` | `median` | implemented (window-based) | Median of the valid pixels per cell; not a TerraME fill strategy, offered for outlier-robust aggregation. |
 | `attribute` (value copy) | `attribute` | implemented (vector) | Rasterize a numeric vector column whose name matches the variable. |
 
 "Parity verified" means the operator reproduces TerraME's own output cell by
@@ -114,7 +116,7 @@ compared in percent (DisSCube fraction × 100).
 | `defor_255` | `percentage × coverage_purity` | 0.001 pp | 0.02 pp | **100 %** within 1 pp |
 | `distroad` — `distance` (lines) | `min_distance` | 1 782 m | 5 891 m | biased +1 782 m (r = 0.983) |
 | `distlocal` — `distance` (points) | `min_distance` | 2 499 m | 6 871 m | biased +2 497 m (r = 0.986) |
-| `population` — `sum`, `area = true` | — | — | — | not supported |
+| `population` — `sum`, `area = true` | `sum`, `area = true` | 0.000 | 0.000 (4×10⁻⁷) | **100 %** within 0.01; total 60 693 conserved |
 
 **Reading the results.**
 

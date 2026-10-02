@@ -49,12 +49,15 @@ These operators receive a high-resolution array snapped to the target grid origi
 
 | Operator | Raster | Vector | `requires_class_code` |
 |---|---|---|---|
-| `std` | true per-cell standard deviation | — | no |
+| `std` | true per-cell standard deviation (`ddof` 0 or 1) | — | no |
+| `median` | median of the valid pixels | — | no |
 | `majority` | dominant class by count | rasterizes with `class_code` (or 1) | no |
 | `minority` | least-frequent class by count | rasterizes with `class_code` (or 1) | no |
 | `percentage` | fraction of pixels of the target class | rasterizes with `class_code` | **yes** |
 
-Each accepts `params = {"subcells": n}`, a cap on the fine pixels per cell
+`sum` also accepts a vector source: `params = {area = true}` shares each polygon's value among the cells in proportion to the intersected area (total conserved); without it every feature adds its whole value to each cell it touches. The column is the one named like the target, or `params = {column = "…"}`.
+
+Each of the operators above accepts `params = {"subcells": n}`, a cap on the fine pixels per cell
 along each axis (see `GridAligner._align_fine`).
 
 The last three also produce `coverage_purity` and `dominance_purity` as coordinates of the output `DataArray` (persisted in the Zarr alongside the variable).

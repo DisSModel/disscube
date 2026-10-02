@@ -180,6 +180,7 @@ for how DisSCube's operators relate to TerraME's *Fill*.
 | `mean` | zonal | average | no |
 | `sum` | zonal | sum | no |
 | `std` | zonal | nearest | no |
+| `median` | zonal | nearest¹ | no |
 | `min` | zonal | min | no |
 | `max` | zonal | max | no |
 | `majority` | zonal | nearest¹ | no |
