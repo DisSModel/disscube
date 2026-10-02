@@ -908,6 +908,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../osm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenStreetMap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elevation and slope (DEM)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../grids/" class="md-nav__link">
         
   
@@ -1166,7 +1222,7 @@ measured in <a href="../../terrame_fill_correspondence/">TerraME Fill Cells Corr
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">[[source]]</span><span class="w">                    </span><span class="c1"># one block per source; see the types below</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"…"</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"bdc"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"mapbiomas"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"prodes"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"classified"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"union"</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"bdc"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"mapbiomas"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"prodes"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"classified"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"osm"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"dem"</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">"union"</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
 <a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">[[derive]]</span><span class="w">                    </span><span class="c1"># one block per derived variable</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"urban_pct"</span>
@@ -1215,6 +1271,16 @@ relative to the pipeline file, so a folder with its TOML and data is portable.</
 <td><code>classified</code></td>
 <td><code>path</code>, <code>legend</code> (table or <code>.qml</code>/<code>.json</code>/<code>.csv</code> file), <code>time</code>, <code>nodata</code>, <code>producer</code></td>
 <td><code>disscube.sources.classified</code></td>
+</tr>
+<tr>
+<td><code>osm</code></td>
+<td><code>query</code>, <code>margin</code>, <code>date</code>, <code>endpoints</code>, <code>cache</code>, <code>time</code> (see <a href="../osm/">OpenStreetMap</a>)</td>
+<td><code>disscube.sources.osm</code></td>
+</tr>
+<tr>
+<td><code>dem</code></td>
+<td><code>dem</code> or <code>tiles</code>, <code>product</code>, <code>margin</code>, <code>resolution</code>, <code>cache</code> (see <a href="../dem/">Elevation and slope</a>)</td>
+<td><code>disscube.sources.dem</code></td>
 </tr>
 <tr>
 <td><code>union</code></td>
