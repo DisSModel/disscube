@@ -18,11 +18,13 @@ from pydantic import ValidationError
 from disscube.pipeline.schema import (
     BdcSource,
     ClassifiedSource,
+    DemSource,
     DeriveConfig,
     ExportConfig,
     FileSource,
     GridConfig,
     MapbiomasSource,
+    OsmSource,
     PipelineConfig,
     ProdesSource,
     UnionSource,
@@ -56,7 +58,7 @@ class PipelineFile:
 @dataclass
 class PlannedSource:
     id: str
-    config: FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | UnionSource
+    config: FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | OsmSource | DemSource | UnionSource
     year: int | None = None
 
 
@@ -412,7 +414,7 @@ def _register_source(
 ):
     c = s.config
     # ── Validação defensiva: apenas fontes dinâmicas em janela na nuvem precisam de bbox_geo ──
-    if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource)):
+    if isinstance(c, (BdcSource, MapbiomasSource, ProdesSource, ClassifiedSource, OsmSource, DemSource)):
         if bbox_geo is None:
             raise PipelineError(
                 f"source {c.id!r} ({c.type}): windowed cloud sources require an"
@@ -448,6 +450,29 @@ def _register_source(
                 files=files,
                 name=c.name,
             )
+        if isinstance(c, OsmSource):
+            from disscube.sources import osm
+
+            try:
+                return osm.register_osm_source(
+                    cube, c.id, c.query, bbox_geo, raw, margin=c.margin, date=c.date,
+                    endpoints=c.endpoints, cache=(base / c.cache) if c.cache else None,
+                    time=c.time, name=c.name,
+                )
+            except (osm.OsmError, ValueError) as exc:
+                raise PipelineError(f"source {c.id!r}: {exc}") from None
+        if isinstance(c, DemSource):
+            from disscube.sources import dem
+
+            try:
+                return dem.register_dem_source(
+                    cube, c.id, bbox_geo, raw, dem=c.dem,
+                    tiles=[_resolve(base, t) for t in c.tiles] if c.tiles else None,
+                    product=c.product, margin=c.margin, resolution=c.resolution,
+                    cache=(base / c.cache) if c.cache else None, name=c.name,
+                )
+            except (dem.DemError, ValueError) as exc:
+                raise PipelineError(f"source {c.id!r}: {exc}") from None
         if isinstance(c, ClassifiedSource):
             from disscube.sources.classified import register_classified_map
 

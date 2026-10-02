@@ -246,6 +246,8 @@ disscube/
 │   ├── _categorical.py  legends (.qml/.json/.csv) and reclassification
 │   ├── mapbiomas.py  MapBiomas annual land-cover maps (Collection 11, 10 m series)
 │   ├── prodes.py     PRODES deforestation (download + cache, legend from the .qml)
+│   ├── osm.py        OpenStreetMap ways via Overpass (cached, with date snapshots)
+│   ├── dem.py        Elevation and slope from SRTM, Copernicus GLO-30 or TOPODATA
 │   └── classified.py any classified map with its legend, e.g. from SITS
 └── utils.py          Checksums (sha256_file) and BDC tile importer (import_bdc_grids)
 ```

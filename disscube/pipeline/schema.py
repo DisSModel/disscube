@@ -131,6 +131,49 @@ class ClassifiedSource(_SourceBase):
     producer: str | None = None
 
 
+class OsmSource(_SourceBase):
+    """Ways from OpenStreetMap (Overpass), clipped to the grid plus ``margin``.
+
+    ``query`` holds Overpass statements without the bounding box (``way["highway"]["ref"~"BR-163"]``),
+    separated by ``;`` or given as a list. ``margin`` is in degrees: a ``distance`` needs
+    features beyond the grid, a ``count`` does not. ``date`` asks for the map as it was on
+    that day; with ``years``, ``date = "{year}-07-01"`` gives one snapshot per year. The answer
+    is cached, so a pipeline reads the same data until the cache is cleared. Set ``OSM_CONTACT``.
+    """
+
+    type: Literal["osm"]
+    query: str | list[str]
+    margin: float = Field(default=0.0, ge=0)
+    date: str | None = None
+    endpoints: list[str] | None = None
+    cache: str | None = None
+    time: int | None = None
+
+
+class DemSource(_SourceBase):
+    """Elevation or slope from a DEM (SRTM, Copernicus GLO-30, TOPODATA), over the grid plus ``margin``.
+
+    Give ``dem`` to download one, or ``tiles`` (GeoTIFFs, paths relative to the pipeline file or URLs
+    GDAL can read) to use your own. ``product`` is ``elevation`` (m), ``slope_deg`` or ``slope_pct``;
+    a slope is computed on a metric (UTM) grid of ``resolution`` metres. Prefer SRTM or TOPODATA to
+    Copernicus for slope: Copernicus includes the forest canopy.
+    """
+
+    type: Literal["dem"]
+    dem: Literal["srtm", "copernicus", "topodata"] | None = None
+    tiles: list[str] | None = None
+    product: Literal["elevation", "slope_deg", "slope_pct"] = "elevation"
+    margin: float = Field(default=0.02, ge=0)
+    resolution: float = Field(default=30.0, gt=0)
+    cache: str | None = None
+
+    @model_validator(mode="after")
+    def _one_input(self):
+        if (self.dem is None) == (self.tiles is None):
+            raise ValueError(f"source {self.id!r}: give exactly one of 'dem' or 'tiles'")
+        return self
+
+
 class UnionSource(_SourceBase):
     """The features of several vector sources of this file as one source."""
 
@@ -139,7 +182,7 @@ class UnionSource(_SourceBase):
 
 
 Source = Annotated[
-    FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | UnionSource,
+    FileSource | BdcSource | MapbiomasSource | ProdesSource | ClassifiedSource | OsmSource | DemSource | UnionSource,
     Field(discriminator="type"),
 ]
 
@@ -174,7 +217,7 @@ class PipelineConfig(_Strict):
     grid: GridConfig | None = None
     extent: list[float] | None = Field(default=None, min_length=4, max_length=4)
     """``[min_lon, min_lat, max_lon, max_lat]`` (WGS84) a sources-only file reads
-    windowed sources over (classified maps, BDC, MapBiomas, PRODES)."""
+    windowed sources over (classified maps, BDC, MapBiomas, PRODES, OpenStreetMap, DEM)."""
     sources_from_catalog: bool = False
     """Let [[derive]] blocks use sources this file does not declare, registered
     in the workspace's catalog by another pipeline file. Off by default, so a
@@ -190,14 +233,14 @@ class PipelineConfig(_Strict):
 
         # Apenas fontes dinâmicas em janela na nuvem precisam de extent.
         # Fontes 'file' e 'union' já têm extensão definida por seus arquivos locais.
-        windowed_types = {"bdc", "mapbiomas", "prodes", "classified"}
+        windowed_types = {"bdc", "mapbiomas", "prodes", "classified", "osm", "dem"}
         needs_extent = any(
             getattr(s, "type", None) in windowed_types for s in self.source
         )
 
         if self.grid is None and self.extent is None and needs_extent:
             raise ValueError(
-                "a sources-only file with windowed sources (BDC, MapBiomas, PRODES)"
+                "a sources-only file with windowed sources (BDC, MapBiomas, PRODES, OpenStreetMap, DEM)"
                 " needs `extent` (or a [grid])"
             )
         return self

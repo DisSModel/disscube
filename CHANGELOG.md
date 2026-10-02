@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`type = "dem"` source**: elevation, or slope in degrees or percent, from SRTM, Copernicus GLO-30
+  or TOPODATA (or your own `tiles`), read over the grid plus a `margin` and registered as a raster
+  source with checksum and provenance. The slope is computed on a metric (UTM) grid by central
+  differences; asking for a Copernicus slope logs a warning, since that model includes the forest
+  canopy. TOPODATA sheets are downloaded once into a cache. Replaces the DEM script of the Lab15
+  reconstruction.
+- **`type = "osm"` source**: ways from OpenStreetMap through the Overpass API, clipped to the grid
+  plus a `margin`, registered as a vector source with checksum and provenance (request, server,
+  time retrieved, `timestamp_osm_base`, ODbL). The answer is cached by request, so a pipeline reads
+  the same data (and gets the same `spec_hash`) on every run; `date` asks for an older snapshot
+  (`date = "{year}-07-01"` with `years`); several public servers are tried with retries; HTTP 406
+  points to `OSM_CONTACT`. Replaces the OpenStreetMap download script of the Lab15 reconstruction.
+
+## [0.4.0] - 2026-09-30
+
 ### Changed
 - **DisSModel is now optional.** DisSCube no longer depends on it: install
   `disscube[dissmodel]` only to hand a cube to a model. `CubeClient.to_lucc_data()`
