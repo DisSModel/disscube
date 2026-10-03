@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`sum` over vector sources**, with `params = {area = true}` for areal weighting: each polygon's
+  attribute (e.g. census population) is shared among the cells in proportion to the intersected
+  area, conserving the total. Reproduces TerraME's `sum` with `area = true` on Itaituba in all 620
+  cells (max error 4×10⁻⁷). Without `area`, every feature adds its whole value to each cell it
+  touches (a point to its own cell). `params = {column = …}` picks the column (default: the target
+  name). Vector sources are no longer clipped to the grid for `sum`, so a polygon crossing the border
+  keeps its full denominator.
+- **`median` operator**: per-cell median of the valid pixels, from the fine-aligned source.
+- **`std` `ddof` param** (`0` default, `1` for the sample estimate). The default is unchanged, so
+  existing `spec_hash`es hold.
 - **`type = "dem"` source**: elevation, or slope in degrees or percent, from SRTM, Copernicus GLO-30
   or TOPODATA (or your own `tiles`), read over the grid plus a `margin` and registered as a raster
   source with checksum and provenance. The slope is computed on a metric (UTM) grid by central
@@ -21,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same data (and gets the same `spec_hash`) on every run; `date` asks for an older snapshot
   (`date = "{year}-07-01"` with `years`); several public servers are tried with retries; HTTP 406
   points to `OSM_CONTACT`. Replaces the OpenStreetMap download script of the Lab15 reconstruction.
+
+### Changed
+- **TerraME parity documented against the TerraME 2.0.1 goldens** (`LambdaGeo/luccme-goldens`)
+  instead of an earlier reference of unrecorded provenance. TerraME 2.0.1 divides coverage by the
+  valid pixels, so `percentage` matches it with no `coverage_purity` correction (Itaituba max 0.0064,
+  Amazônia identical), and it measures distance from the cell centre to the nearest *vertex*:
+  `distance` is identical for points and smaller for lines where a line passes between vertices.
+  The notes saying TerraME measures from the cell polygon and divides by the whole cell were removed,
+  and so was the "half a cell diagonal" remark in the `DistanceOperator` docstring.
 
 ## [0.4.0] - 2026-09-30
 
