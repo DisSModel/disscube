@@ -1204,6 +1204,10 @@ its DisSCube pipeline representation, side by side:</p>
 <td><code>presence</code>, <code>count</code>, <code>sum</code>, <code>minimum</code>, <code>maximum</code>, <code>stdev</code></td>
 <td><code>presence</code>, <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>std</code></td>
 </tr>
+<tr>
+<td><code>sum</code> with <code>area = true</code></td>
+<td><code>sum</code> with <code>params = {area = true}</code></td>
+</tr>
 </tbody>
 </table>
 <p>How faithful each operator is to TerraME — and what is not supported yet — is
@@ -1339,9 +1343,24 @@ its own attributes — in the first one's CRS:</p>
 <td>measure in this CRS — e.g. a projected one, for metres on a geographic grid</td>
 </tr>
 <tr>
-<td><code>percentage</code>, <code>majority</code>, <code>minority</code>, <code>std</code></td>
+<td><code>percentage</code>, <code>majority</code>, <code>minority</code>, <code>std</code>, <code>median</code></td>
 <td><code>subcells</code></td>
 <td>at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90)</td>
+</tr>
+<tr>
+<td><code>sum</code></td>
+<td><code>area</code></td>
+<td>vector polygons: share the value in proportion to the intersected area (default <code>false</code>)</td>
+</tr>
+<tr>
+<td><code>sum</code></td>
+<td><code>column</code></td>
+<td>vector: numeric column to sum (default: the target name)</td>
+</tr>
+<tr>
+<td><code>std</code></td>
+<td><code>ddof</code></td>
+<td><code>0</code> (default, population) or <code>1</code> (sample standard deviation)</td>
 </tr>
 </tbody>
 </table>

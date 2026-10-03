@@ -1216,7 +1216,7 @@ and the parity cases in the recipes repository (<code>cases/terrame_fill</code>)
 <td><code>coverage</code> / <code>percentage</code> (raster)</td>
 <td><code>percentage</code></td>
 <td>implemented (window-based); <strong>parity verified</strong> (Itaituba, Amazônia)</td>
-<td>Fraction (0..1) of the target class per cell, <strong>over valid pixels</strong>. TerraME divides by the whole cell instead; <code>percentage × coverage_purity</code> reproduces TerraME's value (see the benchmarks). Requires <code>class_code</code>.</td>
+<td>Fraction (0..1) of the target class per cell, <strong>over valid pixels</strong> — the denominator TerraME 2.0.1 uses too, so the value reproduces its goldens with no correction (Itaituba: max 0.0064; Amazônia: identical). <code>coverage_purity</code> stays available as metadata. Requires <code>class_code</code>.</td>
 </tr>
 <tr>
 <td><code>area</code> (polygons)</td>
@@ -1245,14 +1245,14 @@ and the parity cases in the recipes repository (<code>cases/terrame_fill</code>)
 <tr>
 <td><code>distance</code></td>
 <td><code>distance</code></td>
-<td>implemented (exact, from the cell centre)</td>
-<td>Euclidean distance from each cell centre to the nearest feature, in CRS units (or in the CRS given as <code>params = {crs = …}</code>, e.g. metres on a geographic grid), without clipping the source to the grid (features outside it count). TerraME measures from the cell polygon, so <code>distance</code> is larger by at most half a cell diagonal. The LuccME Lab15 cellular space was built with centre distances, and <code>distance</code> reproduces its fields.</td>
+<td>implemented (exact, from the cell centre); <strong>parity verified</strong> for points, lines differ by the vertex rule</td>
+<td>Euclidean distance from each cell centre to the nearest feature, in CRS units (or in the CRS given as <code>params = {crs = …}</code>, e.g. metres on a geographic grid), without clipping the source to the grid (features outside it count). TerraME 2.0.1 measures from the cell centre to the nearest <em>vertex</em> of the feature, so for points the two are identical (error &lt; 1 mm on Itaituba and Amazônia) and for lines <code>distance</code>, which measures to the segment, is smaller where a line passes between vertices (Itaituba: mean 24 m, 73.7 % of cells within 1 m; Amazônia: mean 300 m, 63.8 %). The LuccME Lab15 cellular space was built with centre distances, and <code>distance</code> reproduces its fields.</td>
 </tr>
 <tr>
 <td><code>distance</code></td>
 <td><code>min_distance</code></td>
 <td><strong>approximation — semantics differ</strong></td>
-<td>Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures the distance from each cell polygon to the nearest feature, so <code>min_distance</code> overestimates it by up to about one cell (see the benchmarks).</td>
+<td>Rasterizes the features on the target grid and takes the Euclidean distance transform between cell centres (EDT × resolution). TerraME measures from the cell centre to the nearest vertex, so <code>min_distance</code> differs from it by up to about one cell: against the 2.0.1 goldens the mean error is 1.2 km on Itaituba (5 km cells) and 11–12 km on Amazônia (50 km cells), biased low because <code>all_touched</code> marks the cells a line only touches. Prefer <code>distance</code>.</td>
 </tr>
 <tr>
 <td><code>average</code> / <code>mean</code></td>
@@ -1267,10 +1267,16 @@ and the parity cases in the recipes repository (<code>cases/terrame_fill</code>)
 <td>Sum per cell (continuous).</td>
 </tr>
 <tr>
+<td><code>sum</code> (vector, <code>area = false</code>)</td>
+<td><code>sum</code></td>
+<td>implemented</td>
+<td>Adds the numeric column named like the target (or <code>params = {column = …}</code>) over the features that reach each cell: a point to the cell containing it, any other geometry to every cell it touches.</td>
+</tr>
+<tr>
 <td><code>sum</code> with <code>area = true</code> (polygons)</td>
-<td>—</td>
-<td><strong>not implemented</strong></td>
-<td>Distributes a polygon attribute (e.g. census population) over cells in proportion to the intersected area. <code>sum</code> accepts raster sources only.</td>
+<td><code>sum</code>, <code>params = {area = true}</code></td>
+<td>implemented; <strong>parity verified</strong> (Itaituba)</td>
+<td>Distributes a polygon attribute (e.g. census population) over cells in proportion to the intersected area, so the total is conserved. Reproduces TerraME's <code>population</code> within 4×10⁻⁷ in all 620 cells. Polygons are not clipped to the grid: one that crosses the border distributes only its inside share.</td>
 </tr>
 <tr>
 <td><code>minimum</code></td>
@@ -1288,7 +1294,13 @@ and the parity cases in the recipes repository (<code>cases/terrame_fill</code>)
 <td><code>stdev</code> / <code>standardDeviation</code></td>
 <td><code>std</code></td>
 <td>implemented (window-based)</td>
-<td>True per-cell standard deviation over valid pixels.</td>
+<td>True per-cell standard deviation over valid pixels. Population (<code>ddof = 0</code>) by default; <code>params = {ddof = 1}</code> gives the sample estimate (NaN for a cell with a single valid pixel).</td>
+</tr>
+<tr>
+<td><code>median</code></td>
+<td><code>median</code></td>
+<td>implemented (window-based)</td>
+<td>Median of the valid pixels per cell; not a TerraME fill strategy, offered for outlier-robust aggregation.</td>
 </tr>
 <tr>
 <td><code>attribute</code> (value copy)</td>
@@ -1316,9 +1328,19 @@ design that have not yet been measured against TerraME.</p>
 <h2 id="parity-with-terrame">Parity with TerraME</h2>
 <p>TerraME's <code>gis</code> package ships three <em>Fill</em> examples — Itaituba (the
 <a href="https://github.com/TerraME/terrame/wiki/Fill">Fill tutorial</a>), Emas and
-Amazônia — each with its input layers, the Lua script and the cellular space
-TerraME produced. Those outputs are the reference: the same inputs are derived
-with DisSCube on the same grid and compared cell by cell.</p>
+Amazônia — each with its input layers and the Lua script. The reference is the
+cellular space that TerraME 2.0.1 produces from them, archived as the goldens of
+<a href="https://github.com/LambdaGeo/luccme-goldens"><code>LambdaGeo/luccme-goldens</code></a>
+(v1.0.0, DOI <a href="https://doi.org/10.5281/zenodo.23107748">10.5281/zenodo.23107748</a>):
+the same inputs are derived with DisSCube on the same grid and compared cell by
+cell.</p>
+<p>Earlier versions of this page compared against a different reference file, whose
+provenance was not recorded and which TerraME 2.0.1 does not reproduce (coverage as
+a percentage divided by the whole cell, distance 0 in every cell that contains a
+feature). The explanations drawn from it — that TerraME measures distance from the
+cell polygon and divides coverage by the whole cell — do not hold for the goldens
+and were removed. <code>elevation</code>, <code>population</code> and all of Emas are identical in both
+files.</p>
 <p>The full parity benchmark suite is maintained and executed on CI in the
 <a href="https://github.com/LambdaGeo/disscube-recipes">DisSCube Case Studies and Recipes</a>
 repository (<code>cases/terrame_fill</code>), where input datasets are fetched from TerraME
@@ -1356,58 +1378,58 @@ compared in percent (DisSCube fraction × 100).</p>
 <tr>
 <td><code>defor_7</code> — <code>coverage</code> (60 m raster)</td>
 <td><code>percentage</code></td>
-<td>2.17 pp</td>
-<td>50.13 pp</td>
-<td>92 % within 1 pp</td>
-</tr>
-<tr>
-<td><code>defor_7</code></td>
-<td><code>percentage × coverage_purity</code></td>
-<td>0.09 pp</td>
+<td>0.054 pp</td>
 <td>0.64 pp</td>
 <td><strong>100 %</strong> within 1 pp</td>
 </tr>
 <tr>
 <td><code>defor_87</code></td>
-<td><code>percentage × coverage_purity</code></td>
-<td>0.06 pp</td>
+<td><code>percentage</code></td>
+<td>0.054 pp</td>
 <td>0.64 pp</td>
 <td><strong>100 %</strong> within 1 pp</td>
 </tr>
 <tr>
 <td><code>defor_167</code></td>
-<td><code>percentage × coverage_purity</code></td>
-<td>0.01 pp</td>
+<td><code>percentage</code></td>
+<td>0.006 pp</td>
 <td>0.39 pp</td>
 <td><strong>100 %</strong> within 1 pp</td>
 </tr>
 <tr>
 <td><code>defor_255</code></td>
-<td><code>percentage × coverage_purity</code></td>
-<td>0.001 pp</td>
-<td>0.02 pp</td>
+<td><code>percentage</code></td>
+<td>0.000 pp</td>
+<td>0.002 pp</td>
 <td><strong>100 %</strong> within 1 pp</td>
 </tr>
 <tr>
-<td><code>distroad</code> — <code>distance</code> (lines)</td>
-<td><code>min_distance</code></td>
-<td>1 782 m</td>
-<td>5 891 m</td>
-<td>biased +1 782 m (r = 0.983)</td>
+<td><code>distlocal</code> — <code>distance</code> (points)</td>
+<td><code>distance</code></td>
+<td>1×10⁻⁶ m</td>
+<td>5×10⁻⁶ m</td>
+<td><strong>100 %</strong> within 1 mm</td>
 </tr>
 <tr>
-<td><code>distlocal</code> — <code>distance</code> (points)</td>
+<td><code>distroad</code> — <code>distance</code> (lines)</td>
+<td><code>distance</code></td>
+<td>24 m</td>
+<td>1 885 m</td>
+<td>73.7 % within 1 m; TerraME measures to the nearest vertex</td>
+</tr>
+<tr>
+<td><code>distroad</code>, <code>distlocal</code></td>
 <td><code>min_distance</code></td>
-<td>2 499 m</td>
-<td>6 871 m</td>
-<td>biased +2 497 m (r = 0.986)</td>
+<td>1 180 m, 1 244 m</td>
+<td>3 449 m, 3 396 m</td>
+<td>biased −552 m, −273 m (not recommended)</td>
 </tr>
 <tr>
 <td><code>population</code> — <code>sum</code>, <code>area = true</code></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>not supported</td>
+<td><code>sum</code>, <code>area = true</code></td>
+<td>0.000</td>
+<td>0.000 (4×10⁻⁷)</td>
+<td><strong>100 %</strong> within 0.01; total 60 693 conserved</td>
 </tr>
 </tbody>
 </table>
@@ -1416,26 +1438,25 @@ compared in percent (DisSCube fraction × 100).</p>
 <li><strong>Continuous averages agree.</strong> The residual in <code>elevation</code> comes from the
   averaging rule (area-weighted resampling vs. TerraME's per-pixel average) on
   a coarse 923 m source.</li>
-<li><strong>Coverage agrees once the denominator is made explicit.</strong> Raw
-  <code>percentage</code> differs only in the 50 border cells (last column and top row)
-  that the raster covers partially: TerraME divides the class area by the
-  <em>whole cell</em>, so its classes sum to less than 100 % there, while DisSCube
-  divides by the <em>valid pixels</em> and reports the covered share separately as
-  <code>coverage_purity</code>. Their product reproduces TerraME within 0.64 pp in every
-  cell. The difference is a design choice, not an error: DisSCube keeps "how
-  much of the cell is class <em>k</em>" apart from "how much of the cell has data",
-  and TerraME's value is recoverable exactly.</li>
-<li><strong>Distances differ by construction.</strong> Recomputing the exact distance from
-  each cell polygon to the nearest road reproduces <code>distroad</code> exactly (±0.5 m)
-  in 80 % of the cells (mean error 52 m), which identifies TerraME's semantics.
-  <code>min_distance</code> instead measures between rasterized cell centres, so at 5 km
-  it overestimates by about a third to a half of a cell on average.</li>
+<li><strong>Coverage agrees with no correction.</strong> TerraME 2.0.1 divides the class area
+  by the <em>valid pixels</em> of the cell, as DisSCube does; the residual is at most
+  0.64 pp. Multiplying by
+  <code>coverage_purity</code> — right for the earlier reference — would now be wrong.</li>
+<li><strong>TerraME measures distance from the cell centre to the nearest vertex of the
+  feature.</strong> For the localities (points) that is the feature itself, so
+  <code>distance</code> is identical. For roads TerraME ignores the middle of the
+  segments, so <code>distance</code> (to the segment) is smaller wherever a road passes
+  between vertices; recomputing the distance to the nearest vertex reproduces
+  <code>distroad</code> in 100 % of the cells, to the millimetre. The explanation is
+  inferred from the output; TerraME's source was not read.</li>
+<li><strong><code>min_distance</code> is an approximation.</strong> It rasterizes the features with
+  <code>all_touched</code>, takes the Euclidean distance transform between cell centres
+  and multiplies by the resolution, so its error reaches about one cell.</li>
 <li><strong>Rasters without a declared nodata.</strong> The deforestation raster declares
   none, and its classes include 255. Earlier versions reprojected it with the
   <code>uint8</code> default fill value (255) and then treated that value as nodata,
-  dropping the legitimate class 255 (94 % of cells within 1 pp). Since the
-  fix, the fill value can no longer collide with the data, and <code>defor_255</code>
-  agrees with TerraME in every cell.</li>
+  dropping the legitimate class 255. Since the fix, the fill value can no longer
+  collide with the data, and <code>defor_255</code> agrees with TerraME in every cell.</li>
 </ul>
 <h3 id="emas-5-514-cells-500-m">Emas — 5 514 cells, 500 m</h3>
 <p>Cells of the Emas National Park (EPSG:29192) that touch the park limit,
@@ -1490,18 +1511,23 @@ the 5 km PRODES raster, roads, ports and indigenous lands.</p>
 <tbody>
 <tr>
 <td><code>prodes_10</code>, <code>prodes_208</code> — <code>coverage</code></td>
-<td><code>percentage × coverage_purity</code></td>
-<td><strong>identical</strong> in every cell with PRODES data; in the 55 cells without any, DisSCube reports NaN (purity 0) where TerraME reports 0</td>
-</tr>
-<tr>
-<td><code>distroads</code> — <code>distance</code> (lines)</td>
-<td><code>min_distance</code></td>
-<td>mean error 17 km; the exact polygon distance matches TerraME in 73 % of cells (83 % within 100 m)</td>
+<td><code>percentage</code></td>
+<td><strong>identical</strong> (max 5×10⁻¹¹) in every cell with PRODES data; in the 55 cells without any, DisSCube reports NaN where TerraME reports 0</td>
 </tr>
 <tr>
 <td><code>distports</code> — <code>distance</code> (points)</td>
+<td><code>distance</code></td>
+<td><strong>identical</strong> (max 5×10⁻⁴ m)</td>
+</tr>
+<tr>
+<td><code>distroads</code> — <code>distance</code> (lines)</td>
+<td><code>distance</code></td>
+<td>mean 300 m, max 18 km; 63.8 % of cells within 1 m. TerraME measures to the nearest vertex (reproduced in 100 % of cells)</td>
+</tr>
+<tr>
+<td><code>distroads</code>, <code>distports</code></td>
 <td><code>min_distance</code></td>
-<td>mean error 28 km; the exact polygon distance matches in 89 % of cells (91 % within 100 m)</td>
+<td>mean 12.0 km, 11.2 km; biased low (−6.8 km, −2.7 km); not recommended</td>
 </tr>
 <tr>
 <td><code>protected</code> — <code>area</code> (polygons)</td>
@@ -1510,23 +1536,16 @@ the 5 km PRODES raster, roads, ports and indigenous lands.</p>
 </tr>
 </tbody>
 </table>
-<p>The exact polygon distance explains most but not all of TerraME's <code>distance</code>
-values on Amazônia (the largest residuals reach 13–16 km), so TerraME's rule
-needs to be pinned down before an exact operator is implemented.</p>
 <h2 id="known-gaps-relative-to-terrame">Known gaps relative to TerraME</h2>
 <ul>
-<li><strong>Exact vector distance.</strong> TerraME's <code>distance</code> is measured from the cell
-  polygon to the nearest feature; <code>min_distance</code> is a raster approximation
-  between cell centres (see the benchmarks). An exact vector operator is
-  needed for parity; the Amazônia residuals show TerraME's rule is not only
-  the plain geometric distance.</li>
+<li><strong>Distance to lines.</strong> TerraME 2.0.1 measures from the cell centre to the
+  nearest <em>vertex</em> of a line; <code>distance</code> measures to the segment, which is the
+  geometrically correct value and is smaller where a line passes between
+  vertices. There is no vertex mode yet; for points the two coincide.</li>
 <li><strong>Cell assignment of pixels and lines.</strong> <code>min</code>/<code>max</code> count pixels that
   straddle a cell border, and <code>presence</code> rasterizes lines through cell
   centres; TerraME assigns each pixel to the cell containing its centre and
   marks every cell a line touches (Emas).</li>
-<li><strong>Area-weighted vector aggregation.</strong> TerraME's <code>sum</code> with <code>area = true</code>
-  has no DisSCube equivalent yet: <code>sum</code> accepts raster sources only. (<code>area</code>,
-  the fraction of the cell covered by polygons, is exact.)</li>
 <li><strong>In-memory, single-tile by design.</strong> The fine-alignment path materializes a
   fine array in memory; very large tiles at a high fine/target ratio are bounded
   by available memory — <code>params = {subcells = n}</code> caps the ratio.
@@ -1540,10 +1559,10 @@ reproducible spatial-derivation layer: fill strategies become typed operators
 over a catalogued data cube, with aggregation on windows aligned to the target
 grid and explicit control of cell purity. On the three Fill examples shipped
 with TerraME (Itaituba, Emas, Amazônia), raster averages and class coverage
-reproduce TerraME's output cell by cell once cell purity is applied, and
-<code>presence</code>, <code>min</code> and <code>max</code> agree in 98–99.7 % of cells, and polygon
-<code>area</code> in ≥ 99 %; exact vector distance and area-weighted sums are the
-remaining gaps.</p>
+reproduce TerraME's output cell by cell, distance to points is identical and
+the areal-weighted <code>sum</code> conserves TerraME's totals, while <code>presence</code>, <code>min</code>
+and <code>max</code> agree in 98–99.7 % of cells and polygon <code>area</code> in ≥ 99 %; distance
+to lines follows TerraME's vertex rule only approximately.</p>
 </blockquote>
 
 

@@ -1254,7 +1254,13 @@
 <tbody>
 <tr>
 <td><code>std</code></td>
-<td>true per-cell standard deviation</td>
+<td>true per-cell standard deviation (<code>ddof</code> 0 or 1)</td>
+<td>—</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>median</code></td>
+<td>median of the valid pixels</td>
 <td>—</td>
 <td>no</td>
 </tr>
@@ -1278,7 +1284,8 @@
 </tr>
 </tbody>
 </table>
-<p>Each accepts <code>params = {"subcells": n}</code>, a cap on the fine pixels per cell
+<p><code>sum</code> also accepts a vector source: <code>params = {area = true}</code> shares each polygon's value among the cells in proportion to the intersected area (total conserved); without it every feature adds its whole value to each cell it touches. The column is the one named like the target, or <code>params = {column = "…"}</code>.</p>
+<p>Each of the operators above accepts <code>params = {"subcells": n}</code>, a cap on the fine pixels per cell
 along each axis (see <code>GridAligner._align_fine</code>).</p>
 <p>The last three also produce <code>coverage_purity</code> and <code>dominance_purity</code> as coordinates of the output <code>DataArray</code> (persisted in the Zarr alongside the variable).</p>
 <h3 id="proximity-vector-and-passthrough-for-raster">Proximity — vector (and passthrough for raster)</h3>
