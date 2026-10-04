@@ -159,6 +159,9 @@ class NetworkCostOperator(Operator):
     Replicates and improves upon TerraME's GPM (Generalized Proximity Matrix)
     Network connectivity algorithm (used in LuccME-BR for e_connmkt and e_connport).
 
+    Cells that cannot reach any target through the network (for example, a road
+    component that holds no target) are NaN, with a RuntimeWarning.
+
     Parameters in var.params:
     -------------------------
     targets : str or list
@@ -202,9 +205,9 @@ class NetworkCostOperator(Operator):
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, gpd.GeoDataFrame):
             import shapely
-            from shapely.geometry import Point, LineString
             from scipy.sparse import csr_matrix
             from scipy.sparse.csgraph import dijkstra
+            from shapely.geometry import LineString, Point
 
             crs = var.params.get("crs")
             if crs is not None:
@@ -228,6 +231,7 @@ class NetworkCostOperator(Operator):
             target_points = []
             if isinstance(targets_param, str):
                 import os
+
                 import pooch
                 target_path = None
                 if os.path.exists(targets_param):
@@ -262,7 +266,7 @@ class NetworkCostOperator(Operator):
                 return xr.DataArray(dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
 
             # 2. Construir o grafo da rede viária
-            node_coords = {}
+            node_coords: dict[tuple[float, float], int] = {}
             node_list = []
             edges = []
             segment_geoms = []
@@ -380,6 +384,19 @@ class NetworkCostOperator(Operator):
                     net_cost = min(node_min_cost[u] + d_u * factor * unit_scale,
                                    node_min_cost[v] + d_v * factor * unit_scale)
                     flat_costs[c_idx] = offroad_dists[i] * (outside_factor * unit_scale) + net_cost
+
+            # Cells that cannot reach any target (a road component with no target)
+            # come out of Dijkstra as inf. Report them as NaN, like every other
+            # operator does for "no value", so they do not leak into Zarr and exports.
+            unreachable = np.isinf(flat_costs)
+            if unreachable.any():
+                warnings.warn(
+                    f"network_cost: {int(unreachable.sum())} cell(s) of '{var.name}' cannot "
+                    "reach any target through the network; set to NaN",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                flat_costs = np.where(unreachable, np.nan, flat_costs)
 
             out_dist = flat_costs.reshape((grid.rows, grid.cols))
             return xr.DataArray(out_dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
