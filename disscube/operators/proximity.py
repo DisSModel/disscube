@@ -155,32 +155,32 @@ class NetworkCostOperator(Operator):
     destinations via a linear transport network (e.g. roads, railways),
     accounting for off-road access and on-road impedance.
 
-    Replicates the behavior of TerraME's GPM (Generalized Proximity Matrix)
-    Network connectivity algorithm (used in LuccME-BR for e_connmkt and
-    e_connport).
-
-    The source data is a GeoDataFrame of network lines (LineString or
-    MultiLineString geometries).
+    Replicates and improves upon TerraME's GPM (Generalized Proximity Matrix)
+    Network connectivity algorithm (used in LuccME-BR for e_connmkt and e_connport).
 
     Parameters in var.params:
-    -----------------------------
+    -------------------------
     targets : str or list
         Path to vector file (e.g. shapefile/GeoJSON) of target destinations
         (points or polygons), or a list of [x, y] coordinates.
+    cost_column : str, optional
+        Name of attribute column with individual road impedance/cost multiplier
+        (e.g. 'custo_ajus'). If present, overrides status_column.
     status_column : str, optional
-        Name of attribute column in the network indicating surface/pavement
-        type (e.g. "status", "surface", "paved").
+        Name of attribute column distinguishing road status (e.g. 'status', 'paved').
     inside_paved : float, optional
-        Cost/impedance factor on paved lines (default 1.0). In TerraME,
-        if distance is divided by speed 5, factor is 1/5 = 0.2.
+        Cost/impedance factor on paved lines (default 1.0).
     inside_unpaved : float, optional
         Cost/impedance factor on unpaved lines (default 1.0).
     outside : float, optional
-        Cost/impedance factor outside the network (off-road Euclidean distance
-        from cell centre to the nearest point on the network, default 1.0).
+        Cost/impedance factor outside the network (default 1.0).
+    unit_scale : float, optional
+        Multiplier applied to distances (e.g. 1e-3 to convert metres to kilometres, default 1.0).
+    entrance : str, optional
+        How cell connects to the network: 'segment' (orthogonal projection, default)
+        or 'vertex' (nearest line vertex, replicating TerraME).
     crs : str, optional
-        Projected CRS for metric distance calculation (e.g. "EPSG:5880").
-        If omitted, the grid's CRS is used.
+        Projected CRS for metric distance calculation (e.g. 'EPSG:5880').
     """
 
     name = "network_cost"
@@ -188,10 +188,13 @@ class NetworkCostOperator(Operator):
     clip_to_grid = False
     params: ClassVar[dict[str, str]] = {
         "targets": "path to destinations vector layer or coordinate list [[x, y], ...]",
+        "cost_column": "column in network vector with per-segment cost multiplier (e.g. 'custo_ajus')",
         "status_column": "column in network vector distinguishing road status (e.g. 'status')",
         "inside_paved": "impedance/friction multiplier on paved lines (default: 1.0)",
         "inside_unpaved": "impedance/friction multiplier on unpaved lines (default: 1.0)",
         "outside": "impedance/friction multiplier off-road from cell to network (default: 1.0)",
+        "unit_scale": "scale factor for output units, e.g. 1e-3 for km (default: 1.0)",
+        "entrance": "connection rule: 'segment' (nearest edge) or 'vertex' (nearest vertex, TerraME)",
         "crs": "projected CRS to measure distances in metres (e.g. 'EPSG:5880')",
     }
 
@@ -214,8 +217,12 @@ class NetworkCostOperator(Operator):
             outside_factor = float(var.params.get("outside", 1.0))
             inside_paved_factor = float(var.params.get("inside_paved", 1.0))
             inside_unpaved_factor = float(var.params.get("inside_unpaved", 1.0))
+            unit_scale = float(var.params.get("unit_scale", 1.0))
+            entrance_mode = var.params.get("entrance", "segment").lower()
+            cost_col = var.params.get("cost_column")
             status_col = var.params.get("status_column")
 
+            # 1. Carregar os destinos (alvos)
             targets_param = var.params.get("targets")
             target_points = []
             if isinstance(targets_param, str):
@@ -226,10 +233,7 @@ class NetworkCostOperator(Operator):
                         tgdf = tgdf.to_crs(crs)
                     for g in tgdf.geometry:
                         if g is not None and not g.is_empty:
-                            if g.geom_type == "Point":
-                                target_points.append(g)
-                            else:
-                                target_points.append(g.centroid)
+                            target_points.append(g if g.geom_type == "Point" else g.centroid)
             elif isinstance(targets_param, (list, tuple)):
                 for pt in targets_param:
                     if isinstance(pt, (list, tuple)) and len(pt) >= 2:
@@ -246,6 +250,7 @@ class NetworkCostOperator(Operator):
                 dist = np.full((grid.rows, grid.cols), np.nan)
                 return xr.DataArray(dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
 
+            # 2. Construir o grafo da rede viária
             node_coords = {}
             node_list = []
             edges = []
@@ -265,13 +270,18 @@ class NetworkCostOperator(Operator):
                 geom = row.geometry
                 if geom is None or geom.is_empty:
                     continue
-                factor = inside_paved_factor
-                if status_col and status_col in row:
+
+                # Determinar o fator de impedância da linha
+                if cost_col and cost_col in row and not pd.isna(row[cost_col]):
+                    factor = float(row[cost_col])
+                elif status_col and status_col in row:
                     val = str(row[status_col]).lower()
                     if any(term in val for term in ("unpaved", "terra", "implantada", "natural", "leito")):
                         factor = inside_unpaved_factor
-                    elif any(term in val for term in ("paved", "pavimentada", "duplicada", "calçado")):
+                    else:
                         factor = inside_paved_factor
+                else:
+                    factor = inside_paved_factor
 
                 lines = geom.geoms if geom.geom_type == "MultiLineString" else [geom]
                 for line in lines:
@@ -284,7 +294,7 @@ class NetworkCostOperator(Operator):
                             continue
                         u = get_node(p1)
                         v = get_node(p2)
-                        seg_cost = seg_dist * factor
+                        seg_cost = seg_dist * factor * unit_scale
                         edges.append((u, v, seg_cost))
                         segment_geoms.append(LineString([coords[i], coords[i + 1]]))
                         seg_to_edge.append((u, v, factor))
@@ -294,9 +304,7 @@ class NetworkCostOperator(Operator):
                 dist = np.full((grid.rows, grid.cols), np.nan)
                 return xr.DataArray(dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
 
-            row_idx = []
-            col_idx = []
-            cost_data = []
+            row_idx, col_idx, cost_data = [], [], []
             for u, v, cost in edges:
                 row_idx.extend([u, v])
                 col_idx.extend([v, u])
@@ -305,44 +313,67 @@ class NetworkCostOperator(Operator):
             adj_matrix = csr_matrix((cost_data, (row_idx, col_idx)), shape=(num_nodes, num_nodes))
             node_tree = shapely.STRtree(node_list)
 
-            target_indices = [int(np.atleast_1d(node_tree.query_nearest(t))[0]) for t in target_points]
+            # 3. Mapear alvos na rede com custo de acesso inicial (TerraME GPM)
+            target_indices = []
+            target_access_penalties = []
+            for t in target_points:
+                nearest_node_idx = int(np.atleast_1d(node_tree.query_nearest(t))[0])
+                nearest_pt = node_list[nearest_node_idx]
+                target_indices.append(nearest_node_idx)
+                # Adiciona o custo de acesso euclidiano fora da rede do porto até a linha
+                access_dist = t.distance(nearest_pt)
+                target_access_penalties.append(access_dist * outside_factor * unit_scale)
+
+            # 4. Resolver caminhos mínimos via Dijkstra
             dist_matrix = dijkstra(adj_matrix, indices=target_indices, directed=False)
+            
+            # Somar a penalidade de acesso do alvo ao vetor de distâncias do grafo
             if len(target_indices) == 1:
                 node_min_cost = dist_matrix[0] if dist_matrix.ndim == 2 else dist_matrix
+                node_min_cost = node_min_cost + target_access_penalties[0]
             else:
-                node_min_cost = np.min(dist_matrix, axis=0)
+                penalties = np.array(target_access_penalties)[:, np.newaxis]
+                node_min_cost = np.min(dist_matrix + penalties, axis=0)
 
+            # 5. Interpolar para as células da grade
             xx, yy = np.meshgrid(grid.xs, grid.ys)
             if crs is not None:
                 from pyproj import Transformer
                 xx, yy = Transformer.from_crs(grid.crs, crs, always_xy=True).transform(xx, yy)
 
             centres = shapely.points(xx.ravel(), yy.ravel())
-            seg_tree = shapely.STRtree(segment_geoms)
-            indices, offroad_dists = seg_tree.query_nearest(centres, return_distance=True, all_matches=False)
-            pt_idx = indices[0]
-            seg_idx = indices[1]
+            
+            if entrance_mode == "vertex":
+                # Regra do vértice mais próximo (reproduz a lógica discreta do TerraME)
+                indices, offroad_dists = node_tree.query_nearest(centres, return_distance=True, all_matches=False)
+                c_idx, v_idx = indices[0], indices[1]
+                flat_costs = offroad_dists * (outside_factor * unit_scale) + node_min_cost[v_idx]
+            else:
+                # Regra do segmento contínuo (ortogonal, mais precisa)
+                seg_tree = shapely.STRtree(segment_geoms)
+                indices, offroad_dists = seg_tree.query_nearest(centres, return_distance=True, all_matches=False)
+                pt_idx, seg_idx = indices[0], indices[1]
 
-            flat_costs = np.full(len(centres), np.nan)
-            for i in range(len(pt_idx)):
-                s_idx = seg_idx[i]
-                c_idx = pt_idx[i]
-                u, v, factor = seg_to_edge[s_idx]
-                seg_geom = segment_geoms[s_idx]
-                c_pt = centres[c_idx]
+                flat_costs = np.full(len(centres), np.nan)
+                for i in range(len(pt_idx)):
+                    s_idx = seg_idx[i]
+                    c_idx = pt_idx[i]
+                    u, v, factor = seg_to_edge[s_idx]
+                    seg_geom = segment_geoms[s_idx]
+                    c_pt = centres[c_idx]
 
-                dist_along = seg_geom.project(c_pt)
-                p_proj = seg_geom.interpolate(dist_along)
-                d_u = p_proj.distance(node_list[u])
-                d_v = p_proj.distance(node_list[v])
-                net_cost = min(node_min_cost[u] + d_u * factor, node_min_cost[v] + d_v * factor)
-                flat_costs[c_idx] = offroad_dists[i] * outside_factor + net_cost
+                    dist_along = seg_geom.project(c_pt)
+                    p_proj = seg_geom.interpolate(dist_along)
+                    d_u = p_proj.distance(node_list[u])
+                    d_v = p_proj.distance(node_list[v])
+                    net_cost = min(node_min_cost[u] + d_u * factor * unit_scale,
+                                   node_min_cost[v] + d_v * factor * unit_scale)
+                    flat_costs[c_idx] = offroad_dists[i] * (outside_factor * unit_scale) + net_cost
 
             out_dist = flat_costs.reshape((grid.rows, grid.cols))
             return xr.DataArray(out_dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
 
         raise TypeError(f"'network_cost' expects a vector source, got {type(data).__name__}")
-
 
 class GpmNetworkOperator(NetworkCostOperator):
     """
