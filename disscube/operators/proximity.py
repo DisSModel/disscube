@@ -262,7 +262,7 @@ class NetworkCostOperator(Operator):
                 return xr.DataArray(dist, dims=("y", "x"), coords={"y": grid.ys, "x": grid.xs})
 
             # 2. Construir o grafo da rede viária
-            node_coords = {}
+            node_coords: dict[tuple[float, float], int] = {}
             node_list = []
             edges = []
             segment_geoms = []
