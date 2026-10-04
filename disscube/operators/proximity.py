@@ -9,6 +9,7 @@ from typing import ClassVar
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import rasterio.features
 import xarray as xr
 from rasterio.warp import Resampling
@@ -227,8 +228,18 @@ class NetworkCostOperator(Operator):
             target_points = []
             if isinstance(targets_param, str):
                 import os
+                import pooch
+                target_path = None
                 if os.path.exists(targets_param):
-                    tgdf = gpd.read_file(targets_param)
+                    target_path = targets_param
+                elif (pooch.os_cache("disscube") / "raw" / targets_param).exists():
+                    target_path = str(pooch.os_cache("disscube") / "raw" / targets_param)
+                else:
+                    matches = list((pooch.os_cache("disscube") / "raw").glob(f"**/{os.path.basename(targets_param)}"))
+                    if matches:
+                        target_path = str(matches[0])
+                if target_path and os.path.exists(target_path):
+                    tgdf = gpd.read_file(target_path)
                     if crs is not None and tgdf.crs is not None:
                         tgdf = tgdf.to_crs(crs)
                     for g in tgdf.geometry:
