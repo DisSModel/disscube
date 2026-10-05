@@ -6,8 +6,8 @@ authors:
     orcid: "https://orcid.org/0000-0002-0232-4549"
 title: "DisSCube: Declarative spatial data cubes"
 abstract: "An open-source, declarative engine for constructing cellular spatial data cubes for dynamic modeling, spatial simulation, and environmental analysis."
-version: 0.4.0
-date-released: "2026-09-29"
+version: 0.5.0
+date-released: "2026-10-05"
 url: "https://github.com/DisSModel/disscube"
 repository-code: "https://github.com/DisSModel/disscube"
 license: MIT

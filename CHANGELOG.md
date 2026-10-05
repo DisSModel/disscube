@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.5.0] - 2026-10-05
+
 ### Added
 - **`sum` over vector sources**, with `params = {area = true}` for areal weighting: each polygon's
   attribute (e.g. census population) is shared among the cells in proportion to the intersected
@@ -16,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   touches (a point to its own cell). `params = {column = …}` picks the column (default: the target
   name). Vector sources are no longer clipped to the grid for `sum`, so a polygon crossing the border
   keeps its full denominator.
+- **`network_cost` operator** (alias `gpm_network`): least transport cost over a road network, from
+  each cell to the nearest destination, by an exact multi-source Dijkstra over the line graph
+  (`scipy.sparse.csgraph`). Destinations come from `params = {targets = …}` (a vector file, found
+  in the download cache or as given, or a list of `[x, y]`; polygons count by their centroid).
+  The cost of a segment is its length times a factor: `cost_column` (a per-line multiplier),
+  or `status_column` with `inside_paved` / `inside_unpaved`; the legs from a cell to the network
+  cost `outside` times the distance. `entrance = "vertex"` joins a cell and a destination at the
+  nearest vertex, as TerraME's GPM does; `"segment"` (default) at the nearest point of the nearest
+  line. `unit_scale` rescales the result (`1e-3` for km) and `crs` measures in metres. Cells that
+  reach no destination are NaN, with a warning. Reproduces the regional pattern of TerraME's GPM
+  `Network` (generalized transport cost to ports, r = 0.996 on the 25 km Brazil grid); the two
+  methods do not agree cell by cell (`LambdaGeo/disscube-benchmark`, `connectivity`). Example:
+  `examples/04_network_connectivity.py`. First use: `e_connport`, the connectivity to ports of
+  LuccME-BR (`LambdaGeo/disscube-recipes`, `cases/luccme_br`).
 - **`median` operator**: per-cell median of the valid pixels, from the fine-aligned source.
 - **`std` `ddof` param** (`0` default, `1` for the sample estimate). The default is unchanged, so
   existing `spec_hash`es hold.
@@ -40,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `distance` is identical for points and smaller for lines where a line passes between vertices.
   The notes saying TerraME measures from the cell polygon and divides by the whole cell were removed,
   and so was the "half a cell diagonal" remark in the `DistanceOperator` docstring.
+
+### Fixed
+- The CLI reports a missing optional extra (e.g. `disscube[dissmodel]`) as an error message, not a
+  traceback.
 
 ## [0.4.0] - 2026-09-30
 
