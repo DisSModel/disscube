@@ -1314,6 +1314,11 @@ along each axis (see <code>GridAligner._align_fine</code>).</p>
 <td>no</td>
 </tr>
 <tr>
+<td><code>network_cost</code> (alias <code>gpm_network</code>)</td>
+<td>Least transport cost over a road network (exact multi-source Dijkstra) from each cell to the nearest destination: <code>targets</code> (file or <code>[x, y]</code> list), <code>cost_column</code> or <code>status_column</code> + <code>inside_paved</code> / <code>inside_unpaved</code>, <code>outside</code> (off-road factor), <code>entrance</code> (<code>segment</code> or <code>vertex</code>), <code>unit_scale</code>, <code>crs</code>. NaN where no destination is reachable</td>
+<td>no</td>
+</tr>
+<tr>
 <td><code>area</code></td>
 <td>Share (0..1) of each cell covered by polygons (intersection area / cell area; overlaps count once) — TerraME's <code>area</code></td>
 <td>no</td>
