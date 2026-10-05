@@ -69,6 +69,7 @@ The last three also produce `coverage_purity` and `dominance_purity` as coordina
 | `distance` | Exact Euclidean distance (CRS units) from each cell centre to the nearest feature; the source is not clipped to the grid. `params = {"crs": …}` measures in another CRS (metres in a projected one) | no |
 | `min_distance` | Raster approximation of the distance to the nearest feature inside the grid (NaN, with a warning, if none is inside) | no |
 | `count` | Number of features whose centroid falls in each cell | no |
+| `network_cost` (alias `gpm_network`) | Least transport cost over a road network (exact multi-source Dijkstra) from each cell to the nearest destination: `targets` (file or `[x, y]` list), `cost_column` or `status_column` + `inside_paved` / `inside_unpaved`, `outside` (off-road factor), `entrance` (`segment` or `vertex`), `unit_scale`, `crs`. NaN where no destination is reachable | no |
 | `area` | Share (0..1) of each cell covered by polygons (intersection area / cell area; overlaps count once) — TerraME's `area` | no |
 
 ## The `compute()` contract

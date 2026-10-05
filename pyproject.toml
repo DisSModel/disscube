@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "disscube"
-version = "0.4.0"
+version = "0.5.0"
 description = "Declarative spatial data cubes: describe sources, grid and derived variables in TOML; get a cataloged, reproducible cube."
 readme = "README.md"
 requires-python = ">=3.11"
