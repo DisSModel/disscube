@@ -3,6 +3,8 @@
 [![CI](https://github.com/DisSModel/disscube/actions/workflows/ci.yml/badge.svg)](https://github.com/DisSModel/disscube/actions/workflows/ci.yml)
 [![Docs](https://github.com/DisSModel/disscube/actions/workflows/docs.yml/badge.svg)](https://dissmodel.github.io/disscube/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/disscube.svg)](https://pypi.org/project/disscube/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23172450.svg)](https://doi.org/10.5281/zenodo.23172450)
 
 > **Status: Alpha — stable APIs for the core pipeline; declarative models still evolving.**
 
@@ -21,10 +23,17 @@ A **source** (`SpatialSource`) goes through a **derivation** (`SpatialDerivation
 ## Installation
 
 ```bash
+pip install disscube                 # from PyPI
+pip install "disscube[dissmodel]"    # + hand-off of the cube to DisSModel models
+```
+
+From a clone, for development:
+
+```bash
 git clone https://github.com/DisSModel/disscube.git
 cd disscube
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Basic usage

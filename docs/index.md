@@ -13,10 +13,17 @@ A **source** (`SpatialSource`) goes through a **derivation** that applies an **o
 ## Quick install
 
 ```bash
+pip install disscube                 # from PyPI
+pip install "disscube[dissmodel]"    # + hand-off of the cube to DisSModel models
+```
+
+From a clone, for development:
+
+```bash
 git clone https://github.com/DisSModel/disscube.git
 cd disscube
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Main workflow
