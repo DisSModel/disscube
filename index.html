@@ -1037,28 +1037,32 @@
 </code></pre></div>
 <p>A <strong>source</strong> (<code>SpatialSource</code>) goes through a <strong>derivation</strong> that applies an <strong>operator</strong> on a <strong>grid</strong> (<code>GridSpec</code>), producing a variable registered in the SQLite catalog and stored in Zarr.</p>
 <h2 id="quick-install">Quick install</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DisSModel/disscube.git
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>disscube
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>disscube<span class="w">                 </span><span class="c1"># from PyPI</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"disscube[dissmodel]"</span><span class="w">    </span><span class="c1"># + hand-off of the cube to DisSModel models</span>
+</code></pre></div>
+<p>From a clone, for development:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DisSModel/disscube.git
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>disscube
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
 </code></pre></div>
 <h2 id="main-workflow">Main workflow</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">CubeClient</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Derivation</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">cube</span> <span class="o">=</span> <span class="n">CubeClient</span><span class="p">(</span><span class="n">catalog</span><span class="o">=</span><span class="s2">"catalog.db"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="s2">"./data/"</span><span class="p">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">d</span> <span class="o">=</span> <span class="n">Derivation</span><span class="p">(</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">target</span><span class="o">=</span><span class="s2">"forest_pct"</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">source_id</span><span class="o">=</span><span class="s2">"mapbiomas_2020"</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">operator</span><span class="o">=</span><span class="s2">"percentage"</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">class_code</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">valid_from</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">valid_until</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="p">)</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">da</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"forest_pct"</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">CubeClient</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Derivation</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">cube</span> <span class="o">=</span> <span class="n">CubeClient</span><span class="p">(</span><span class="n">catalog</span><span class="o">=</span><span class="s2">"catalog.db"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="s2">"./data/"</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">d</span> <span class="o">=</span> <span class="n">Derivation</span><span class="p">(</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">target</span><span class="o">=</span><span class="s2">"forest_pct"</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">source_id</span><span class="o">=</span><span class="s2">"mapbiomas_2020"</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">operator</span><span class="o">=</span><span class="s2">"percentage"</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">class_code</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">valid_from</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">valid_until</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">da</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"forest_pct"</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="navigation">Navigation</h2>
 <ul>
