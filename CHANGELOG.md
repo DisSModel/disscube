@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **SQLite connections of the catalog are closed.** `with sqlite3.connect(...)` only ends the transaction;
+  every catalog call left a connection open until interpreter exit (`ResourceWarning: unclosed database`).
+
 ---
 
 ## [0.5.0] - 2026-10-05
