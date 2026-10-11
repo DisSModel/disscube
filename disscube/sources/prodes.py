@@ -14,7 +14,8 @@ turns the raster into a forest / deforested / other map for a given year::
 
 Codes of the local map: :data:`FOREST` (1), :data:`DEFORESTED` (2),
 :data:`OTHER` (3, non-forest vegetation and water), nodata 0 (clouds and
-anything the legend does not describe).
+anything the legend does not describe). With ``separate_water=True`` the hydrography
+of the edition is :data:`WATER` (4) and :data:`OTHER` is the non-forest vegetation only.
 
 **Years.** The edition distributed today labels deforestation by year from
 ``d2007`` on — the first of those codes holds everything deforested up to
@@ -51,6 +52,7 @@ DEFAULT_URL = (f"{TERRABRASILIS}/download/dataset/legal-amz-prodes/raster/"
                "prodes_amazonia_legal_2025_v20260408.zip")
 
 FOREST, DEFORESTED, OTHER = 1, 2, 3
+WATER = 4                     # only with separate_water=True; otherwise water is OTHER
 NODATA = 0
 
 
@@ -159,8 +161,12 @@ class Scheme:
             raise ValueError("the legend has no yearly deforestation classes (dYYYY)")
         return min(self.deforestation)
 
-    def lookup(self, year: int) -> dict[int, int]:
-        """Code -> FOREST / DEFORESTED / OTHER for the situation at the end of ``year``."""
+    def lookup(self, year: int, separate_water: bool = False) -> dict[int, int]:
+        """
+        Code -> FOREST / DEFORESTED / OTHER for the situation at the end of ``year``.
+
+        ``separate_water``: the hydrography of the edition is WATER instead of OTHER.
+        """
         if year < self.first_year:
             raise ValueError(
                 f"this PRODES edition separates deforestation from {self.first_year} on "
@@ -170,8 +176,10 @@ class Scheme:
         table: dict[int, int] = {}
         for code in self.forest:
             table[code] = FOREST
-        for code in self.non_forest | self.water:
+        for code in self.non_forest:
             table[code] = OTHER
+        for code in self.water:
+            table[code] = WATER if separate_water else OTHER
         for yr, code in {**self.deforestation, **self.residual}.items():
             table[code] = DEFORESTED if yr <= year else FOREST
         return table
@@ -204,13 +212,14 @@ def parse_legend(legend: dict[int, str]) -> Scheme:
 # Read and register
 # ---------------------------------------------------------------------------
 
-def read_prodes(year: int, bbox_geo: Sequence[float], files: ProdesFiles) -> tuple[Window2D, Scheme]:
-    """Forest / deforested / other at the end of ``year`` over ``bbox_geo``."""
+def read_prodes(year: int, bbox_geo: Sequence[float], files: ProdesFiles,
+                separate_water: bool = False) -> tuple[Window2D, Scheme]:
+    """Forest / deforested / other (and water, if ``separate_water``) at the end of ``year`` over ``bbox_geo``."""
     if files.qml is None:
         raise ValueError(f"{files.zip_path.name} has no .qml legend; cannot interpret the codes")
     scheme = parse_legend(read_qml_legend(files.qml))
     raw = read_window(str(files.tif), bbox_geo)
-    return reclassify(raw, scheme.lookup(year)), scheme
+    return reclassify(raw, scheme.lookup(year, separate_water)), scheme
 
 
 def register_prodes_source(
@@ -224,9 +233,13 @@ def register_prodes_source(
     cache_dir: str | Path | None = None,
     files: ProdesFiles | None = None,
     name: str | None = None,
+    separate_water: bool = False,
 ):
     """
     Register PRODES forest / deforested / other at the end of ``year`` as a source.
+
+    ``separate_water``: the hydrography class of the edition gets its own code (:data:`WATER`, 4)
+    instead of being part of ``other``.
 
     Downloads the edition on first use (see :func:`download`). The provenance
     records the edition URL, the ZIP's SHA-256, the legend as read from the
@@ -243,7 +256,8 @@ def register_prodes_source(
         "zip_checksum": files.zip_checksum,
         "year": year,
         "bbox_geo": list(bbox_geo),
-        "codes": {"forest": FOREST, "deforested": DEFORESTED, "other": OTHER, "nodata": NODATA},
+        "codes": {"forest": FOREST, "deforested": DEFORESTED, "other": OTHER, "nodata": NODATA,
+                  **({"water": WATER} if separate_water else {})},
         "first_separable_year": scheme.first_year,
         "legend": {str(k): v for k, v in read_qml_legend(files.qml).items()} if files.qml else None,
         "source": "https://terrabrasilis.dpi.inpe.br/downloads/",
@@ -251,9 +265,9 @@ def register_prodes_source(
     # Read and written a block of rows at a time: the window can be the whole Legal Amazon (9.7 billion
     # pixels), which does not fit in memory as one array. Same file as read_prodes() + write_geotiff().
     tif, crs = copy_window(str(files.tif), bbox_geo, Path(out_dir) / f"{source_id}.tif",
-                           lookup=scheme.lookup(year), out_nodata=NODATA)
+                           lookup=scheme.lookup(year, separate_water), out_nodata=NODATA)
     return register_file(
         cube, source_id, tif, crs, provenance,
         name=name or f"PRODES {files.zip_path.stem}, situation at the end of {year}",
-        time=year, tags=["prodes", f"edition:{files.zip_path.stem}", f"year:{year}"],
+        time=year, tags=["prodes", f"edition:{files.zip_path.stem}", f"year:{year}", *(["separate_water"] if separate_water else [])],
     )

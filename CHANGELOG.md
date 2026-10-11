@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **PRODES: `separate_water = true`** gives the hydrography class of the edition its own code (4) instead of folding it into
+  `other` (3), so a map of the classes can show rivers apart from non-forest vegetation. Off by default: the local map is
+  unchanged (1 forest, 2 deforested up to the year, 3 other).
 - **`majority` and `minority` accept `params = {groups = {label = [codes]}}`**: the map is read at a coarser level and
   the result is the label of the group that covers most (least) of the cell. One derivation gives the MapBiomas level-1
   class (`"1" = [3, 4, 5, 6, 49]`, …) from the leaf-class map. Codes in no group, and nodata, are ignored; a code in two

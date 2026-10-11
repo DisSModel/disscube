@@ -449,6 +449,7 @@ def _register_source(
                 raw,
                 files=files,
                 name=c.name,
+                separate_water=c.separate_water,
             )
         if isinstance(c, OsmSource):
             from disscube.sources import osm

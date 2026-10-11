@@ -156,3 +156,22 @@ def test_register_before_first_year_fails(server, tmp_path):
     files = prodes.download(server["url"], cache_dir=tmp_path / "cache")
     with pytest.raises(ValueError, match="use MapBiomas"):
         prodes.register_prodes_source(cube, "p", 2004, BBOX, tmp_path / "raw", files=files)
+
+
+def test_separate_water_keeps_hydrography_apart(server, tmp_path):
+    scheme = prodes.parse_legend(LEGEND)
+    assert scheme.lookup(2012)[91] == prodes.OTHER                    # default: folded into other
+    t = scheme.lookup(2012, separate_water=True)
+    assert t[91] == prodes.WATER == 4 and t[101] == prodes.OTHER and t[100] == prodes.FOREST
+
+    cube = CubeClient(catalog=str(tmp_path / "c.db"), store=str(tmp_path / "s"))
+    files = prodes.download(server["url"], cache_dir=tmp_path / "cache")
+    plain = prodes.register_prodes_source(cube, "p_plain", 2016, BBOX, tmp_path / "raw", files=files)
+    apart = prodes.register_prodes_source(cube, "p_water", 2016, BBOX, tmp_path / "raw", files=files,
+                                          separate_water=True)
+    with rasterio.open(plain.asset_url) as a, rasterio.open(apart.asset_url) as b:
+        va, vb = a.read(1), b.read(1)
+    assert prodes.WATER not in np.unique(va) and prodes.WATER in np.unique(vb)
+    assert np.array_equal(np.where(vb == prodes.WATER, prodes.OTHER, vb), va)   # only the water pixels change
+    prov = json.loads((tmp_path / "raw" / "p_water.provenance.json").read_text())
+    assert prov["codes"]["water"] == 4

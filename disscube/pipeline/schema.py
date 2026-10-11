@@ -118,6 +118,7 @@ class ProdesSource(_SourceBase):
     year: int | str | None = None
     url: str | None = None
     cache: str | None = None
+    separate_water: bool = False
 
 
 class ClassifiedSource(_SourceBase):
