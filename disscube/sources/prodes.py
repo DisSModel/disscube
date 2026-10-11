@@ -38,7 +38,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 from disscube.sources._categorical import read_qml_legend, reclassify, strip_code
-from disscube.sources._raster import Window2D, read_window, register_raster
+from disscube.sources._raster import Window2D, copy_window, read_window, register_file
 from disscube.utils import sha256_file
 
 log = logging.getLogger(__name__)
@@ -233,7 +233,9 @@ def register_prodes_source(
     ``.qml`` and the code mapping applied.
     """
     files = files or download(url, cache_dir)
-    window, scheme = read_prodes(year, bbox_geo, files)
+    if files.qml is None:
+        raise ValueError(f"{files.zip_path.name} has no .qml legend; cannot interpret the codes")
+    scheme = parse_legend(read_qml_legend(files.qml))
     provenance = {
         "dataset": "PRODES — Legal Amazon deforestation (INPE)",
         "edition": files.zip_path.stem,
@@ -246,9 +248,12 @@ def register_prodes_source(
         "legend": {str(k): v for k, v in read_qml_legend(files.qml).items()} if files.qml else None,
         "source": "https://terrabrasilis.dpi.inpe.br/downloads/",
     }
-    return register_raster(
-        cube, source_id, window, out_dir, provenance,
+    # Read and written a block of rows at a time: the window can be the whole Legal Amazon (9.7 billion
+    # pixels), which does not fit in memory as one array. Same file as read_prodes() + write_geotiff().
+    tif, crs = copy_window(str(files.tif), bbox_geo, Path(out_dir) / f"{source_id}.tif",
+                           lookup=scheme.lookup(year), out_nodata=NODATA)
+    return register_file(
+        cube, source_id, tif, crs, provenance,
         name=name or f"PRODES {files.zip_path.stem}, situation at the end of {year}",
         time=year, tags=["prodes", f"edition:{files.zip_path.stem}", f"year:{year}"],
-        dtype="uint8", nodata=NODATA,
     )

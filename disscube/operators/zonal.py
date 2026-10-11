@@ -269,6 +269,7 @@ def _continuous_reduce(
 # ---------------------------------------------------------------------------
 
 class MeanOperator(Operator):
+    block_safe = True
     name = "mean"
     _resampling = Resampling.average
 
@@ -297,6 +298,7 @@ class SumOperator(Operator):
       clipped to the grid, so a polygon crossing the border keeps its full
       denominator and only the part inside the grid is distributed.
     """
+    block_safe = True
 
     name = "sum"
     _resampling = Resampling.sum
@@ -383,6 +385,7 @@ def _cell_boxes(grid: GridSpec) -> np.ndarray:
 
 
 class StdOperator(Operator):
+    block_safe = True
     name = "std"
     # Standard deviation has no rasterio resampling equivalent; it requires a
     # real per-cell window pass, so this operator uses fine alignment.
@@ -412,6 +415,7 @@ class MedianOperator(Operator):
     aligned to a fine grid first: the median of per-cell means would not be the
     median of the pixels.
     """
+    block_safe = True
     name = "median"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
@@ -427,6 +431,7 @@ class MedianOperator(Operator):
 
 
 class MinOperator(Operator):
+    block_safe = True
     name = "min"
     _resampling = Resampling.min
 
@@ -437,6 +442,7 @@ class MinOperator(Operator):
 
 
 class MaxOperator(Operator):
+    block_safe = True
     name = "max"
     _resampling = Resampling.max
 
@@ -451,6 +457,7 @@ class MaxOperator(Operator):
 # ---------------------------------------------------------------------------
 
 class MajorityOperator(Operator):
+    block_safe = True
     name = "majority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
@@ -469,6 +476,7 @@ class MajorityOperator(Operator):
 
 
 class MinorityOperator(Operator):
+    block_safe = True
     name = "minority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
@@ -487,6 +495,7 @@ class MinorityOperator(Operator):
 
 
 class PercentageOperator(Operator):
+    block_safe = True
     name = "percentage"
     requires_class_code = True
     _resampling = Resampling.nearest

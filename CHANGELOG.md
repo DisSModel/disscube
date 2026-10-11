@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Sources and grids larger than memory.** The MapBiomas and PRODES adapters read the window and write the
+  registered GeoTIFF a block of rows at a time, in the file's own `uint8` (new `copy_window`, `register_file`),
+  instead of one float32 array of the whole window. `derive` aligns a raster source a strip of grid rows at
+  a time when it has more than `block_pixels` pixels (default 50 million, `DISSCUBE_BLOCK_PIXELS` or
+  `derive(..., block_pixels=)`), for the operators that work cell by cell (`Operator.block_safe`: mean, sum, std,
+  median, min, max, majority, minority, percentage). The aligner clips the source to the grid before
+  reprojecting. No new TOML syntax: the PRODES of the whole Legal Amazon (86,679 × 111,508 pixels) on a 5.28 km
+  grid, or MapBiomas over Brazil at 30 m, is one pipeline file. Registered MapBiomas files are byte for byte the
+  ones of 0.5.0. Class shares, majority and median of a strip equal those of the whole grid when GDAL's exact
+  transformer is used; with its default approximate one a cell on an edge can pick the neighbouring source
+  pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12. The BDC adapter still reads whole windows.
+
 ### Fixed
 - **`Error in sys.excepthook:` at the end of `disscube run`.** The aligner opened the source raster and never
   closed it; the open handle was finalised at interpreter exit. It is now closed once the aligned arrays are in memory.

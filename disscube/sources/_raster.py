@@ -69,6 +69,14 @@ def portable_crs(crs: CRS) -> CRS:
     return CRS.from_string(BDC_CRS) if is_bdc_albers(crs) else crs
 
 
+def _window_of(ds, bbox_geo: Sequence[float]) -> Window:
+    """Pixel window of the open raster ``ds`` that covers ``bbox_geo`` (WGS84), clipped to the file."""
+    bounds = transform_bounds("EPSG:4326", ds.crs, *bbox_geo, densify_pts=21)
+    win = from_bounds(*bounds, transform=ds.transform)
+    win = win.round_offsets().round_lengths()
+    return win.intersection(Window(0, 0, ds.width, ds.height))
+
+
 def read_window(
     href: str,
     bbox_geo: Sequence[float],
@@ -87,10 +95,7 @@ def read_window(
     value they use, such as MapBiomas' 0).
     """
     with rasterio.open(href) as ds:
-        bounds = transform_bounds("EPSG:4326", ds.crs, *bbox_geo, densify_pts=21)
-        win = from_bounds(*bounds, transform=ds.transform)
-        win = win.round_offsets().round_lengths()
-        win = win.intersection(Window(0, 0, ds.width, ds.height))
+        win = _window_of(ds, bbox_geo)
         raw = ds.read(1, window=win)
         transform = ds.window_transform(win)
         nodata = nodata if nodata is not None else ds.nodata
@@ -216,6 +221,66 @@ def write_geotiff(
 
 
 
+#: Rows of pixels read and written at a time by :func:`copy_window` (a 111 508-pixel-wide
+#: uint8 strip of this height is about 114 MB).
+COPY_BLOCK_ROWS = 1024
+
+
+def copy_window(
+    href: str,
+    bbox_geo: Sequence[float],
+    path: str | Path,
+    *,
+    nodata: float | None = None,
+    lookup: dict[int, int] | None = None,
+    out_nodata: int = 0,
+    block_rows: int = COPY_BLOCK_ROWS,
+) -> tuple[Path, CRS]:
+    """
+    Write the pixels of ``href`` that cover ``bbox_geo`` to a uint8 GeoTIFF, a block of rows at a time.
+
+    Same result as ``read_window`` + ``write_geotiff(dtype="uint8")`` for an integer source, but memory
+    is bounded by ``block_rows`` instead of the size of the window (the window of PRODES over the Legal
+    Amazon is 9.7 billion pixels; as float32 it would take 39 GB). ``nodata`` overrides the file's;
+    those pixels are written as ``out_nodata``. ``lookup`` maps source codes to output codes
+    (``reclassify``'s job in the whole-window path); a code that is not in it becomes ``out_nodata``.
+    Returns the file and the source CRS.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with rasterio.open(href) as ds:
+        win = _window_of(ds, bbox_geo)
+        nd = nodata if nodata is not None else ds.nodata
+        lut = None
+        if lookup is not None:
+            if ds.dtypes[0] != "uint8":
+                raise ValueError(f"a lookup table needs a uint8 source; {href} is {ds.dtypes[0]}")
+            lut = np.full(256, out_nodata, dtype="uint8")
+            for old, new in lookup.items():
+                if 0 <= int(old) < 256:
+                    lut[int(old)] = int(new)
+            if nd is not None and not np.isnan(nd) and 0 <= int(nd) < 256:
+                lut[int(nd)] = out_nodata
+        transform = ds.window_transform(win)
+        crs = ds.crs
+        with rasterio.open(
+            path, "w", driver="GTiff", height=int(win.height), width=int(win.width), count=1, dtype="uint8",
+            crs=portable_crs(crs), transform=transform, nodata=out_nodata, compress="deflate",
+        ) as dst:
+            for r in range(0, int(win.height), block_rows):
+                h = min(block_rows, int(win.height) - r)
+                sub = Window(win.col_off, win.row_off + r, win.width, h)
+                raw = ds.read(1, window=sub)
+                if lut is not None:
+                    block = lut[raw]
+                else:
+                    block = raw.astype("uint8")
+                    if nd is not None and not np.isnan(nd):
+                        block[raw == nd] = out_nodata
+                dst.write(block, 1, window=Window(0, r, int(win.width), h))
+    return path, crs
+
+
 # ---------------------------------------------------------------------------
 # Registration with provenance
 # ---------------------------------------------------------------------------
@@ -243,10 +308,27 @@ def register_raster(
     ``dtype``/``nodata`` are passed to :func:`write_geotiff` (integer types for
     categorical layers). Returns the ``SpatialSource``.
     """
-    from disscube.models import SpatialSource
-
     out_dir = Path(out_dir)
     tif = write_geotiff(window, out_dir / f"{source_id}.tif", dtype=dtype, nodata=nodata)
+    return register_file(cube, source_id, tif, window.crs, provenance, name=name, time=time, tags=tags)
+
+
+def register_file(
+    cube,
+    source_id: str,
+    tif: str | Path,
+    crs: CRS,
+    provenance: dict,
+    *,
+    name: str | None = None,
+    time: int | None = None,
+    tags: Sequence[str] = (),
+):
+    """Register a GeoTIFF already written by an adapter: checksum, provenance sidecar, catalog entry."""
+    from disscube.models import SpatialSource
+
+    tif = Path(tif)
+    out_dir = tif.parent
     checksum = sha256_file(tif)
     record = {
         **provenance,
@@ -266,7 +348,7 @@ def register_raster(
         format="raster",
         asset_url=str(tif),
         checksum=checksum,
-        crs=BDC_CRS if is_bdc_albers(window.crs) else window.crs.to_string(),
+        crs=BDC_CRS if is_bdc_albers(crs) else crs.to_string(),
         time=time,
         tags=[*tags, f"provenance:{prov_path}"],
     )

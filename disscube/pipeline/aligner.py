@@ -102,6 +102,41 @@ def _with_non_colliding_nodata(band: xr.DataArray) -> xr.DataArray:
     return out.rio.write_nodata(np.iinfo(wider).max, encoded=False)
 
 
+def _clip_to_grid(band: xr.DataArray, grid: GridSpec, pad: int = 2) -> xr.DataArray:
+    """
+    Keep only the pixels of ``band`` that can reach the cells of ``grid``.
+
+    The band is opened lazily, so slicing it reads just that window: a 9.7-billion-pixel raster
+    aligned to a small grid no longer has to be loaded whole. ``pad`` extra source pixels on each side
+    cover the pixels that only partly overlap the edge cells, so the aligned values are the same as
+    from the whole band. A grid with no overlap with the band gets a one-pixel window at the nearest
+    edge, which aligns to nodata. Bands that are not north-up are returned as they are.
+    """
+    try:
+        from rasterio.warp import transform_bounds
+        from rasterio.windows import from_bounds
+
+        crs, tr = band.rio.crs, band.rio.transform()
+        ny, nx = band.sizes["y"], band.sizes["x"]
+        if crs is None or tr.b != 0 or tr.d != 0 or tr.e >= 0 or tr.a <= 0:
+            return band
+        left, bottom, right, top = transform_bounds(grid.crs, crs, *grid.bbox, densify_pts=21)
+        w = from_bounds(left, bottom, right, top, transform=tr)
+        c0, c1 = int(np.floor(w.col_off)) - pad, int(np.ceil(w.col_off + w.width)) + pad
+        r0, r1 = int(np.floor(w.row_off)) - pad, int(np.ceil(w.row_off + w.height)) + pad
+        c0, c1, r0, r1 = max(c0, 0), min(c1, nx), max(r0, 0), min(r1, ny)
+        if c1 <= c0:
+            c0 = min(max(c0, 0), nx - 1); c1 = c0 + 1
+        if r1 <= r0:
+            r0 = min(max(r0, 0), ny - 1); r1 = r0 + 1
+        if (c0, c1, r0, r1) == (0, nx, 0, ny):
+            return band
+        return band.isel(y=slice(r0, r1), x=slice(c0, c1))
+    except Exception:
+        log.debug("could not clip the source to the grid; using the whole band", exc_info=True)
+        return band
+
+
 class GridAligner(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
         grid = ctx.grid
@@ -216,6 +251,9 @@ class GridAligner(PipelineStage):
                 else:
                     band = ds_src.isel(band=0) if "band" in ds_src.dims else ds_src
 
+                whole_band = band
+                band = _clip_to_grid(band, grid)
+
                 # ── Per-operator resampling method ─────────────────────────
                 op_cls = OPERATOR_REGISTRY.get(var.operator)
                 needs_fine = bool(getattr(op_cls, "needs_fine_alignment", False))
@@ -225,7 +263,11 @@ class GridAligner(PipelineStage):
                     # Reproject with NEAREST (never average a class code) onto a
                     # fine grid that shares the target grid origin, at a resolution
                     # that is an integer sub-multiple of the target cell size.
-                    aligned = self._align_fine(band, grid, var.params.get("subcells"))
+                    # The fine resolution is chosen from the whole source, not from the clipped window:
+                    # the resolution GDAL proposes depends on the extent, and every strip of a grid must
+                    # use the one the whole grid would.
+                    aligned = self._align_fine(band, grid, var.params.get("subcells"),
+                                               src_res=self._source_resolution(whole_band, grid))
                     result[var.name] = aligned
                     log.debug(
                         "fine-aligned '%s' via '%s' (nearest, fine shape=%s -> target=%s)",
@@ -272,8 +314,23 @@ class GridAligner(PipelineStage):
     # Fine alignment for categorical operators
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _source_resolution(band: xr.DataArray, grid: GridSpec) -> float:
+        """The source resolution in the grid CRS: the one GDAL would choose to reproject ``band``."""
+        from rasterio.warp import calculate_default_transform
+
+        try:
+            rows, cols = band.rio.shape
+            src_transform, _, _ = calculate_default_transform(
+                band.rio.crs, grid.crs, cols, rows, *band.rio.bounds()
+            )
+            return abs(float(src_transform.a))
+        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
+            return grid.resolution
+
     def _align_fine(
-        self, band: xr.DataArray, grid: GridSpec, max_subcells: int | None = None
+        self, band: xr.DataArray, grid: GridSpec, max_subcells: int | None = None,
+        src_res: float | None = None,
     ) -> xr.DataArray:
         """
         Reproject ``band`` onto a fine grid snapped to the target grid origin.
@@ -309,20 +366,9 @@ class GridAligner(PipelineStage):
         """
         from affine import Affine
 
-        # The source resolution in target CRS units: the resolution GDAL would
-        # choose to reproject it (the same one ``rio.reproject`` uses by
-        # default), computed without reprojecting the pixels.
-        from rasterio.warp import calculate_default_transform
-
         band = _with_non_colliding_nodata(band)
-        try:
-            rows, cols = band.rio.shape
-            src_transform, _, _ = calculate_default_transform(
-                band.rio.crs, grid.crs, cols, rows, *band.rio.bounds()
-            )
-            src_res = abs(float(src_transform.a))
-        except Exception:  # noqa: BLE001 — defensive fallback: the .rio accessor raises undocumented types (e.g. ValueError, CRSError)
-            src_res = grid.resolution
+        if src_res is None:
+            src_res = self._source_resolution(band, grid)
 
         target_res = grid.resolution
         if src_res <= 0 or src_res >= target_res:
