@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`majority` and `minority` accept `params = {groups = {label = [codes]}}`**: the map is read at a coarser level and
+  the result is the label of the group that covers most (least) of the cell. One derivation gives the MapBiomas level-1
+  class (`"1" = [3, 4, 5, 6, 49]`, …) from the leaf-class map. Codes in no group, and nodata, are ignored; a code in two
+  groups is an error. In a pipeline file the table is `[derive.params.groups]`.
 - **`percentage` accepts a list of classes**: `class_code = [3, 4, 5, 6, 49]` is the share of the cell in any of
   them, for classes that are a group of codes (a MapBiomas level-1 class is a group of leaf codes). Raster sources
   only; a vector source still takes one class.

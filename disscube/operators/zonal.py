@@ -73,6 +73,34 @@ def _fine_array(data: xr.DataArray) -> tuple[np.ndarray, float | None]:
     return arr, nodata
 
 
+def _regroup(fine: np.ndarray, groups) -> np.ndarray:
+    """
+    Replace the class codes of ``fine`` by the label of the group that lists them.
+
+    ``groups`` is ``{label: [codes]}`` (labels may be strings, as TOML keys are). Pixels whose code is in no
+    group, and nodata, become NaN, which the reduction ignores. This is how a map of leaf classes is read
+    at a coarser level (MapBiomas level 1: ``{1 = [3, 4, 5, 6, 49], 3 = [15, 39, ...]}``).
+    """
+    if not isinstance(groups, dict) or not groups:
+        raise ValueError("'groups' must be a table {label = [codes]}")
+    out = np.full(fine.shape, np.nan, dtype=np.float64)
+    seen: set[int] = set()
+    for label, codes in groups.items():
+        try:
+            value = float(int(label))
+        except (TypeError, ValueError):
+            raise ValueError(f"group label {label!r} must be an integer") from None
+        codes = [codes] if isinstance(codes, int) else list(codes)
+        if seen & set(codes):
+            raise ValueError(f"code(s) {sorted(seen & set(codes))} listed in more than one group")
+        seen |= set(codes)
+        out[np.isin(fine, np.asarray(codes, dtype=np.float64))] = value
+    return out
+
+
+_GROUPS_DOC = "{label = [codes]}: read the map at a coarser level; the result is the label of the group (codes in no group are ignored)"
+
+
 def _windows(n_fine: int, n_target: int) -> list[tuple[int, int]]:
     """
     Build per-target-cell (start, stop) index ranges along one axis.
@@ -463,11 +491,16 @@ class MajorityOperator(Operator):
     name = "majority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
-    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
+    params: ClassVar[dict[str, str]] = {
+        "subcells": "at most this many fine pixels per cell along each axis (memory bound)",
+        "groups": _GROUPS_DOC,
+    }
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             fine, nodata = _fine_array(data)
+            if var.params.get("groups"):
+                fine, nodata = _regroup(fine, var.params["groups"]), None
             value, cov, dom = _categorical_reduce(fine, nodata, grid, "majority", None)
             return _attach_purity(value, cov, dom, grid)
         if isinstance(data, gpd.GeoDataFrame):
@@ -482,11 +515,16 @@ class MinorityOperator(Operator):
     name = "minority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
-    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
+    params: ClassVar[dict[str, str]] = {
+        "subcells": "at most this many fine pixels per cell along each axis (memory bound)",
+        "groups": _GROUPS_DOC,
+    }
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             fine, nodata = _fine_array(data)
+            if var.params.get("groups"):
+                fine, nodata = _regroup(fine, var.params["groups"]), None
             value, cov, dom = _categorical_reduce(fine, nodata, grid, "minority", None)
             return _attach_purity(value, cov, dom, grid)
         if isinstance(data, gpd.GeoDataFrame):
