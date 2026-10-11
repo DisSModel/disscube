@@ -95,7 +95,7 @@ def _categorical_reduce(
     nodata: float | None,
     grid: GridSpec,
     mode: str,
-    class_code: int | None,
+    class_code: int | list[int] | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Reduce a fine categorical array into the target grid.
@@ -110,8 +110,9 @@ def _categorical_reduce(
         Target grid (provides ``rows`` / ``cols``).
     mode : {"percentage", "majority", "minority"}
         Aggregation to compute for the primary output.
-    class_code : int | None
-        Target class for ``percentage``.
+    class_code : int | list[int] | None
+        Target class for ``percentage``; with a list, the share of the cell in any of them
+        (e.g. the leaf classes of one MapBiomas level-1 class).
 
     Returns
     -------
@@ -123,6 +124,7 @@ def _categorical_reduce(
     dominance_purity : np.ndarray
         count(dominant_class) / valid_pixels per cell (categorical metric).
     """
+    wanted = np.atleast_1d(class_code if class_code is not None else []).astype(np.int64)
     fr, fc = fine.shape
     tr, tc = grid.rows, grid.cols
 
@@ -161,7 +163,7 @@ def _categorical_reduce(
             dominance[ti, tj] = dom_count / n_valid
 
             if mode == "percentage":
-                hit = int(counts[classes == class_code].sum()) if class_code in classes else 0
+                hit = int(counts[np.isin(classes, wanted)].sum())
                 value[ti, tj] = hit / n_valid
             elif mode == "majority":
                 value[ti, tj] = dom_class
@@ -514,6 +516,8 @@ class PercentageOperator(Operator):
         if isinstance(data, gpd.GeoDataFrame):
             if var.class_code is None:
                 raise ValueError("'percentage' requires class_code to be set.")
+            if isinstance(var.class_code, list):
+                raise TypeError("'percentage' over a vector source takes a single class_code, not a list.")
             shapes = [(g, var.class_code) for g in data.geometry if g is not None]
             return _wrap(_rasterize(shapes, grid), grid)
         raise TypeError(f"'percentage' got unexpected type {type(data).__name__}")

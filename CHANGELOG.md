@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`percentage` accepts a list of classes**: `class_code = [3, 4, 5, 6, 49]` is the share of the cell in any of
+  them, for classes that are a group of codes (a MapBiomas level-1 class is a group of leaf codes). Raster sources
+  only; a vector source still takes one class.
 - **Sources and grids larger than memory.** The MapBiomas and PRODES adapters read the window and write the
   registered GeoTIFF a block of rows at a time, in the file's own `uint8` (new `copy_window`, `register_file`),
   instead of one float32 array of the whole window. `derive` aligns a raster source a strip of grid rows at

@@ -193,7 +193,7 @@ class DeriveConfig(_Strict):
     target: str
     source: str
     operator: str
-    class_code: int | None = None
+    class_code: int | list[int] | None = None
     role: str = "driver"
     years: list[int] | None = None
     params: dict[str, Any] = Field(default_factory=dict)

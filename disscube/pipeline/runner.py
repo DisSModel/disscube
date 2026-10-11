@@ -67,7 +67,7 @@ class PlannedDerive:
     target: str
     source: str
     operator: str
-    class_code: int | None
+    class_code: int | list[int] | None
     role: str
     params: dict = field(default_factory=dict)
     fill: str | None = None
