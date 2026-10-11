@@ -170,98 +170,103 @@ class GridAligner(PipelineStage):
         # file's time metadata, and units such as "years since 2000-1-1" do not
         # decode; the time of a source is set when it is registered.
         opened = rioxarray.open_rasterio(url, decode_times=False)
-        if not isinstance(opened, xr.DataArray):
-            raise TypeError(
-                f"{url!r} opened as {type(opened).__name__}, not a single raster; "
-                "a multi-subdataset file needs an explicit variable (e.g. NETCDF:file:var)"
-            )
-        ds_src = opened
-        # GDAL names the band axis of a NetCDF variable after its own
-        # dimension (e.g. "time"); every band of a raster is a "band" here.
-        extra = [d for d in ds_src.dims if d not in ("y", "x")]
-        if len(extra) == 1 and extra[0] != "band":
-            ds_src = ds_src.rename({extra[0]: "band"})
-            ds_src = ds_src.assign_coords(band=np.arange(1, ds_src.sizes["band"] + 1))
-        if nodata is not None:
-            ds_src = ds_src.rio.write_nodata(nodata, encoded=False)
-        # Map of variable name -> aligned DataArray. A plain dict (not a
-        # Dataset) is used because fine-aligned categorical arrays have a
-        # different shape than the target grid; putting them in a Dataset
-        # keyed on grid coords would trigger coordinate realignment to NaN.
-        result: dict[str, xr.DataArray] = {}
+        # Close the file when done: the aligned arrays are in memory, and a handle left open is
+        # finalised at interpreter exit, which printed `Error in sys.excepthook` after every run.
+        try:
+            if not isinstance(opened, xr.DataArray):
+                raise TypeError(
+                    f"{url!r} opened as {type(opened).__name__}, not a single raster; "
+                    "a multi-subdataset file needs an explicit variable (e.g. NETCDF:file:var)"
+                )
+            ds_src = opened
+            # GDAL names the band axis of a NetCDF variable after its own
+            # dimension (e.g. "time"); every band of a raster is a "band" here.
+            extra = [d for d in ds_src.dims if d not in ("y", "x")]
+            if len(extra) == 1 and extra[0] != "band":
+                ds_src = ds_src.rename({extra[0]: "band"})
+                ds_src = ds_src.assign_coords(band=np.arange(1, ds_src.sizes["band"] + 1))
+            if nodata is not None:
+                ds_src = ds_src.rio.write_nodata(nodata, encoded=False)
+            # Map of variable name -> aligned DataArray. A plain dict (not a
+            # Dataset) is used because fine-aligned categorical arrays have a
+            # different shape than the target grid; putting them in a Dataset
+            # keyed on grid coords would trigger coordinate realignment to NaN.
+            result: dict[str, xr.DataArray] = {}
 
-        for i, var in enumerate(variables):
-            # ── Band selection ─────────────────────────────────────────
-            if "band" in ds_src.dims and ds_src.sizes["band"] > 1:
-                if band_map and var.name in band_map:
-                    band_idx = band_map[var.name] - 1  # 1-based → 0-based
-                    if not (0 <= band_idx < ds_src.sizes["band"]):
+            for i, var in enumerate(variables):
+                # ── Band selection ─────────────────────────────────────────
+                if "band" in ds_src.dims and ds_src.sizes["band"] > 1:
+                    if band_map and var.name in band_map:
+                        band_idx = band_map[var.name] - 1  # 1-based → 0-based
+                        if not (0 <= band_idx < ds_src.sizes["band"]):
+                            raise ValueError(
+                                f"Band index {band_idx + 1} for variable "
+                                f"'{var.name}' is out of range; "
+                                f"source has {ds_src.sizes['band']} bands."
+                            )
+                    elif i < ds_src.sizes["band"]:
+                        band_idx = i
+                    else:
                         raise ValueError(
-                            f"Band index {band_idx + 1} for variable "
-                            f"'{var.name}' is out of range; "
-                            f"source has {ds_src.sizes['band']} bands."
+                            f"No band available for variable '{var.name}' at "
+                            f"index {i}; source has {ds_src.sizes['band']} bands "
+                            "and no band_map was provided."
                         )
-                elif i < ds_src.sizes["band"]:
-                    band_idx = i
+                    band = ds_src.isel(band=band_idx)
                 else:
-                    raise ValueError(
-                        f"No band available for variable '{var.name}' at "
-                        f"index {i}; source has {ds_src.sizes['band']} bands "
-                        "and no band_map was provided."
+                    band = ds_src.isel(band=0) if "band" in ds_src.dims else ds_src
+
+                # ── Per-operator resampling method ─────────────────────────
+                op_cls = OPERATOR_REGISTRY.get(var.operator)
+                needs_fine = bool(getattr(op_cls, "needs_fine_alignment", False))
+
+                if needs_fine:
+                    # Categorical operators must see sub-cell class composition.
+                    # Reproject with NEAREST (never average a class code) onto a
+                    # fine grid that shares the target grid origin, at a resolution
+                    # that is an integer sub-multiple of the target cell size.
+                    aligned = self._align_fine(band, grid, var.params.get("subcells"))
+                    result[var.name] = aligned
+                    log.debug(
+                        "fine-aligned '%s' via '%s' (nearest, fine shape=%s -> target=%s)",
+                        var.name, var.operator, aligned.rio.shape, (grid.rows, grid.cols),
                     )
-                band = ds_src.isel(band=band_idx)
-            else:
-                band = ds_src.isel(band=0) if "band" in ds_src.dims else ds_src
+                    continue
 
-            # ── Per-operator resampling method ─────────────────────────
-            op_cls = OPERATOR_REGISTRY.get(var.operator)
-            needs_fine = bool(getattr(op_cls, "needs_fine_alignment", False))
+                resampling: Resampling = (
+                    op_cls.resampling() if op_cls else Resampling.nearest
+                )
 
-            if needs_fine:
-                # Categorical operators must see sub-cell class composition.
-                # Reproject with NEAREST (never average a class code) onto a
-                # fine grid that shares the target grid origin, at a resolution
-                # that is an integer sub-multiple of the target cell size.
-                aligned = self._align_fine(band, grid, var.params.get("subcells"))
-                result[var.name] = aligned
+                # ── Reproject to target grid ───────────────────────────────
+                # Continuous operators work in float64 with NaN as nodata (see
+                # _as_float_with_nan_nodata for why the source dtype is unsafe).
+                band = _as_float_with_nan_nodata(band)
+                aligned = band.rio.reproject(
+                    grid.crs,
+                    shape=(grid.rows, grid.cols),
+                    transform=grid.transform,
+                    resampling=resampling,
+                )
+
+                # ── Alignment invariant ────────────────────────────────────
+                actual = aligned.rio.shape
+                expected = (grid.rows, grid.cols)
+                if actual != expected:
+                    raise ValueError(
+                        f"GridAligner: variable '{var.name}' alignment produced "
+                        f"shape {actual}, expected {expected} for grid '{grid.id}'. "
+                        f"Source: {url}"
+                    )
+
+                result[var.name] = aligned.transpose("y", "x")
                 log.debug(
-                    "fine-aligned '%s' via '%s' (nearest, fine shape=%s -> target=%s)",
-                    var.name, var.operator, aligned.rio.shape, (grid.rows, grid.cols),
-                )
-                continue
-
-            resampling: Resampling = (
-                op_cls.resampling() if op_cls else Resampling.nearest
-            )
-
-            # ── Reproject to target grid ───────────────────────────────
-            # Continuous operators work in float64 with NaN as nodata (see
-            # _as_float_with_nan_nodata for why the source dtype is unsafe).
-            band = _as_float_with_nan_nodata(band)
-            aligned = band.rio.reproject(
-                grid.crs,
-                shape=(grid.rows, grid.cols),
-                transform=grid.transform,
-                resampling=resampling,
-            )
-
-            # ── Alignment invariant ────────────────────────────────────
-            actual = aligned.rio.shape
-            expected = (grid.rows, grid.cols)
-            if actual != expected:
-                raise ValueError(
-                    f"GridAligner: variable '{var.name}' alignment produced "
-                    f"shape {actual}, expected {expected} for grid '{grid.id}'. "
-                    f"Source: {url}"
+                    "aligned '%s' via '%s' (resampling=%s, shape=%s)",
+                    var.name, var.operator, resampling.name, actual,
                 )
 
-            result[var.name] = aligned.transpose("y", "x")
-            log.debug(
-                "aligned '%s' via '%s' (resampling=%s, shape=%s)",
-                var.name, var.operator, resampling.name, actual,
-            )
-
-        return result
+            return result
+        finally:
+            opened.close()
 
     # ------------------------------------------------------------------
     # Fine alignment for categorical operators

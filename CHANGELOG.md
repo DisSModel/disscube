@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **`Error in sys.excepthook:` at the end of `disscube run`.** The aligner opened the source raster and never
+  closed it; the open handle was finalised at interpreter exit. It is now closed once the aligned arrays are in memory.
 - **SQLite connections of the catalog are closed.** `with sqlite3.connect(...)` only ends the transaction;
   every catalog call left a connection open until interpreter exit (`ResourceWarning: unclosed database`).
 
