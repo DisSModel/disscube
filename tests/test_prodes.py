@@ -158,20 +158,37 @@ def test_register_before_first_year_fails(server, tmp_path):
         prodes.register_prodes_source(cube, "p", 2004, BBOX, tmp_path / "raw", files=files)
 
 
-def test_separate_water_keeps_hydrography_apart(server, tmp_path):
+def test_codes_choose_the_local_code_of_each_category(server, tmp_path):
     scheme = prodes.parse_legend(LEGEND)
-    assert scheme.lookup(2012)[91] == prodes.OTHER                    # default: folded into other
-    t = scheme.lookup(2012, separate_water=True)
-    assert t[91] == prodes.WATER == 4 and t[101] == prodes.OTHER and t[100] == prodes.FOREST
+    assert scheme.lookup(2012)[91] == scheme.lookup(2012)[101] == 3   # default: water and non-forest together
+    t = scheme.lookup(2012, {"water": 4})
+    assert t[91] == 4 and t[101] == 3 and t[100] == prodes.FOREST
+    merged = scheme.lookup(2012, {"forest": 7, "non_forest": 7, "water": 7})
+    assert merged[100] == merged[101] == merged[91] == 7 and merged[7] == prodes.DEFORESTED
+    with pytest.raises(ValueError, match="unknown PRODES categories"):
+        prodes.resolve_codes({"cloud": 9})
+    for bad in (0, 256, 2.5, True):
+        with pytest.raises(ValueError, match="1 to 255"):
+            prodes.resolve_codes({"water": bad})
 
     cube = CubeClient(catalog=str(tmp_path / "c.db"), store=str(tmp_path / "s"))
     files = prodes.download(server["url"], cache_dir=tmp_path / "cache")
     plain = prodes.register_prodes_source(cube, "p_plain", 2016, BBOX, tmp_path / "raw", files=files)
     apart = prodes.register_prodes_source(cube, "p_water", 2016, BBOX, tmp_path / "raw", files=files,
-                                          separate_water=True)
+                                          codes={"water": 4})
     with rasterio.open(plain.asset_url) as a, rasterio.open(apart.asset_url) as b:
         va, vb = a.read(1), b.read(1)
-    assert prodes.WATER not in np.unique(va) and prodes.WATER in np.unique(vb)
-    assert np.array_equal(np.where(vb == prodes.WATER, prodes.OTHER, vb), va)   # only the water pixels change
+    assert 4 not in np.unique(va) and 4 in np.unique(vb)
+    assert np.array_equal(np.where(vb == 4, 3, vb), va)               # only the water pixels change
     prov = json.loads((tmp_path / "raw" / "p_water.provenance.json").read_text())
-    assert prov["codes"]["water"] == 4
+    assert prov["codes"] == {"forest": 1, "deforested": 2, "non_forest": 3, "water": 4, "nodata": 0}
+
+
+def test_codes_in_a_pipeline_file(tmp_path):
+    from pydantic import ValidationError
+
+    from disscube.pipeline.schema import ProdesSource
+
+    assert ProdesSource(id="p", type="prodes", codes={"water": 4}).codes == {"water": 4}
+    with pytest.raises(ValidationError, match="unknown PRODES categories"):
+        ProdesSource(id="p", type="prodes", codes={"agua": 4})

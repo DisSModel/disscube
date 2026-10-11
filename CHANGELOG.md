@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **PRODES: `separate_water = true`** gives the hydrography class of the edition its own code (4) instead of folding it into
-  `other` (3), so a map of the classes can show rivers apart from non-forest vegetation. Off by default: the local map is
-  unchanged (1 forest, 2 deforested up to the year, 3 other).
+- **PRODES: the local code of each category is declared in the pipeline file.** `[source.codes]` (or `codes=` in
+  `register_prodes_source`) gives the code of `forest`, `deforested`, `non_forest` and `water`; categories with the same code
+  are merged. The default is the map of before (1 forest, 2 deforested up to the year, 3 non-forest vegetation and water
+  together); `water = 4` keeps the hydrography apart, so a map of the classes shows rivers apart from non-forest vegetation.
+  The legend is still read by label (`dAAAA`, `rAAAA`, hidrografia, não floresta, floresta; clouds are no data), so the
+  categories do not depend on the numbers of an edition. See `docs/guides/landcover.md`.
 - **`majority` and `minority` accept `params = {groups = {label = [codes]}}`**: the map is read at a coarser level and
   the result is the label of the group that covers most (least) of the cell. One derivation gives the MapBiomas level-1
   class (`"1" = [3, 4, 5, 6, 49]`, …) from the leaf-class map. Codes in no group, and nodata, are ignored; a code in two

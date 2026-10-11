@@ -96,7 +96,7 @@ relative to the pipeline file, so a folder with its TOML and data is portable.
 | `file` | `path` (raster, vector, or `zip://…` shapefile), `crs`, `format`, `time`, `variable`, `nodata`, `read` | a local file, checksummed |
 | `bdc` | `collection`, `asset` **or** `normalized_difference = [a, b]`, `period`, `reducer`, `scale`, `offset`, `url`, `time` | `disscube.sources.bdc` |
 | `mapbiomas` | `year`, `collection` (11), `resolution` (30), `url` | `disscube.sources.mapbiomas` |
-| `prodes` | `year`, `url`, `cache`, `separate_water` | `disscube.sources.prodes` |
+| `prodes` | `year`, `url`, `cache`, `codes` | `disscube.sources.prodes` |
 | `classified` | `path`, `legend` (table or `.qml`/`.json`/`.csv` file), `time`, `nodata`, `producer` | `disscube.sources.classified` |
 | `osm` | `query`, `margin`, `date`, `endpoints`, `cache`, `time` (see [OpenStreetMap](osm.md)) | `disscube.sources.osm` |
 | `dem` | `dem` or `tiles`, `product`, `margin`, `resolution`, `cache` (see [Elevation and slope](dem.md)) | `disscube.sources.dem` |

@@ -14,8 +14,9 @@ turns the raster into a forest / deforested / other map for a given year::
 
 Codes of the local map: :data:`FOREST` (1), :data:`DEFORESTED` (2),
 :data:`OTHER` (3, non-forest vegetation and water), nodata 0 (clouds and
-anything the legend does not describe). With ``separate_water=True`` the hydrography
-of the edition is :data:`WATER` (4) and :data:`OTHER` is the non-forest vegetation only.
+anything the legend does not describe). The code of each category is
+a choice (``codes=``, or ``[source.codes]`` in a pipeline file): categories given the same code are merged, so
+``water = 4`` keeps the hydrography of the edition apart from the non-forest vegetation.
 
 **Years.** The edition distributed today labels deforestation by year from
 ``d2007`` on — the first of those codes holds everything deforested up to
@@ -33,7 +34,7 @@ import shutil
 import tempfile
 import urllib.request
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -52,7 +53,25 @@ DEFAULT_URL = (f"{TERRABRASILIS}/download/dataset/legal-amz-prodes/raster/"
                "prodes_amazonia_legal_2025_v20260408.zip")
 
 FOREST, DEFORESTED, OTHER = 1, 2, 3
-WATER = 4                     # only with separate_water=True; otherwise water is OTHER
+
+#: What the legend of an edition is read as, and the local code each category gets by default.
+#: ``other`` (3) of the default map is ``non_forest`` and ``water`` together.
+CATEGORIES = ("forest", "deforested", "non_forest", "water")
+DEFAULT_CODES = {"forest": FOREST, "deforested": DEFORESTED, "non_forest": OTHER, "water": OTHER}
+
+
+def resolve_codes(codes: Mapping[str, int] | None = None) -> dict[str, int]:
+    """The local code of every category: ``codes`` over :data:`DEFAULT_CODES`, checked."""
+    codes = dict(codes or {})
+    unknown = sorted(set(codes) - set(CATEGORIES))
+    if unknown:
+        raise ValueError(f"unknown PRODES categories {unknown}; the categories are {list(CATEGORIES)}")
+    out = {**DEFAULT_CODES, **codes}
+    for name, code in out.items():
+        if isinstance(code, bool) or not isinstance(code, int) or not 1 <= code <= 255:
+            raise ValueError(f"PRODES code of {name!r} must be an integer from 1 to 255 (0 is no data), got {code!r}")
+    return out
+
 NODATA = 0
 
 
@@ -161,12 +180,14 @@ class Scheme:
             raise ValueError("the legend has no yearly deforestation classes (dYYYY)")
         return min(self.deforestation)
 
-    def lookup(self, year: int, separate_water: bool = False) -> dict[int, int]:
+    def lookup(self, year: int, codes: Mapping[str, int] | None = None) -> dict[int, int]:
         """
-        Code -> FOREST / DEFORESTED / OTHER for the situation at the end of ``year``.
+        Code -> local code for the situation at the end of ``year``.
 
-        ``separate_water``: the hydrography of the edition is WATER instead of OTHER.
+        ``codes`` gives the local code of each category (:func:`resolve_codes`): by default forest 1,
+        deforested 2, non-forest vegetation and water 3.
         """
+        local = resolve_codes(codes)
         if year < self.first_year:
             raise ValueError(
                 f"this PRODES edition separates deforestation from {self.first_year} on "
@@ -175,13 +196,13 @@ class Scheme:
             )
         table: dict[int, int] = {}
         for code in self.forest:
-            table[code] = FOREST
+            table[code] = local["forest"]
         for code in self.non_forest:
-            table[code] = OTHER
+            table[code] = local["non_forest"]
         for code in self.water:
-            table[code] = WATER if separate_water else OTHER
+            table[code] = local["water"]
         for yr, code in {**self.deforestation, **self.residual}.items():
-            table[code] = DEFORESTED if yr <= year else FOREST
+            table[code] = local["deforested"] if yr <= year else local["forest"]
         return table
 
 
@@ -213,13 +234,13 @@ def parse_legend(legend: dict[int, str]) -> Scheme:
 # ---------------------------------------------------------------------------
 
 def read_prodes(year: int, bbox_geo: Sequence[float], files: ProdesFiles,
-                separate_water: bool = False) -> tuple[Window2D, Scheme]:
-    """Forest / deforested / other (and water, if ``separate_water``) at the end of ``year`` over ``bbox_geo``."""
+                codes: Mapping[str, int] | None = None) -> tuple[Window2D, Scheme]:
+    """The PRODES classes at the end of ``year`` over ``bbox_geo`` (``codes``: see :meth:`Scheme.lookup`)."""
     if files.qml is None:
         raise ValueError(f"{files.zip_path.name} has no .qml legend; cannot interpret the codes")
     scheme = parse_legend(read_qml_legend(files.qml))
     raw = read_window(str(files.tif), bbox_geo)
-    return reclassify(raw, scheme.lookup(year, separate_water)), scheme
+    return reclassify(raw, scheme.lookup(year, codes)), scheme
 
 
 def register_prodes_source(
@@ -233,13 +254,14 @@ def register_prodes_source(
     cache_dir: str | Path | None = None,
     files: ProdesFiles | None = None,
     name: str | None = None,
-    separate_water: bool = False,
+    codes: Mapping[str, int] | None = None,
 ):
     """
     Register PRODES forest / deforested / other at the end of ``year`` as a source.
 
-    ``separate_water``: the hydrography class of the edition gets its own code (:data:`WATER`, 4)
-    instead of being part of ``other``.
+    ``codes``: the local code of each category (``forest``, ``deforested``, ``non_forest``, ``water``);
+    categories with the same code are merged. Default: 1, 2, 3, 3. ``codes={"water": 4}`` keeps the
+    hydrography apart from the non-forest vegetation.
 
     Downloads the edition on first use (see :func:`download`). The provenance
     records the edition URL, the ZIP's SHA-256, the legend as read from the
@@ -256,8 +278,7 @@ def register_prodes_source(
         "zip_checksum": files.zip_checksum,
         "year": year,
         "bbox_geo": list(bbox_geo),
-        "codes": {"forest": FOREST, "deforested": DEFORESTED, "other": OTHER, "nodata": NODATA,
-                  **({"water": WATER} if separate_water else {})},
+        "codes": {**resolve_codes(codes), "nodata": NODATA},
         "first_separable_year": scheme.first_year,
         "legend": {str(k): v for k, v in read_qml_legend(files.qml).items()} if files.qml else None,
         "source": "https://terrabrasilis.dpi.inpe.br/downloads/",
@@ -265,9 +286,9 @@ def register_prodes_source(
     # Read and written a block of rows at a time: the window can be the whole Legal Amazon (9.7 billion
     # pixels), which does not fit in memory as one array. Same file as read_prodes() + write_geotiff().
     tif, crs = copy_window(str(files.tif), bbox_geo, Path(out_dir) / f"{source_id}.tif",
-                           lookup=scheme.lookup(year, separate_water), out_nodata=NODATA)
+                           lookup=scheme.lookup(year, codes), out_nodata=NODATA)
     return register_file(
         cube, source_id, tif, crs, provenance,
         name=name or f"PRODES {files.zip_path.stem}, situation at the end of {year}",
-        time=year, tags=["prodes", f"edition:{files.zip_path.stem}", f"year:{year}", *(["separate_water"] if separate_water else [])],
+        time=year, tags=["prodes", f"edition:{files.zip_path.stem}", f"year:{year}", *(["codes:custom"] if codes else [])],
     )

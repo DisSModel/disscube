@@ -118,7 +118,19 @@ class ProdesSource(_SourceBase):
     year: int | str | None = None
     url: str | None = None
     cache: str | None = None
-    separate_water: bool = False
+    codes: dict[str, int] | None = None
+    """Local code of each category (forest, deforested, non_forest, water); categories with one code are merged."""
+
+    @model_validator(mode="after")
+    def _check_codes(self):
+        if self.codes is not None:
+            from disscube.sources.prodes import resolve_codes
+
+            try:
+                resolve_codes(self.codes)
+            except ValueError as e:
+                raise ValueError(f"source {self.id!r}: {e}") from e
+        return self
 
 
 class ClassifiedSource(_SourceBase):
