@@ -66,6 +66,9 @@ bdc = [
 s3 = [
     "s3fs",
 ]
+plot = [                    # disscube plot: a PNG of the bands of an exported GeoTIFF
+    "matplotlib",
+]
 netcdf = [                  # CubeClient.export_netcdf()
     "h5netcdf",
     "h5py",

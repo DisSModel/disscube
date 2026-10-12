@@ -248,7 +248,7 @@ disscube/
 ├── pipeline/         Pipeline execution & planning (schema, runner) + internal stages
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage.py        AssetStore (fsspec — local and S3)
-├── cli.py            `disscube validate` / `disscube run` / `disscube export`
+├── cli.py            `disscube validate` / `disscube run` / `disscube export` / `disscube plot`
 ├── sources/          Adapters that bring external data in as SpatialSources,
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
