@@ -98,6 +98,18 @@ def test_legend_parsing():
     assert scheme.first_year == 2007
 
 
+def test_lookup_keeps_the_yearly_class_when_a_residual_class_has_the_same_year():
+    """In the real legend every year from 2010 has both dYYYY (code 10 to 25) and rYYYY (50 to 65)."""
+    legend = {9: "9 d2009", 10: "10 d2010", 15: "15 d2015", 24: "24 d2024", 25: "25 d2025", 50: "50 r2010",
+              55: "55 r2015", 64: "64 r2024", 100: "100 Vegetação nativa florestal"}
+    scheme = prodes.parse_legend(legend)
+    t = scheme.lookup(2015)
+    assert t[10] == t[50] == t[15] == t[55] == prodes.DEFORESTED
+    assert t[24] == t[64] == t[25] == prodes.FOREST                  # not yet cleared in 2015
+    assert set(legend) - {100} <= set(t)                              # no class is left out (it would be nodata)
+    assert scheme.lookup(2024)[24] == scheme.lookup(2024)[64] == prodes.DEFORESTED
+
+
 def test_lookup_by_year():
     scheme = prodes.parse_legend(LEGEND)
     t2012 = scheme.lookup(2012)

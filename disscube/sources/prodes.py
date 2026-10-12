@@ -201,8 +201,11 @@ class Scheme:
             table[code] = local["non_forest"]
         for code in self.water:
             table[code] = local["water"]
-        for yr, code in {**self.deforestation, **self.residual}.items():
-            table[code] = local["deforested"] if yr <= year else local["forest"]
+        # Two separate loops: the yearly classes (d2015) and the residual ones (r2015) share their years, so
+        # merging the two dicts by year would drop every dYYYY that has an rYYYY.
+        for by_year in (self.deforestation, self.residual):
+            for yr, code in by_year.items():
+                table[code] = local["deforested"] if yr <= year else local["forest"]
         return table
 
 

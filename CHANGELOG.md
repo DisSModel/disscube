@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12 with the exact transformer. The BDC adapter still reads whole windows.
 
 ### Fixed
+- **PRODES: the yearly classes d2010 to d2025 were dropped.** In the edition's legend every year from 2010 has a
+  yearly class (dYYYY, codes 10 to 25) and a residual class (rYYYY, codes 50 to 65); the lookup was built from a dictionary
+  keyed by year, so the residual class replaced the yearly one and the pixels of d2010 to d2025 came out as no data. A map of
+  forest or of accumulated deforestation lacked them (about a quarter of the deforestation of Acre, whose accumulated
+  deforestation rose by 1 thousand km² between 2008 and 2024 in place of 12 thousand). Both kinds of class are now in the
+  lookup. Maps made with an earlier version should be made again.
 - **`Error in sys.excepthook:` at the end of `disscube run`.** The aligner opened the source raster and never
   closed it; the open handle was finalised at interpreter exit. It is now closed once the aligned arrays are in memory.
 - **SQLite connections of the catalog are closed.** `with sqlite3.connect(...)` only ends the transaction;
