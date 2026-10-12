@@ -1,11 +1,12 @@
 """
 Quick look at the bands of an exported GeoTIFF: one panel per band, written as a PNG.
 
-    disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols 2] [--dpi 150]
+    disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols 2] [--shared-colorbar] [--dpi 150]
 
 A check of the result, not a publication figure. The scale follows the values: shares in [0, 1] are
 drawn as 0 to 100 %, a band of a few integer codes as discrete classes, anything else as a continuous
-scale clipped at the 2nd and 98th percentiles. Cells without data are left white. Needs matplotlib
+scale clipped at the 2nd and 98th percentiles. Cells without data are left white. ``--shared-colorbar`` draws one bar for all panels when every
+panel is a share (0 to 100 %), to leave more room for the maps. Needs matplotlib
 (``pip install 'disscube[plot]'``).
 """
 
@@ -36,7 +37,7 @@ def _kind(values: np.ndarray) -> str:
 
 
 def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: list[str] | None = None,
-                 year: int | None = None, cols: int | None = None, dpi: int = 150) -> Path:
+                 year: int | None = None, cols: int | None = None, dpi: int = 150, shared_colorbar: bool = False) -> Path:
     """Draw the bands of ``path`` (all, or those named in ``bands`` or of ``year``) into a PNG."""
     try:
         import matplotlib
@@ -77,6 +78,8 @@ def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: l
     fig, axes = plt.subplots(nrows, ncols, figsize=(5.2 * ncols, 4.4 * nrows), squeeze=False,
                              constrained_layout=True)
     cmaps = {"share": "viridis", "continuous": "magma"}
+    shared = shared_colorbar and all(_kind(a) == "share" for a in data)
+    last_im = None
     for ax, i, arr in zip(axes.flat, chosen, data, strict=False):
         kind = _kind(arr)
         if kind == "empty":
@@ -94,7 +97,9 @@ def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: l
             cb.set_label("class code")
         elif kind == "share":
             im = ax.imshow(arr * 100, extent=extent, cmap=cmaps[kind], vmin=0, vmax=100)
-            fig.colorbar(im, ax=ax, shrink=0.7, label="share of the cell (%)")
+            last_im = im
+            if not shared:
+                fig.colorbar(im, ax=ax, shrink=0.7, label="share of the cell (%)")
         else:
             v = arr[np.isfinite(arr)]
             lo, hi = np.percentile(v, [2, 98])
@@ -105,6 +110,8 @@ def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: l
         ax.set_yticks([])
     for ax in list(axes.flat)[len(data):]:
         ax.axis("off")
+    if shared and last_im is not None:
+        fig.colorbar(last_im, ax=list(axes.flat)[:len(data)], shrink=0.6, label="share of the cell (%)")
     fig.suptitle(f"{path.name}  {grid}  {res:g} {unit}  {crs}".replace("  ", " "), fontsize=9)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=dpi)

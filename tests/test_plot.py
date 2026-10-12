@@ -59,3 +59,14 @@ def test_cli_plot_and_its_errors(tmp_path, capsys):
     assert (tmp_path / "p.png").exists()
     assert main(["plot", str(tif), "--bands", "zzz"]) == 2
     assert "no band" in capsys.readouterr().err
+
+
+def test_shared_colorbar_draws_one_bar_for_shares_only(tmp_path):
+    tif = _tif(tmp_path / "x.tif")
+    plain = plot_geotiff(tif, tmp_path / "a.png", bands=["forest_2015", "forest_2020"], cols=2)
+    one = plot_geotiff(tif, tmp_path / "b.png", bands=["forest_2015", "forest_2020"], cols=2, shared_colorbar=True)
+    assert one.stat().st_size > 0 and plain.stat().st_size > 0
+    # with a class band in the mix the option is ignored (each panel keeps its own bar)
+    mixed = plot_geotiff(tif, tmp_path / "c.png", bands=["forest_2015", "lulc_2020"], shared_colorbar=True)
+    assert mixed.exists()
+    assert main(["plot", str(tif), "-o", str(tmp_path / "d.png"), "--shared-colorbar", "--bands", "forest_2015"]) == 0
