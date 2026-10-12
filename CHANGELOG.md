@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols N]`. One panel per band; the scale
   follows the values (shares in [0, 1] as 0 to 100 %, a few integer codes as classes, otherwise continuous between the 2nd
   and 98th percentiles); cells without data are white. It is a quick look and not a publication figure. Needs matplotlib
-  (`pip install 'disscube[plot]'`). `--shared-colorbar` draws one bar for all panels when every panel is a share (0 to 100 %).
+  (`pip install 'disscube[plot]'`). `--shared-colorbar` draws one bar for all panels when every panel is a share (0 to 100 %);
+  `--crop` trims the empty margin (bounding box of the cells with data in any drawn band).
 - **PRODES: the local code of each category is declared in the pipeline file.** `[source.codes]` (or `codes=` in
   `register_prodes_source`) gives the code of `forest`, `deforested`, `non_forest` and `water`; categories with the same code
   are merged. The default is the map of before (1 forest, 2 deforested up to the year, 3 non-forest vegetation and water

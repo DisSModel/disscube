@@ -1,12 +1,13 @@
 """
 Quick look at the bands of an exported GeoTIFF: one panel per band, written as a PNG.
 
-    disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols 2] [--shared-colorbar] [--dpi 150]
+    disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols 2] [--shared-colorbar] [--crop] [--dpi 150]
 
 A check of the result, not a publication figure. The scale follows the values: shares in [0, 1] are
 drawn as 0 to 100 %, a band of a few integer codes as discrete classes, anything else as a continuous
 scale clipped at the 2nd and 98th percentiles. Cells without data are left white. ``--shared-colorbar`` draws one bar for all panels when every
-panel is a share (0 to 100 %), to leave more room for the maps. Needs matplotlib
+panel is a share (0 to 100 %), to leave more room for the maps. ``--crop`` trims the empty margin: the panels are cut to the
+bounding box of the cells with data in any of the drawn bands. Needs matplotlib
 (``pip install 'disscube[plot]'``).
 """
 
@@ -36,8 +37,22 @@ def _kind(values: np.ndarray) -> str:
     return "continuous"
 
 
+def _crop(data: list[np.ndarray], extent: list[float]) -> tuple[list[np.ndarray], list[float]]:
+    """Cut the panels to the bounding box of the cells with data in any band (extent: left, right, bottom, top)."""
+    valid = np.any([np.isfinite(a) for a in data], axis=0)
+    rows, cols = np.where(valid.any(axis=1))[0], np.where(valid.any(axis=0))[0]
+    if rows.size == 0:
+        return data, extent
+    r0, r1, c0, c1 = rows[0], rows[-1] + 1, cols[0], cols[-1] + 1
+    h, w = valid.shape
+    left, right, bottom, top = extent
+    dx, dy = (right - left) / w, (top - bottom) / h
+    cropped = [a[r0:r1, c0:c1] for a in data]
+    return cropped, [left + c0 * dx, left + c1 * dx, top - r1 * dy, top - r0 * dy]
+
+
 def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: list[str] | None = None,
-                 year: int | None = None, cols: int | None = None, dpi: int = 150, shared_colorbar: bool = False) -> Path:
+                 year: int | None = None, cols: int | None = None, dpi: int = 150, shared_colorbar: bool = False, crop: bool = False) -> Path:
     """Draw the bands of ``path`` (all, or those named in ``bands`` or of ``year``) into a PNG."""
     try:
         import matplotlib
@@ -67,6 +82,8 @@ def plot_geotiff(path: str | Path, output: str | Path | None = None, *, bands: l
                 .astype("float64").filled(np.nan) for i in chosen]
         t = src.transform
         extent = [t.c, t.c + t.a * src.width, t.f + t.e * src.height, t.f]
+        if crop:
+            data, extent = _crop(data, extent)
         crs = src.crs.to_string() if src.crs else "unknown CRS"
         res = abs(t.a)
         unit = (src.crs.linear_units if src.crs and src.crs.is_projected else "degrees") if src.crs else "units"

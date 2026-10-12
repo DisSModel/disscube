@@ -70,3 +70,23 @@ def test_shared_colorbar_draws_one_bar_for_shares_only(tmp_path):
     mixed = plot_geotiff(tif, tmp_path / "c.png", bands=["forest_2015", "lulc_2020"], shared_colorbar=True)
     assert mixed.exists()
     assert main(["plot", str(tif), "-o", str(tmp_path / "d.png"), "--shared-colorbar", "--bands", "forest_2015"]) == 0
+
+
+def test_crop_trims_the_empty_margin_and_keeps_the_extent():
+    from disscube.plot import _crop
+
+    a = np.full((10, 20), np.nan)
+    a[2:5, 4:9] = 0.5                      # rows 2-4, cols 4-8
+    b = np.full((10, 20), np.nan)
+    b[6:8, 10:12] = 0.2                    # rows 6-7, cols 10-11
+    (ca, cb), ext = _crop([a, b], [0.0, 200.0, 0.0, 100.0])   # 10 m cells
+    assert ca.shape == cb.shape == (6, 8)  # rows 2-7, cols 4-11
+    assert [float(v) for v in ext] == [40.0, 120.0, 20.0, 80.0]
+    empty = np.full((4, 4), np.nan)
+    assert _crop([empty], [0, 4, 0, 4])[0][0].shape == (4, 4)
+
+
+def test_plot_with_crop_and_cli(tmp_path):
+    tif = _tif(tmp_path / "x.tif")             # the first 3 rows have no data
+    assert plot_geotiff(tif, tmp_path / "c.png", bands=["forest_2015"], crop=True, shared_colorbar=True).exists()
+    assert main(["plot", str(tif), "-o", str(tmp_path / "d.png"), "--crop", "--bands", "forest_2015"]) == 0
