@@ -28,15 +28,32 @@ if TYPE_CHECKING:
 
 log = logging.getLogger("disscube.client.cube_client")
 
-#: Source pixels aligned at once before a raster source is processed a strip of grid rows at a time.
+#: Source pixels aligned at once before a raster source is processed a block of grid cells at a time.
 DEFAULT_BLOCK_PIXELS = 50_000_000
 
 
-def _strips(source: SpatialSource, grid: GridSpec, derivation: SpatialDerivation,
-            block_pixels: int | None) -> list[GridSpec] | None:
-    """
-    Strips of grid rows, each with about ``block_pixels`` source pixels, or None to derive the grid whole.
+def _source_pixels(bbox: list[float], grid_crs: str, ds: Any) -> float:
+    """Source pixels inside ``bbox`` (grid CRS): its footprint in the source CRS, clipped to the source."""
+    from rasterio.warp import transform_bounds
 
+    left, bottom, right, top = transform_bounds(grid_crs, ds.crs, *bbox, densify_pts=21)
+    b = ds.bounds
+    w = min(right, b.right) - max(left, b.left)
+    h = min(top, b.top) - max(bottom, b.bottom)
+    if w <= 0 or h <= 0:
+        return 0.0
+    return (w / abs(ds.res[0])) * (h / abs(ds.res[1]))
+
+
+def _blocks(source: SpatialSource, grid: GridSpec, derivation: SpatialDerivation,
+            block_pixels: int | None) -> list[list[GridSpec]] | None:
+    """
+    Blocks of grid cells (a list of block rows, each a list of blocks), each covering at most about
+    ``block_pixels`` source pixels, or None to derive the grid whole.
+
+    The footprint of a block in the source is measured, not assumed: a strip of grid rows that is
+    wide in a projected grid covers a far larger area of a longitude/latitude source than its
+    height suggests, so blocks are halved along their larger side until the budget is met.
     None when the source is a vector, is small enough, or a variable uses an operator (or
     ``fill = "nearest"``) whose cells depend on their neighbours.
     """
@@ -51,23 +68,39 @@ def _strips(source: SpatialSource, grid: GridSpec, derivation: SpatialDerivation
         if op is None or not op.block_safe or getattr(v, "fill", None) == "nearest":
             return None
     budget = block_pixels or int(os.environ.get("DISSCUBE_BLOCK_PIXELS", DEFAULT_BLOCK_PIXELS))
+    minx, _miny, _maxx, maxy = grid.bbox
+    res = grid.resolution
+
+    def bbox_of(r0: int, r1: int, c0: int, c1: int) -> list[float]:
+        return [minx + c0 * res, maxy - r1 * res, minx + c1 * res, maxy - r0 * res]
+
     try:
         with rasterio.open(source.asset_url) as ds:
-            total = ds.width * ds.height
+            def worst(nr: int, nc: int) -> float:
+                return max(
+                    _source_pixels(bbox_of(r0, min(r0 + nr, grid.rows), c0, min(c0 + nc, grid.cols)),
+                                   grid.crs, ds)
+                    for r0 in range(0, grid.rows, nr) for c0 in range(0, grid.cols, nc)
+                )
+
+            nr, nc = grid.rows, grid.cols
+            while worst(nr, nc) > budget and (nr > 1 or nc > 1):
+                if nr >= nc:
+                    nr = max(1, (nr + 1) // 2)
+                else:
+                    nc = max(1, (nc + 1) // 2)
     except Exception:  # noqa: BLE001 — not a plain file (NetCDF subdataset, URL…): derive whole
         return None
-    rows = max(1, int(grid.rows * budget / total)) if total > budget else grid.rows
-    if rows >= grid.rows:
+    if nr >= grid.rows and nc >= grid.cols:
         return None
-    minx, _miny, maxx, maxy = grid.bbox
     out = []
-    for r0 in range(0, grid.rows, rows):
-        r1 = min(r0 + rows, grid.rows)
-        out.append(GridSpec(
-            id=grid.id, type=grid.type, crs=grid.crs, resolution=grid.resolution,
-            bbox=[minx, maxy - r1 * grid.resolution, maxx, maxy - r0 * grid.resolution],
-            description=grid.description,
-        ))
+    for r0 in range(0, grid.rows, nr):
+        r1 = min(r0 + nr, grid.rows)
+        out.append([
+            GridSpec(id=grid.id, type=grid.type, crs=grid.crs, resolution=res,
+                     bbox=bbox_of(r0, r1, c0, min(c0 + nc, grid.cols)), description=grid.description)
+            for c0 in range(0, grid.cols, nc)
+        ])
     return out
 
 
@@ -117,7 +150,7 @@ class CubeClient:
         Derive the variables of ``derivation`` on its grid.
 
         ``block_pixels`` is the number of source pixels that may be aligned at once. A raster source
-        larger than that is processed a strip of grid rows at a time (default
+        larger than that is processed a block of grid cells at a time (default
         :data:`DEFAULT_BLOCK_PIXELS`, or the ``DISSCUBE_BLOCK_PIXELS`` environment variable), which
         bounds the memory without changing the result; it needs operators that work cell by cell.
         """
@@ -165,23 +198,31 @@ class CubeClient:
                 description=f"Temporary tile grid for {tile_id}"
             )
 
-        strips = _strips(source, grid, derivation, block_pixels)
-        if strips is None:
+        blocks = _blocks(source, grid, derivation, block_pixels)
+        if blocks is None:
             ctx = PipelineContext(source=source, grid=grid, derivation=derivation, tile_id=tile_id)
             for stage in (Normalizer(), GridAligner(), Aggregator()):
                 ctx = stage.execute(ctx)
         else:
-            # A source too large to align in one piece: derive the grid a strip of rows at a time
-            # and join the strips. Every cell depends only on the source pixels inside it (see
+            # A source too large to align in one piece: derive the grid a block of cells at a time
+            # and join the blocks. Every cell depends only on the source pixels inside it (see
             # Operator.block_safe), so the result is the same as for the whole grid.
-            parts = []
-            for n, sub in enumerate(strips, 1):
-                log.info("strip %d/%d of grid %s (%d rows)", n, len(strips), grid.id, sub.rows)
-                sctx = PipelineContext(source=source, grid=sub, derivation=derivation, tile_id=tile_id)
-                for stage in (Normalizer(), GridAligner(), Aggregator()):
-                    sctx = stage.execute(sctx)
-                parts.append(sctx.data)
-            joined = xr.concat(parts, dim="y", coords="minimal", compat="override")
+            total = sum(len(row) for row in blocks)
+            n = 0
+            band = []
+            for row in blocks:
+                parts = []
+                for sub in row:
+                    n += 1
+                    log.info("block %d/%d of grid %s (%d rows x %d cols)", n, total, grid.id, sub.rows, sub.cols)
+                    sctx = PipelineContext(source=source, grid=sub, derivation=derivation, tile_id=tile_id)
+                    for stage in (Normalizer(), GridAligner(), Aggregator()):
+                        sctx = stage.execute(sctx)
+                    parts.append(sctx.data)
+                band.append(xr.concat(parts, dim="x", coords="minimal", compat="override")
+                            if len(parts) > 1 else parts[0])
+            joined = (xr.concat(band, dim="y", coords="minimal", compat="override")
+                      if len(band) > 1 else band[0])
             joined = joined.assign_coords(y=grid.ys, x=grid.xs)
             write_georeference(joined, grid)
             ctx = PipelineContext(source=source, grid=grid, derivation=derivation, tile_id=tile_id, data=joined)

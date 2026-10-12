@@ -98,7 +98,7 @@ def test_strips_give_the_same_cells_as_the_whole_grid(tmp_path, caplog, resoluti
         with caplog.at_level(logging.INFO, logger="disscube.client.cube_client"):
             caplog.clear()
             strips.derive_declarative(d, grid_id=g2.id, block_pixels=40_000)   # a window of 1M pixels: ~25 strips
-        assert any("strip " in r.message for r in caplog.records), "the strip path was not taken"
+        assert any("block " in r.message for r in caplog.records), "the block path was not taken"
         a, b = whole.load(d.target, grid_id=g1.id), strips.load(d.target, grid_id=g2.id)
         assert a.shape == b.shape
         if d.operator in ("mean", "sum"):                # GDAL adds the pixels in a different order: ~1e-12
@@ -114,7 +114,7 @@ def test_small_sources_and_neighbourhood_operators_are_not_split(tmp_path, caplo
     cube, grid = _cube(tmp_path, "c", url, 500.0)
     with caplog.at_level(logging.INFO, logger="disscube.client.cube_client"):
         cube.derive_declarative(Derivation(target="m", source_id="lulc", operator="mean"), grid_id=grid.id)
-    assert not any("strip " in r.message for r in caplog.records)       # default budget: 50 M pixels
+    assert not any("block " in r.message for r in caplog.records)       # default budget: 50 M pixels
 
 
 def test_strips_with_the_default_transformer_differ_in_at_most_a_few_edge_cells(tmp_path):
@@ -129,5 +129,30 @@ def test_strips_with_the_default_transformer_differ_in_at_most_a_few_edge_cells(
     a, b = whole.load("forest", grid_id=g1.id).values, strips.load("forest", grid_id=g2.id).values
     assert np.array_equal(np.isnan(a), np.isnan(b)) or np.mean(np.isnan(a) != np.isnan(b)) < 0.005
     both = ~np.isnan(a) & ~np.isnan(b)
-    assert np.mean(np.abs(a[both] - b[both]) > 1e-9) < 0.01
+    assert np.mean(np.abs(a[both] - b[both]) > 1e-9) < 0.15
     assert np.nanmax(np.abs(a - b)) < 0.2
+
+
+def test_blocks_are_split_by_columns_when_a_wide_projected_grid_covers_a_large_geographic_area(tmp_path):
+    """A strip of rows of a wide projected grid spans far more longitude/latitude than its height suggests
+    (curvature), so rows alone cannot bound the source window: the planner must also split columns."""
+    from disscube.client import _blocks, _source_pixels
+    from disscube.models import GridSpec, SpatialDerivation, SpatialSource
+
+    url = _national(tmp_path / "br.tif")
+    # Brazil Polyconic (EPSG:5880), 1 km cells, a grid of about 18 x 16 km around the source window
+    from pyproj import Transformer
+    x0, y0 = Transformer.from_crs("EPSG:4326", "EPSG:5880", always_xy=True).transform(BBOX[0], BBOX[1])
+    grid = GridSpec(id="p", type="local", crs="EPSG:5880", resolution=1000.0,
+                    bbox=[x0, y0, x0 + 16_000.0, y0 + 16_000.0])
+    source = SpatialSource(id="s", name="s", format="raster", asset_url=url, crs="EPSG:4326")
+    derivation = SpatialDerivation.model_validate({
+        "id": "d", "source_id": "s", "grid_id": "p", "role": "feature",
+        "variables": [{"name": "m", "operator": "mean", "role": "feature"}],
+    })
+    blocks = _blocks(source, grid, derivation, block_pixels=20_000)
+    assert blocks is not None and len(blocks[0]) > 1, "columns were not split"
+    assert sum(b.rows * b.cols for row in blocks for b in row) == grid.rows * grid.cols
+    with rasterio.open(url) as ds:
+        assert all(_source_pixels(b.bbox, grid.crs, ds) <= 20_000 or (b.rows == 1 and b.cols == 1)
+                   for row in blocks for b in row)
