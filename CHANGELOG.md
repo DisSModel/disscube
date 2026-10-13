@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Invalid polygons in a vector source no longer stop the pipeline.** The reprojection can turn a valid polygon into a
+  self-intersecting one, and `clip` then raised `TopologyException` (found with the INCRA settlements layer of the
+  open-lucc-workflow, one bad feature among 10,000). The aligner now repairs the invalid features (`make_valid`) after the
+  reprojection and before the clip, and logs how many; valid features are not touched.
+
 ### Added
 - **`disscube plot`**: a PNG of the bands of an exported GeoTIFF, to look at a result without a script per case.
   `disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols N]`. One panel per band; the scale

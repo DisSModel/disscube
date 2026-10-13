@@ -28,6 +28,7 @@ from typing import Any
 import geopandas as gpd
 import numpy as np
 import rioxarray  # registers the .rio accessor
+import shapely
 import xarray as xr
 from pyproj import CRS as ProjCRS
 from pyproj.exceptions import CRSError
@@ -137,6 +138,31 @@ def _clip_to_grid(band: xr.DataArray, grid: GridSpec, pad: int = 2) -> xr.DataAr
         return band
 
 
+
+def _repair_geometries(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Repair the invalid geometries of a vector source (self-intersections, often created by the reprojection).
+
+    ``clip`` raises ``TopologyException`` on an invalid polygon, which stopped a pipeline for one bad feature in a layer
+    of thousands. Only the invalid features are changed; a polygon that becomes a collection keeps its polygonal parts.
+    """
+    geoms = gdf.geometry
+    invalid = ~geoms.is_valid & geoms.notna()
+    if not invalid.any():
+        return gdf
+    fixed = shapely.make_valid(geoms[invalid].values)
+    keep_polygons = geoms[invalid].geom_type.isin(["Polygon", "MultiPolygon"]).values
+    out = []
+    for geom, polygonal in zip(fixed, keep_polygons):
+        if polygonal and geom.geom_type not in ("Polygon", "MultiPolygon"):
+            parts = [g for g in shapely.get_parts(geom) if g.geom_type in ("Polygon", "MultiPolygon")]
+            geom = shapely.union_all(parts) if parts else shapely.Polygon()
+        out.append(geom)
+    gdf = gdf.copy()
+    gdf.loc[invalid.values, gdf.geometry.name] = gpd.GeoSeries(out, index=gdf.index[invalid.values], crs=gdf.crs)
+    log.warning("repaired %d invalid geometries before clipping", int(invalid.sum()))
+    return gdf
+
+
 class GridAligner(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
         grid = ctx.grid
@@ -160,6 +186,7 @@ class GridAligner(PipelineStage):
                 needs_reproject = str(gdf.crs) != str(grid.crs)
             if needs_reproject:
                 gdf = gdf.to_crs(grid.crs)
+            gdf = _repair_geometries(gdf)
             ops = [OPERATOR_REGISTRY.get(v.operator) for v in ctx.derivation.variables]
             if all(getattr(op, "clip_to_grid", True) for op in ops):
                 gdf = gdf.clip(box(*grid.bbox))
