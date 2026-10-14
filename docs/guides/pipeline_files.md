@@ -172,7 +172,7 @@ other loops or conditions: what does not fit belongs in Python.
 ├── catalog.db          the catalog
 ├── store/              derived variables (Zarr)
 ├── raw/                every source: GeoTIFF + <id>.provenance.json
-└── run.json            this run: pipeline file and checksum, sources, products
+└── run.json            this run: DisSCube version, pipeline file and checksum, sources, products
 ```
 
 Each provenance file gains a `pipeline` entry with the pipeline file's path,

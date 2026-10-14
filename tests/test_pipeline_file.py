@@ -263,6 +263,13 @@ def test_cli_validate_and_run(tmp_path, capsys):
     assert (tmp_path / "ws" / "run.json").exists()
 
 
+def test_run_json_records_the_disscube_version(tmp_path):
+    from importlib.metadata import version
+    assert cli(["run", str(QUICKSTART), "--workspace", str(tmp_path / "ws")]) == 0
+    record = json.loads((tmp_path / "ws" / "run.json").read_text())
+    assert record["disscube"] == version("disscube")
+
+
 def test_cli_reports_errors(tmp_path, capsys):
     path = _toml(tmp_path, '[[derive]]\ntarget="x"\nsource="nope"\noperator="mean"\n')
     assert cli(["validate", str(path)]) == 2

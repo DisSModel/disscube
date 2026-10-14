@@ -8,11 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- **Invalid polygons in a vector source no longer stop the pipeline.** The reprojection can turn a valid polygon into a
-  self-intersecting one, and `clip` then raised `TopologyException` (found with the INCRA settlements layer of the
-  open-lucc-workflow, one bad feature among 10,000). The aligner now repairs the invalid features (`make_valid`) after the
-  reprojection and before the clip, and logs how many; valid features are not touched.
+---
+
+## [0.6.0] - 2026-10-14
 
 ### Added
 - **`disscube plot`**: a PNG of the bands of an exported GeoTIFF, to look at a result without a script per case.
@@ -45,8 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ones of 0.5.0. The block size is chosen from the measured footprint of each block in the source (a wide strip of a projected grid covers far more longitude/latitude than its height suggests, so rows alone do not bound the memory). Class shares, majority and median of a block equal those of the whole grid when GDAL's exact
   transformer is used; with its default approximate one a cell on an edge can pick the neighbouring source
   pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12 with the exact transformer. The BDC adapter still reads whole windows.
+- **`run.json` records the DisSCube version** (`"disscube": "0.6.0"`, `null` when running from a source tree that is not installed), so a run can be tied to a release without noting the commit by hand.
 
 ### Fixed
+- **Invalid polygons in a vector source no longer stop the pipeline.** The reprojection can turn a valid polygon into a
+  self-intersecting one, and `clip` then raised `TopologyException` (found with the INCRA settlements layer of the
+  open-lucc-workflow, one bad feature among 10,000). The aligner now repairs the invalid features (`make_valid`) after the
+  reprojection and before the clip, and logs how many; valid features are not touched.
 - **PRODES: the yearly classes d2010 to d2025 were dropped.** In the edition's legend every year from 2010 has a
   yearly class (dYYYY, codes 10 to 25) and a residual class (rYYYY, codes 50 to 65); the lookup was built from a dictionary
   keyed by year, so the residual class replaced the yearly one and the pixels of d2010 to d2025 came out as no data. A map of
@@ -57,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   closed it; the open handle was finalised at interpreter exit. It is now closed once the aligned arrays are in memory.
 - **SQLite connections of the catalog are closed.** `with sqlite3.connect(...)` only ends the transaction;
   every catalog call left a connection open until interpreter exit (`ResourceWarning: unclosed database`).
+
+---
 
 ---
 
