@@ -335,7 +335,9 @@ class GridAligner(PipelineStage):
 
             return result
         finally:
-            opened.close()
+            # open_rasterio returns a DataArray, a Dataset or a list of Datasets (multi-subdataset files)
+            for handle in opened if isinstance(opened, list) else [opened]:
+                handle.close()
 
     # ------------------------------------------------------------------
     # Fine alignment for categorical operators
