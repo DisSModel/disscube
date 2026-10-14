@@ -1268,7 +1268,7 @@ relative to the pipeline file, so a folder with its TOML and data is portable.</
 </tr>
 <tr>
 <td><code>prodes</code></td>
-<td><code>year</code>, <code>url</code>, <code>cache</code></td>
+<td><code>year</code>, <code>url</code>, <code>cache</code>, <code>codes</code></td>
 <td><code>disscube.sources.prodes</code></td>
 </tr>
 <tr>
@@ -1380,7 +1380,7 @@ other loops or conditions: what does not fit belongs in Python.</p>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── catalog.db          the catalog
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>├── store/              derived variables (Zarr)
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>├── raw/                every source: GeoTIFF + &lt;id&gt;.provenance.json
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>└── run.json            this run: pipeline file and checksum, sources, products
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>└── run.json            this run: DisSCube version, pipeline file and checksum, sources, products
 </code></pre></div>
 <p>Each provenance file gains a <code>pipeline</code> entry with the pipeline file's path,
 name and SHA-256, so every derived variable can be traced back to the exact

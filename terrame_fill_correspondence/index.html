@@ -1216,7 +1216,7 @@ and the parity cases in the recipes repository (<code>cases/terrame_fill</code>)
 <td><code>coverage</code> / <code>percentage</code> (raster)</td>
 <td><code>percentage</code></td>
 <td>implemented (window-based); <strong>parity verified</strong> (Itaituba, Amazônia)</td>
-<td>Fraction (0..1) of the target class per cell, <strong>over valid pixels</strong> — the denominator TerraME 2.0.1 uses too, so the value reproduces its goldens with no correction (Itaituba: max 0.0064; Amazônia: identical). <code>coverage_purity</code> stays available as metadata. Requires <code>class_code</code>.</td>
+<td>Fraction (0..1) of the target class per cell, <strong>over valid pixels</strong> — the denominator TerraME 2.0.1 uses too, so the value reproduces its goldens with no correction (Itaituba: max 0.0064; Amazônia: identical). <code>coverage_purity</code> stays available as metadata. Requires <code>class_code</code>, one code or a list of codes (the share in any of them).</td>
 </tr>
 <tr>
 <td><code>area</code> (polygons)</td>

@@ -1017,29 +1017,87 @@ holding its legend.</p>
   <code>latest_url()</code> asks TerraBrasilis' own download index for the newest edition.</li>
 <li><strong>Legend from the file.</strong> Codes are read from the <code>.qml</code> (<code>"7 d2007"</code>,
   <code>"91 Hidrografia"</code>, <code>"100 Vegetação nativa florestal"</code>, …), not hard-coded,
-  so a new edition with another encoding is read correctly or fails loudly.</li>
-<li><strong>One map per year.</strong> For a year Y the local map has <code>FOREST</code> (1),
-  <code>DEFORESTED</code> (2, any <code>dYYYY</code> or residual <code>rYYYY</code> up to Y) and <code>OTHER</code> (3,
-  non-forest vegetation and water); clouds and unknown codes are nodata.</li>
-<li><strong>Years.</strong> The edition distributed today separates deforestation by year
-  from 2007 on (<code>d2007</code> holds everything cleared up to then). Earlier years
-  raise an error; use MapBiomas for them.</li>
+  so a new edition with another encoding is read correctly or fails loudly.
+  Each label is read as one category, by its text (the first rule that fits wins):</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>deforested</code></td>
+<td><code>dAAAA</code> (deforestation of the year, e.g. <code>d2007</code>), and <code>rAAAA</code> (residual, e.g. <code>r2015</code>)</td>
+</tr>
+<tr>
+<td><code>water</code></td>
+<td>contains "hidrografia", "hydrograph" or "água"</td>
+</tr>
+<tr>
+<td>clouds</td>
+<td>contains "nuvem" or "cloud": no data</td>
+</tr>
+<tr>
+<td><code>non_forest</code></td>
+<td>contains "não florest", "nao florest", "non-forest" or "non forest"</td>
+</tr>
+<tr>
+<td><code>forest</code></td>
+<td>contains "florest" or "forest"</td>
+</tr>
+<tr>
+<td>anything else</td>
+<td>warning in the log; no data</td>
+</tr>
+</tbody>
+</table>
+<p>For the edition <code>prodes_amazonia_legal_2025_v20260408</code> the legend is: 7–25
+  <code>d2007</code>…<code>d2025</code>, 50–65 <code>r2010</code>…<code>r2025</code>, 91 Hidrografia, 100 Vegetação nativa
+  florestal, 101 Vegetação nativa não florestal. The legend of an edition is
+  kept in the provenance file.
+- <strong>One map per year, with the codes you choose.</strong> For a year Y a pixel is
+  <code>deforested</code> when its label is <code>dAAAA</code> or <code>rAAAA</code> with AAAA ≤ Y (a later one is
+  still <code>forest</code>). The local code of each category is <code>codes</code>; the default is
+  <code>forest</code> 1, <code>deforested</code> 2, and <code>non_forest</code> and <code>water</code> together 3
+  (non-forest vegetation and water). Categories given the same code are merged, so
+  <code>codes={"water": 4}</code> keeps the hydrography apart:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">prodes</span><span class="o">.</span><span class="n">register_prodes_source</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span> <span class="s2">"prodes_2024"</span><span class="p">,</span> <span class="mi">2024</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">,</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                              <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">,</span> <span class="n">codes</span><span class="o">=</span><span class="p">{</span><span class="s2">"water"</span><span class="p">:</span> <span class="mi">4</span><span class="p">})</span>
+</code></pre></div>
+<p>In a pipeline file the same is a table of the source:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[[source]]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"prodes_{year}"</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"prodes"</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">years</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">2024</span><span class="p">]</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">[source.codes]</span><span class="w">            </span><span class="c1"># local code of each category (1 to 255; 0 is no data)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">forest</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">            </span><span class="c1"># vegetação nativa florestal</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">deforested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w">            </span><span class="c1"># desmatamento até o ano (dAAAA and rAAAA)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">non_forest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w">            </span><span class="c1"># vegetação nativa não florestal</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">water</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w">            </span><span class="c1"># hidrografia; 3 would merge it with the non-forest</span>
+</code></pre></div>
+<p>Only these four names are accepted. Clouds and unknown labels are always no data.
+- <strong>Years.</strong> The edition distributed today separates deforestation by year
+  from 2007 on (<code>d2007</code> holds everything cleared up to then). Earlier years
+  raise an error; use MapBiomas for them.</p>
 <p>The provenance records the edition, its URL, the ZIP's SHA-256, the legend and
-the code mapping.</p>
+the code of each category.</p>
 <h2 id="any-classified-map-eg-from-sits-disscubesourcesclassified">Any classified map, e.g. from SITS (<code>disscube.sources.classified</code>)</h2>
 <p><a href="https://e-sensing.github.io/sitsbook/">SITS</a> classifies satellite image time
 series — including the Brazil Data Cube cubes — into land-cover maps written
 as GeoTIFFs. <code>register_classified_map()</code> reads such a map (or any categorical
 GeoTIFF, local or a Cloud-Optimized URL) over an area and registers it with
 its legend:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources.classified</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_classified_map</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">register_classified_map</span><span class="p">(</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cube</span><span class="p">,</span> <span class="s2">"lulc_sits_2020"</span><span class="p">,</span> <span class="s2">"classified/santarem_class_2020.tif"</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">time</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">"Forest"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"Pasture"</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">"Water"</span><span class="p">},</span>   <span class="c1"># or .qml / .json / .csv</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">producer</span><span class="o">=</span><span class="s2">"SITS"</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.sources.classified</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_classified_map</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">register_classified_map</span><span class="p">(</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">cube</span><span class="p">,</span> <span class="s2">"lulc_sits_2020"</span><span class="p">,</span> <span class="s2">"classified/santarem_class_2020.tif"</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">time</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">"Forest"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"Pasture"</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">"Water"</span><span class="p">},</span>   <span class="c1"># or .qml / .json / .csv</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">producer</span><span class="o">=</span><span class="s2">"SITS"</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">)</span>
 </code></pre></div>
 <p>The legend may be a mapping, a QGIS <code>.qml</code>, a <code>.json</code> (<code>{"1": "Forest"}</code> or a
 list of <code>{"code", "label"}</code>) or a <code>.csv</code> with <code>code,label</code> columns. A map that
