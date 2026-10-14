@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   grid, or MapBiomas over Brazil at 30 m, is one pipeline file. Registered MapBiomas files are byte for byte the
   ones of 0.5.0. The block size is chosen from the measured footprint of each block in the source (a wide strip of a projected grid covers far more longitude/latitude than its height suggests, so rows alone do not bound the memory). Class shares, majority and median of a block equal those of the whole grid when GDAL's exact
   transformer is used; with its default approximate one a cell on an edge can pick the neighbouring source
-  pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12 with the exact transformer. The BDC adapter still reads whole windows.
+  pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12 with the exact transformer. The exact transformer can be selected only with rasterio 1.5 or later (Python 3.12 or later); with rasterio 1.4, on Python 3.11, a few cells of the categorical operators can differ between blocks and whole grid, and the equality test is skipped there. The BDC adapter still reads whole windows.
 - **`run.json` records the DisSCube version** (`"disscube": "0.6.0"`, `null` when running from a source tree that is not installed), so a run can be tied to a release without noting the commit by hand.
 
 ### Fixed

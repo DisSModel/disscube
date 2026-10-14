@@ -69,7 +69,15 @@ def exact_transform(monkeypatch):
     positions depend on the extent being warped, so a strip and the whole grid can pick a neighbouring
     pixel at a cell edge. With the exact transformer every pixel is mapped independently of the extent.
     """
+    import inspect
+
+    import rasterio.warp
     from rioxarray.raster_array import RasterArray
+
+    # `tolerance` is a parameter of rasterio.warp.reproject only from rasterio 1.5 (Python >= 3.12); older
+    # versions ignore it, so the exact transformer cannot be selected and equality is not testable.
+    if "tolerance" not in inspect.signature(rasterio.warp.reproject).parameters:
+        pytest.skip("rasterio < 1.5 cannot reproject with GDAL's exact transformer")
 
     original = RasterArray.reproject
 
