@@ -9,6 +9,7 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, Literal
 
@@ -67,7 +68,7 @@ class PlannedDerive:
     target: str
     source: str
     operator: str
-    class_code: int | None
+    class_code: int | list[int] | None
     role: str
     params: dict = field(default_factory=dict)
     fill: str | None = None
@@ -279,6 +280,14 @@ def resolve_workspace(p: Plan, workspace: str | Path | None = None) -> Path:
     return pf.base_dir / cfg.workspace if cfg.workspace else pf.base_dir / pf.path.stem
 
 
+def _installed_version() -> str | None:
+    """Version of the installed DisSCube, written to ``run.json``; ``None`` from a source tree that is not installed."""
+    try:
+        return version("disscube")
+    except PackageNotFoundError:
+        return None
+
+
 def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None = None,
         export_geotiff: str | Path | None = None) -> RunReport:
     """
@@ -342,6 +351,7 @@ def run(pipeline: PipelineFile | Plan | str | Path, workspace: str | Path | None
         report.exported = out_path
 
     record = {
+        "disscube": _installed_version(),
         "pipeline": pipeline_info,
         "started": started,
         "finished": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -449,6 +459,7 @@ def _register_source(
                 raw,
                 files=files,
                 name=c.name,
+                codes=c.codes,
             )
         if isinstance(c, OsmSource):
             from disscube.sources import osm

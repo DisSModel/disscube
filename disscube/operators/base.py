@@ -64,6 +64,12 @@ class Operator:
     # composition rather than a pre-collapsed mode.
     needs_fine_alignment: ClassVar[bool] = False
 
+    # True when each output cell depends only on the source pixels inside that cell (the zonal
+    # statistics and class shares over a raster). The pipeline may then derive the grid a block of
+    # rows at a time, so a source larger than memory can be processed; the result is the same.
+    # Operators that look across cells (distances, network costs) or at vector features stay False.
+    block_safe: ClassVar[bool] = False
+
     # When False, GridAligner does not clip a vector source to the grid bbox
     # for this operator — needed by operators that measure to features lying
     # outside the grid (``distance``). A derivation is clipped only if every

@@ -98,6 +98,18 @@ def test_legend_parsing():
     assert scheme.first_year == 2007
 
 
+def test_lookup_keeps_the_yearly_class_when_a_residual_class_has_the_same_year():
+    """In the real legend every year from 2010 has both dYYYY (code 10 to 25) and rYYYY (50 to 65)."""
+    legend = {9: "9 d2009", 10: "10 d2010", 15: "15 d2015", 24: "24 d2024", 25: "25 d2025", 50: "50 r2010",
+              55: "55 r2015", 64: "64 r2024", 100: "100 Vegetação nativa florestal"}
+    scheme = prodes.parse_legend(legend)
+    t = scheme.lookup(2015)
+    assert t[10] == t[50] == t[15] == t[55] == prodes.DEFORESTED
+    assert t[24] == t[64] == t[25] == prodes.FOREST                  # not yet cleared in 2015
+    assert set(legend) - {100} <= set(t)                              # no class is left out (it would be nodata)
+    assert scheme.lookup(2024)[24] == scheme.lookup(2024)[64] == prodes.DEFORESTED
+
+
 def test_lookup_by_year():
     scheme = prodes.parse_legend(LEGEND)
     t2012 = scheme.lookup(2012)
@@ -156,3 +168,39 @@ def test_register_before_first_year_fails(server, tmp_path):
     files = prodes.download(server["url"], cache_dir=tmp_path / "cache")
     with pytest.raises(ValueError, match="use MapBiomas"):
         prodes.register_prodes_source(cube, "p", 2004, BBOX, tmp_path / "raw", files=files)
+
+
+def test_codes_choose_the_local_code_of_each_category(server, tmp_path):
+    scheme = prodes.parse_legend(LEGEND)
+    assert scheme.lookup(2012)[91] == scheme.lookup(2012)[101] == 3   # default: water and non-forest together
+    t = scheme.lookup(2012, {"water": 4})
+    assert t[91] == 4 and t[101] == 3 and t[100] == prodes.FOREST
+    merged = scheme.lookup(2012, {"forest": 7, "non_forest": 7, "water": 7})
+    assert merged[100] == merged[101] == merged[91] == 7 and merged[7] == prodes.DEFORESTED
+    with pytest.raises(ValueError, match="unknown PRODES categories"):
+        prodes.resolve_codes({"cloud": 9})
+    for bad in (0, 256, 2.5, True):
+        with pytest.raises(ValueError, match="1 to 255"):
+            prodes.resolve_codes({"water": bad})
+
+    cube = CubeClient(catalog=str(tmp_path / "c.db"), store=str(tmp_path / "s"))
+    files = prodes.download(server["url"], cache_dir=tmp_path / "cache")
+    plain = prodes.register_prodes_source(cube, "p_plain", 2016, BBOX, tmp_path / "raw", files=files)
+    apart = prodes.register_prodes_source(cube, "p_water", 2016, BBOX, tmp_path / "raw", files=files,
+                                          codes={"water": 4})
+    with rasterio.open(plain.asset_url) as a, rasterio.open(apart.asset_url) as b:
+        va, vb = a.read(1), b.read(1)
+    assert 4 not in np.unique(va) and 4 in np.unique(vb)
+    assert np.array_equal(np.where(vb == 4, 3, vb), va)               # only the water pixels change
+    prov = json.loads((tmp_path / "raw" / "p_water.provenance.json").read_text())
+    assert prov["codes"] == {"forest": 1, "deforested": 2, "non_forest": 3, "water": 4, "nodata": 0}
+
+
+def test_codes_in_a_pipeline_file(tmp_path):
+    from pydantic import ValidationError
+
+    from disscube.pipeline.schema import ProdesSource
+
+    assert ProdesSource(id="p", type="prodes", codes={"water": 4}).codes == {"water": 4}
+    with pytest.raises(ValidationError, match="unknown PRODES categories"):
+        ProdesSource(id="p", type="prodes", codes={"agua": 4})

@@ -109,3 +109,22 @@ def test_alignment_invariant_passes_on_correct_shape(tmp_path):
 
     GridAligner().execute(ctx)  # must not raise
     assert ctx.data["v"].shape == (10, 10)
+
+
+def test_invalid_polygon_is_repaired_before_clip():
+    """A bow-tie polygon (invalid) must not stop the alignment: the aligner repairs it before ``clip``."""
+    import geopandas as gpd
+    from shapely.geometry import Polygon
+
+    from disscube.pipeline.aligner import _repair_geometries
+
+    good = Polygon([(0, 0), (2, 0), (2, 2), (0, 2)])
+    bowtie = Polygon([(0, 0), (4, 4), (4, 0), (0, 4)])  # self-intersecting
+    gdf = gpd.GeoDataFrame({"id": [1, 2]}, geometry=[good, bowtie], crs="EPSG:3857")
+    assert not gdf.geometry.is_valid.all()
+    fixed = _repair_geometries(gdf)
+    assert fixed.geometry.is_valid.all()
+    assert fixed.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all()
+    assert fixed.geometry.iloc[0].equals(good)  # valid features are left alone
+    assert fixed.geometry.iloc[1].area > 0
+    assert _repair_geometries(fixed) is fixed  # nothing to repair: same object

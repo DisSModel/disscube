@@ -76,7 +76,7 @@ class Derivation(BaseModel):
     target: str
     source_id: str
     operator: str
-    class_code: int | None = None
+    class_code: int | list[int] | None = None
     role: str = "driver"
     valid_from: str | None = None
     valid_until: str | None = None

@@ -73,6 +73,34 @@ def _fine_array(data: xr.DataArray) -> tuple[np.ndarray, float | None]:
     return arr, nodata
 
 
+def _regroup(fine: np.ndarray, groups) -> np.ndarray:
+    """
+    Replace the class codes of ``fine`` by the label of the group that lists them.
+
+    ``groups`` is ``{label: [codes]}`` (labels may be strings, as TOML keys are). Pixels whose code is in no
+    group, and nodata, become NaN, which the reduction ignores. This is how a map of leaf classes is read
+    at a coarser level (MapBiomas level 1: ``{1 = [3, 4, 5, 6, 49], 3 = [15, 39, ...]}``).
+    """
+    if not isinstance(groups, dict) or not groups:
+        raise ValueError("'groups' must be a table {label = [codes]}")
+    out = np.full(fine.shape, np.nan, dtype=np.float64)
+    seen: set[int] = set()
+    for label, codes in groups.items():
+        try:
+            value = float(int(label))
+        except (TypeError, ValueError):
+            raise ValueError(f"group label {label!r} must be an integer") from None
+        codes = [codes] if isinstance(codes, int) else list(codes)
+        if seen & set(codes):
+            raise ValueError(f"code(s) {sorted(seen & set(codes))} listed in more than one group")
+        seen |= set(codes)
+        out[np.isin(fine, np.asarray(codes, dtype=np.float64))] = value
+    return out
+
+
+_GROUPS_DOC = "{label = [codes]}: read the map at a coarser level; the result is the label of the group (codes in no group are ignored)"
+
+
 def _windows(n_fine: int, n_target: int) -> list[tuple[int, int]]:
     """
     Build per-target-cell (start, stop) index ranges along one axis.
@@ -95,7 +123,7 @@ def _categorical_reduce(
     nodata: float | None,
     grid: GridSpec,
     mode: str,
-    class_code: int | None,
+    class_code: int | list[int] | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Reduce a fine categorical array into the target grid.
@@ -110,8 +138,9 @@ def _categorical_reduce(
         Target grid (provides ``rows`` / ``cols``).
     mode : {"percentage", "majority", "minority"}
         Aggregation to compute for the primary output.
-    class_code : int | None
-        Target class for ``percentage``.
+    class_code : int | list[int] | None
+        Target class for ``percentage``; with a list, the share of the cell in any of them
+        (e.g. the leaf classes of one MapBiomas level-1 class).
 
     Returns
     -------
@@ -123,6 +152,7 @@ def _categorical_reduce(
     dominance_purity : np.ndarray
         count(dominant_class) / valid_pixels per cell (categorical metric).
     """
+    wanted = np.atleast_1d(class_code if class_code is not None else []).astype(np.int64)
     fr, fc = fine.shape
     tr, tc = grid.rows, grid.cols
 
@@ -161,7 +191,7 @@ def _categorical_reduce(
             dominance[ti, tj] = dom_count / n_valid
 
             if mode == "percentage":
-                hit = int(counts[classes == class_code].sum()) if class_code in classes else 0
+                hit = int(counts[np.isin(classes, wanted)].sum())
                 value[ti, tj] = hit / n_valid
             elif mode == "majority":
                 value[ti, tj] = dom_class
@@ -269,6 +299,7 @@ def _continuous_reduce(
 # ---------------------------------------------------------------------------
 
 class MeanOperator(Operator):
+    block_safe = True
     name = "mean"
     _resampling = Resampling.average
 
@@ -297,6 +328,7 @@ class SumOperator(Operator):
       clipped to the grid, so a polygon crossing the border keeps its full
       denominator and only the part inside the grid is distributed.
     """
+    block_safe = True
 
     name = "sum"
     _resampling = Resampling.sum
@@ -383,6 +415,7 @@ def _cell_boxes(grid: GridSpec) -> np.ndarray:
 
 
 class StdOperator(Operator):
+    block_safe = True
     name = "std"
     # Standard deviation has no rasterio resampling equivalent; it requires a
     # real per-cell window pass, so this operator uses fine alignment.
@@ -412,6 +445,7 @@ class MedianOperator(Operator):
     aligned to a fine grid first: the median of per-cell means would not be the
     median of the pixels.
     """
+    block_safe = True
     name = "median"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
@@ -427,6 +461,7 @@ class MedianOperator(Operator):
 
 
 class MinOperator(Operator):
+    block_safe = True
     name = "min"
     _resampling = Resampling.min
 
@@ -437,6 +472,7 @@ class MinOperator(Operator):
 
 
 class MaxOperator(Operator):
+    block_safe = True
     name = "max"
     _resampling = Resampling.max
 
@@ -451,14 +487,20 @@ class MaxOperator(Operator):
 # ---------------------------------------------------------------------------
 
 class MajorityOperator(Operator):
+    block_safe = True
     name = "majority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
-    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
+    params: ClassVar[dict[str, str]] = {
+        "subcells": "at most this many fine pixels per cell along each axis (memory bound)",
+        "groups": _GROUPS_DOC,
+    }
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             fine, nodata = _fine_array(data)
+            if var.params.get("groups"):
+                fine, nodata = _regroup(fine, var.params["groups"]), None
             value, cov, dom = _categorical_reduce(fine, nodata, grid, "majority", None)
             return _attach_purity(value, cov, dom, grid)
         if isinstance(data, gpd.GeoDataFrame):
@@ -469,14 +511,20 @@ class MajorityOperator(Operator):
 
 
 class MinorityOperator(Operator):
+    block_safe = True
     name = "minority"
     _resampling = Resampling.nearest
     needs_fine_alignment = True
-    params: ClassVar[dict[str, str]] = {"subcells": "at most this many fine pixels per cell along each axis (memory bound)"}
+    params: ClassVar[dict[str, str]] = {
+        "subcells": "at most this many fine pixels per cell along each axis (memory bound)",
+        "groups": _GROUPS_DOC,
+    }
 
     def compute(self, data, var: Variable, grid: GridSpec) -> xr.DataArray:
         if isinstance(data, xr.DataArray):
             fine, nodata = _fine_array(data)
+            if var.params.get("groups"):
+                fine, nodata = _regroup(fine, var.params["groups"]), None
             value, cov, dom = _categorical_reduce(fine, nodata, grid, "minority", None)
             return _attach_purity(value, cov, dom, grid)
         if isinstance(data, gpd.GeoDataFrame):
@@ -487,6 +535,7 @@ class MinorityOperator(Operator):
 
 
 class PercentageOperator(Operator):
+    block_safe = True
     name = "percentage"
     requires_class_code = True
     _resampling = Resampling.nearest
@@ -505,6 +554,8 @@ class PercentageOperator(Operator):
         if isinstance(data, gpd.GeoDataFrame):
             if var.class_code is None:
                 raise ValueError("'percentage' requires class_code to be set.")
+            if isinstance(var.class_code, list):
+                raise TypeError("'percentage' over a vector source takes a single class_code, not a list.")
             shapes = [(g, var.class_code) for g in data.geometry if g is not None]
             return _wrap(_rasterize(shapes, grid), grid)
         raise TypeError(f"'percentage' got unexpected type {type(data).__name__}")

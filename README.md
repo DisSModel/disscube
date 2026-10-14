@@ -248,7 +248,7 @@ disscube/
 ├── pipeline/         Pipeline execution & planning (schema, runner) + internal stages
 ├── catalog/          CatalogStore (Protocol) + SQLite and JSON implementations
 ├── storage.py        AssetStore (fsspec — local and S3)
-├── cli.py            `disscube validate` / `disscube run` / `disscube export`
+├── cli.py            `disscube validate` / `disscube run` / `disscube export` / `disscube plot`
 ├── sources/          Adapters that bring external data in as SpatialSources,
 │   │                 each with a checksum and a provenance.json sidecar
 │   ├── _raster.py    Window2D, windowed reads, composites, mosaics, register_raster
@@ -286,7 +286,7 @@ The operator is registered automatically and accepted by `Derivation` / `Spatial
 The limitations below are scope decisions for the current version, not bugs. They are documented so that users and reviewers understand what is implemented versus what is planned.
 
 **In-memory, single-tile processing**
-Each call to `derive()` loads a tile's full data into memory. There is no lazy (Dask) or distributed processing. For continental-scale grids (e.g. `BR/1km`), use the tile loop — each tile is processed and saved independently.
+Each call to `derive()` loads a tile's full data into memory, except raster sources of MapBiomas and PRODES, which are read, written and aligned by blocks of rows and columns (`DISSCUBE_BLOCK_PIXELS`, default 50 million pixels) and so can be larger than memory. Other sources are read in memory; for the Brazil Data Cube, the item windows of a BDC composite are all held before the reduction. Each `[[derive]]` of a block-read source re-reads and re-aligns it, one pass per variable and year. There is no lazy (Dask) or distributed processing. For continental-scale grids with other sources, use the tile loop; each tile is processed and saved independently.
 
 **Vector aggregation by rasterization (not area-weighted)**
 Operators over vector sources (`majority`, `percentage`, `attribute`, `presence`, `minority`) convert geometries to raster before aggregating pixels. For the share of each cell covered by polygons, use `area`, which intersects the polygons with the cells exactly.
@@ -312,7 +312,7 @@ If you use DisSCube in your research, dynamic modeling, or spatial data pipeline
   author       = {Costa, S{\'e}rgio Souza},
   title        = {{DisSCube: Declarative spatial data cubes}},
   year         = {2026},
-  version      = {0.5.0},
+  version      = {0.6.0},
   url          = {https://github.com/DisSModel/disscube}
 }
 ```

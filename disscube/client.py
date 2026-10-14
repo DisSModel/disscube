@@ -13,7 +13,7 @@ import xarray as xr
 from disscube.catalog.sqlite_store import SqliteCatalogStore
 from disscube.models import DerivedVariable, GridSpec, SpatialDerivation, SpatialRelation, SpatialSource
 from disscube.pipeline import PipelineContext
-from disscube.pipeline.aggregator import Aggregator
+from disscube.pipeline.aggregator import Aggregator, write_georeference
 from disscube.pipeline.aligner import GridAligner
 from disscube.pipeline.normalizer import Normalizer
 from disscube.pipeline.writer import VariableWriter
@@ -27,6 +27,82 @@ if TYPE_CHECKING:
     from disscube.models import Derivation
 
 log = logging.getLogger("disscube.client.cube_client")
+
+#: Source pixels aligned at once before a raster source is processed a block of grid cells at a time.
+DEFAULT_BLOCK_PIXELS = 50_000_000
+
+
+def _source_pixels(bbox: list[float], grid_crs: str, ds: Any) -> float:
+    """Source pixels inside ``bbox`` (grid CRS): its footprint in the source CRS, clipped to the source."""
+    from rasterio.warp import transform_bounds
+
+    left, bottom, right, top = transform_bounds(grid_crs, ds.crs, *bbox, densify_pts=21)
+    b = ds.bounds
+    w = min(right, b.right) - max(left, b.left)
+    h = min(top, b.top) - max(bottom, b.bottom)
+    if w <= 0 or h <= 0:
+        return 0.0
+    return (w / abs(ds.res[0])) * (h / abs(ds.res[1]))
+
+
+def _blocks(source: SpatialSource, grid: GridSpec, derivation: SpatialDerivation,
+            block_pixels: int | None) -> list[list[GridSpec]] | None:
+    """
+    Blocks of grid cells (a list of block rows, each a list of blocks), each covering at most about
+    ``block_pixels`` source pixels, or None to derive the grid whole.
+
+    The footprint of a block in the source is measured, not assumed: a strip of grid rows that is
+    wide in a projected grid covers a far larger area of a longitude/latitude source than its
+    height suggests, so blocks are halved along their larger side until the budget is met.
+    None when the source is a vector, is small enough, or a variable uses an operator (or
+    ``fill = "nearest"``) whose cells depend on their neighbours.
+    """
+    import rasterio
+
+    from disscube.operators.base import OPERATOR_REGISTRY
+
+    if source.format != "raster":
+        return None
+    for v in derivation.variables:
+        op = OPERATOR_REGISTRY.get(v.operator)
+        if op is None or not op.block_safe or getattr(v, "fill", None) == "nearest":
+            return None
+    budget = block_pixels or int(os.environ.get("DISSCUBE_BLOCK_PIXELS", DEFAULT_BLOCK_PIXELS))
+    minx, _miny, _maxx, maxy = grid.bbox
+    res = grid.resolution
+
+    def bbox_of(r0: int, r1: int, c0: int, c1: int) -> list[float]:
+        return [minx + c0 * res, maxy - r1 * res, minx + c1 * res, maxy - r0 * res]
+
+    try:
+        with rasterio.open(source.asset_url) as ds:
+            def worst(nr: int, nc: int) -> float:
+                return max(
+                    _source_pixels(bbox_of(r0, min(r0 + nr, grid.rows), c0, min(c0 + nc, grid.cols)),
+                                   grid.crs, ds)
+                    for r0 in range(0, grid.rows, nr) for c0 in range(0, grid.cols, nc)
+                )
+
+            nr, nc = grid.rows, grid.cols
+            while worst(nr, nc) > budget and (nr > 1 or nc > 1):
+                if nr >= nc:
+                    nr = max(1, (nr + 1) // 2)
+                else:
+                    nc = max(1, (nc + 1) // 2)
+    except Exception:  # noqa: BLE001 — not a plain file (NetCDF subdataset, URL…): derive whole
+        return None
+    if nr >= grid.rows and nc >= grid.cols:
+        return None
+    out = []
+    for r0 in range(0, grid.rows, nr):
+        r1 = min(r0 + nr, grid.rows)
+        out.append([
+            GridSpec(id=grid.id, type=grid.type, crs=grid.crs, resolution=res,
+                     bbox=bbox_of(r0, r1, c0, min(c0 + nc, grid.cols)), description=grid.description)
+            for c0 in range(0, grid.cols, nc)
+        ])
+    return out
+
 
 # Attributes that describe one stored slice: per-variable only when it has a single slice.
 _SLICE_ATTRS = ("spec_hash", "content_hash", "source_id", "source_checksum")
@@ -68,7 +144,16 @@ class CubeClient:
     def search(self, grid: str | None = None, role: str | None = None) -> list[DerivedVariable]:
         return self.catalog.search_derived_variables(grid_id=grid, role=role)
 
-    def derive(self, derivation: SpatialDerivation, tile_id: str | None = None) -> list[DerivedVariable]:
+    def derive(self, derivation: SpatialDerivation, tile_id: str | None = None,
+               block_pixels: int | None = None) -> list[DerivedVariable]:
+        """
+        Derive the variables of ``derivation`` on its grid.
+
+        ``block_pixels`` is the number of source pixels that may be aligned at once. A raster source
+        larger than that is processed a block of grid cells at a time (default
+        :data:`DEFAULT_BLOCK_PIXELS`, or the ``DISSCUBE_BLOCK_PIXELS`` environment variable), which
+        bounds the memory without changing the result; it needs operators that work cell by cell.
+        """
         derivation = derivation.model_copy(deep=True)
         if not derivation.relations:
             derivation.relations = self.get_relations(derivation.grid_id)
@@ -113,17 +198,35 @@ class CubeClient:
                 description=f"Temporary tile grid for {tile_id}"
             )
 
-        ctx = PipelineContext(source=source, grid=grid, derivation=derivation, tile_id=tile_id)
-
-        pipeline = [
-            Normalizer(),
-            GridAligner(),
-            Aggregator(),
-            VariableWriter(self.store, self.catalog)
-        ]
-
-        for stage in pipeline:
-            ctx = stage.execute(ctx)
+        blocks = _blocks(source, grid, derivation, block_pixels)
+        if blocks is None:
+            ctx = PipelineContext(source=source, grid=grid, derivation=derivation, tile_id=tile_id)
+            for stage in (Normalizer(), GridAligner(), Aggregator()):
+                ctx = stage.execute(ctx)
+        else:
+            # A source too large to align in one piece: derive the grid a block of cells at a time
+            # and join the blocks. Every cell depends only on the source pixels inside it (see
+            # Operator.block_safe), so the result is the same as for the whole grid.
+            total = sum(len(row) for row in blocks)
+            n = 0
+            band = []
+            for row in blocks:
+                parts = []
+                for sub in row:
+                    n += 1
+                    log.info("block %d/%d of grid %s (%d rows x %d cols)", n, total, grid.id, sub.rows, sub.cols)
+                    sctx = PipelineContext(source=source, grid=sub, derivation=derivation, tile_id=tile_id)
+                    for stage in (Normalizer(), GridAligner(), Aggregator()):
+                        sctx = stage.execute(sctx)
+                    parts.append(sctx.data)
+                band.append(xr.concat(parts, dim="x", coords="minimal", compat="override")
+                            if len(parts) > 1 else parts[0])
+            joined = (xr.concat(band, dim="y", coords="minimal", compat="override")
+                      if len(band) > 1 else band[0])
+            joined = joined.assign_coords(y=grid.ys, x=grid.xs)
+            write_georeference(joined, grid)
+            ctx = PipelineContext(source=source, grid=grid, derivation=derivation, tile_id=tile_id, data=joined)
+        ctx = VariableWriter(self.store, self.catalog).execute(ctx)
 
         return [
             d for d in self.catalog.search_derived_variables(tile_id=tile_id)
@@ -135,6 +238,7 @@ class CubeClient:
         derivation: Derivation,
         grid_id: str,
         tile_id: str | None = None,
+        block_pixels: int | None = None,
     ) -> list[DerivedVariable]:
         """
         Thin convenience wrapper: build a ``SpatialDerivation`` from a
@@ -151,7 +255,7 @@ class CubeClient:
         tile_id : str | None
             Optional tile sub-identifier, forwarded to ``derive()``.
         """
-        return self.derive(derivation.to_spatial_derivation(grid_id), tile_id=tile_id)
+        return self.derive(derivation.to_spatial_derivation(grid_id), tile_id=tile_id, block_pixels=block_pixels)
 
     def purge_stale(self) -> int:
         """

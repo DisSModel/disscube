@@ -5,6 +5,7 @@ Command line: run DisSCube pipeline files.
     disscube fetch pipeline.toml
     disscube run pipeline.toml [--workspace DIR] [--output OUT.tif] [--dry-run] [--json] [-v]
     disscube export pipeline.toml --output OUT.tif [--workspace DIR] [--variables ...] [--json] [-v]
+    disscube plot OUT.tif [-o LOOK.png] [--bands NAME ...] [--year YYYY] [--cols N] [--shared-colorbar] [--crop] [--dpi N]
 """
 
 from __future__ import annotations
@@ -42,7 +43,26 @@ def main(argv: list[str] | None = None) -> int:
     p_exp.add_argument("--json", action="store_true", help="output export result as JSON")
     p_exp.add_argument("-v", "--verbose", action="store_true", help="log each step")
 
+    p_plot = sub.add_parser("plot", help="draw the bands of an exported GeoTIFF into a PNG, to look at the result")
+    p_plot.add_argument("file", help="GeoTIFF written by run --output or export")
+    p_plot.add_argument("--output", "-o", help="PNG (default: the GeoTIFF's name with .png)")
+    p_plot.add_argument("--bands", nargs="*", help="band or variable names (default: all)")
+    p_plot.add_argument("--year", type=int, help="only the bands of this year")
+    p_plot.add_argument("--cols", type=int, help="panels per row")
+    p_plot.add_argument("--shared-colorbar", action="store_true", help="one colour bar for all panels (when all are shares)")
+    p_plot.add_argument("--crop", action="store_true", help="trim the empty margin (bounding box of the cells with data)")
+    p_plot.add_argument("--dpi", type=int, default=150)
+
     args = parser.parse_args(argv)
+    if args.command == "plot":
+        from disscube.plot import plot_geotiff
+
+        try:
+            print(f"figure    : {plot_geotiff(args.file, args.output, bands=args.bands, year=args.year, cols=args.cols, dpi=args.dpi, shared_colorbar=args.shared_colorbar, crop=args.crop)}")
+        except (ImportError, ValueError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        return 0
     from disscube.pipeline import PipelineError, plan, run
 
     logging.basicConfig(level=logging.INFO if getattr(args, "verbose", False) else logging.WARNING,

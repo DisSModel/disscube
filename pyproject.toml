@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "disscube"
-version = "0.5.0"
+version = "0.6.0"
 description = "Declarative spatial data cubes: describe sources, grid and derived variables in TOML; get a cataloged, reproducible cube."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -65,6 +65,9 @@ bdc = [
 ]
 s3 = [
     "s3fs",
+]
+plot = [                    # disscube plot: a PNG of the bands of an exported GeoTIFF
+    "matplotlib",
 ]
 netcdf = [                  # CubeClient.export_netcdf()
     "h5netcdf",

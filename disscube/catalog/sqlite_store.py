@@ -1,3 +1,4 @@
+import contextlib
 import json
 import sqlite3
 from pathlib import Path
@@ -10,10 +11,17 @@ class SqliteCatalogStore:
         self.path = Path(path)
         self._init_db()
 
+    @contextlib.contextmanager
     def _get_connection(self):
+        # `with sqlite3.connect(...)` only ends the transaction (commit/rollback); it does not
+        # close the connection. Close it explicitly so none is left open until interpreter exit.
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
         with self._get_connection() as conn:

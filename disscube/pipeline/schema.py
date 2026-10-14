@@ -118,6 +118,19 @@ class ProdesSource(_SourceBase):
     year: int | str | None = None
     url: str | None = None
     cache: str | None = None
+    codes: dict[str, int] | None = None
+    """Local code of each category (forest, deforested, non_forest, water); categories with one code are merged."""
+
+    @model_validator(mode="after")
+    def _check_codes(self):
+        if self.codes is not None:
+            from disscube.sources.prodes import resolve_codes
+
+            try:
+                resolve_codes(self.codes)
+            except ValueError as e:
+                raise ValueError(f"source {self.id!r}: {e}") from e
+        return self
 
 
 class ClassifiedSource(_SourceBase):
@@ -193,7 +206,7 @@ class DeriveConfig(_Strict):
     target: str
     source: str
     operator: str
-    class_code: int | None = None
+    class_code: int | list[int] | None = None
     role: str = "driver"
     years: list[int] | None = None
     params: dict[str, Any] = Field(default_factory=dict)

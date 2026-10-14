@@ -10,6 +10,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-10-14
+
+### Added
+- **`disscube plot`**: a PNG of the bands of an exported GeoTIFF, to look at a result without a script per case.
+  `disscube plot cellspace.tif [-o look.png] [--bands NAME ...] [--year 2024] [--cols N]`. One panel per band; the scale
+  follows the values (shares in [0, 1] as 0 to 100 %, a few integer codes as classes, otherwise continuous between the 2nd
+  and 98th percentiles); cells without data are white. It is a quick look and not a publication figure. Needs matplotlib
+  (`pip install 'disscube[plot]'`). `--shared-colorbar` draws one bar for all panels when every panel is a share (0 to 100 %);
+  `--crop` trims the empty margin (bounding box of the cells with data in any drawn band).
+- **PRODES: the local code of each category is declared in the pipeline file.** `[source.codes]` (or `codes=` in
+  `register_prodes_source`) gives the code of `forest`, `deforested`, `non_forest` and `water`; categories with the same code
+  are merged. The default is the map of before (1 forest, 2 deforested up to the year, 3 non-forest vegetation and water
+  together); `water = 4` keeps the hydrography apart, so a map of the classes shows rivers apart from non-forest vegetation.
+  The legend is still read by label (`dAAAA`, `rAAAA`, hidrografia, não floresta, floresta; clouds are no data), so the
+  categories do not depend on the numbers of an edition. See `docs/guides/landcover.md`.
+- **`majority` and `minority` accept `params = {groups = {label = [codes]}}`**: the map is read at a coarser level and
+  the result is the label of the group that covers most (least) of the cell. One derivation gives the MapBiomas level-1
+  class (`"1" = [3, 4, 5, 6, 49]`, …) from the leaf-class map. Codes in no group, and nodata, are ignored; a code in two
+  groups is an error. In a pipeline file the table is `[derive.params.groups]`.
+- **`percentage` accepts a list of classes**: `class_code = [3, 4, 5, 6, 49]` is the share of the cell in any of
+  them, for classes that are a group of codes (a MapBiomas level-1 class is a group of leaf codes). Raster sources
+  only; a vector source still takes one class.
+- **Sources and grids larger than memory.** The MapBiomas and PRODES adapters read the window and write the
+  registered GeoTIFF a block of rows at a time, in the file's own `uint8` (new `copy_window`, `register_file`),
+  instead of one float32 array of the whole window. `derive` aligns a raster source a block of grid cells (rows × columns) at
+  a time when it has more than `block_pixels` pixels (default 50 million, `DISSCUBE_BLOCK_PIXELS` or
+  `derive(..., block_pixels=)`), for the operators that work cell by cell (`Operator.block_safe`: mean, sum, std,
+  median, min, max, majority, minority, percentage). The aligner clips the source to the grid before
+  reprojecting. No new TOML syntax: the PRODES of the whole Legal Amazon (86,679 × 111,508 pixels) on a 5.28 km
+  grid, or MapBiomas over Brazil at 30 m, is one pipeline file. Registered MapBiomas files are byte for byte the
+  ones of 0.5.0. The block size is chosen from the measured footprint of each block in the source (a wide strip of a projected grid covers far more longitude/latitude than its height suggests, so rows alone do not bound the memory). Class shares, majority and median of a block equal those of the whole grid when GDAL's exact
+  transformer is used; with its default approximate one a cell on an edge can pick the neighbouring source
+  pixel (1 cell in 3,422 in the test). `mean` and `sum` agree to about 1e-12 with the exact transformer. The exact transformer can be selected only with rasterio 1.5 or later (Python 3.12 or later); with rasterio 1.4, on Python 3.11, a few cells of the categorical operators can differ between blocks and whole grid, and the equality test is skipped there. The BDC adapter still reads whole windows.
+- **`run.json` records the DisSCube version** (`"disscube": "0.6.0"`, `null` when running from a source tree that is not installed), so a run can be tied to a release without noting the commit by hand.
+
+### Fixed
+- **Invalid polygons in a vector source no longer stop the pipeline.** The reprojection can turn a valid polygon into a
+  self-intersecting one, and `clip` then raised `TopologyException` (found with the INCRA settlements layer of the
+  open-lucc-workflow, one bad feature among 10,000). The aligner now repairs the invalid features (`make_valid`) after the
+  reprojection and before the clip, and logs how many; valid features are not touched.
+- **PRODES: the yearly classes d2010 to d2025 were dropped.** In the edition's legend every year from 2010 has a
+  yearly class (dYYYY, codes 10 to 25) and a residual class (rYYYY, codes 50 to 65); the lookup was built from a dictionary
+  keyed by year, so the residual class replaced the yearly one and the pixels of d2010 to d2025 came out as no data. A map of
+  forest or of accumulated deforestation lacked them (about a quarter of the deforestation of Acre, whose accumulated
+  deforestation rose by 1 thousand km² between 2008 and 2024 in place of 12 thousand). Both kinds of class are now in the
+  lookup. Maps made with an earlier version should be made again.
+- **`Error in sys.excepthook:` at the end of `disscube run`.** The aligner opened the source raster and never
+  closed it; the open handle was finalised at interpreter exit. It is now closed once the aligned arrays are in memory.
+- **SQLite connections of the catalog are closed.** `with sqlite3.connect(...)` only ends the transaction;
+  every catalog call left a connection open until interpreter exit (`ResourceWarning: unclosed database`).
+
+---
+
+---
+
 ## [0.5.0] - 2026-10-05
 
 ### Added

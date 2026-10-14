@@ -10,7 +10,7 @@ from .grid import SpatialRelation
 class Variable(BaseModel):
     name: str
     operator: str
-    class_code: int | None = None
+    class_code: int | list[int] | None = None
     params: dict[str, Any] = {}
     """Operator options (e.g. ``{"crs": "EPSG:5880"}`` for ``distance``)."""
     fill: Literal["nearest"] | None = None

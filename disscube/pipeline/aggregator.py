@@ -101,6 +101,12 @@ def _fill_nearest(result: xr.DataArray) -> xr.DataArray:
     return result.copy(data=values[rows, cols])
 
 
+def write_georeference(ds: xr.Dataset, grid) -> None:
+    """Write the CRS and the transform of ``grid`` on ``ds`` (in place)."""
+    ds.rio.write_crs(_crs_to_named_wkt(grid.crs), inplace=True)
+    ds.rio.write_transform(grid.transform, inplace=True)
+
+
 class Aggregator(PipelineStage):
     def execute(self, ctx: PipelineContext) -> PipelineContext:
         grid = ctx.grid
@@ -144,9 +150,7 @@ class Aggregator(PipelineStage):
         # rioxarray.write_crs() sets grid_mapping="spatial_ref" on every existing
         # data variable — calling it before the loop would miss them all, causing
         # QGIS and other CF-compliant readers to not detect the projection.
-        named_wkt = _crs_to_named_wkt(grid.crs)
-        final_ds.rio.write_crs(named_wkt, inplace=True)
-        final_ds.rio.write_transform(grid.transform, inplace=True)
+        write_georeference(final_ds, grid)
 
         ctx.data = final_ds
         return ctx

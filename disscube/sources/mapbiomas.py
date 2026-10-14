@@ -28,7 +28,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from disscube.sources._raster import Window2D, read_window, register_raster
+from disscube.sources._raster import Window2D, copy_window, read_window, register_file
 
 log = logging.getLogger(__name__)
 
@@ -141,7 +141,6 @@ def register_mapbiomas_source(
     resolution, year, URL, bbox, legend and license). ``time`` is ``year``.
     """
     href = url or coverage_url(year, collection, resolution)
-    window = read_coverage(year, bbox_geo, collection=collection, resolution=resolution, url=href)
     provenance = {
         "dataset": "MapBiomas Brazil — annual land cover and land use",
         "collection": collection,
@@ -153,10 +152,13 @@ def register_mapbiomas_source(
         "legend": LEGEND_URL,
         "license": LICENSE,
     }
-    return register_raster(
-        cube, source_id, window, out_dir, provenance,
+    # Read and written a block of rows at a time, so the window can be larger than memory (MapBiomas
+    # over Brazil at 30 m is 9 billion pixels). Same file as read_coverage() + write_geotiff().
+    tif, crs = copy_window(href, bbox_geo, Path(out_dir) / f"{source_id}.tif",
+                           nodata=MAPBIOMAS_NODATA, out_nodata=MAPBIOMAS_NODATA)
+    return register_file(
+        cube, source_id, tif, crs, provenance,
         name=name or f"MapBiomas collection {collection} ({resolution} m), {year}",
         time=year,
         tags=["mapbiomas", f"collection:{collection}", f"resolution:{resolution}m", f"year:{year}"],
-        dtype="uint8", nodata=MAPBIOMAS_NODATA,
     )
