@@ -16,14 +16,14 @@
         <link rel="prev" href="../../terrame_fill_correspondence/">
       
       
-        <link rel="next" href="../bdc/">
+        <link rel="next" href="../cli/">
       
       
         
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -749,6 +749,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#a-vector-source-distance-to-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A vector source: distance to points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#taking-files-as-they-come" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -812,6 +823,62 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../blocks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Block-wise reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1046,6 +1113,17 @@
     <span class="md-ellipsis">
       
         Source types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-vector-source-distance-to-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A vector source: distance to points
       
     </span>
   </a>
@@ -1294,6 +1372,27 @@ relative to the pipeline file, so a folder with its TOML and data is portable.</
 </tbody>
 </table>
 <p>Every source block also accepts <code>name</code> and <code>years</code>.</p>
+<h3 id="a-vector-source-distance-to-points">A vector source: distance to points</h3>
+<p>A point, line or polygon layer is declared as a <code>file</code> source, like a raster, and the operator is the one that
+summarises it in a cell. The distance from each cell to the nearest municipal seat, measured in a projected CRS
+(<code>EPSG:5880</code>, in metres) although the grid is in BDC Albers:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[[source]]</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"seats"</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"zip://ana/GEOFT_CIDADE_2016.zip"</span><span class="w">      </span><span class="c1"># a shapefile inside a zip</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://…/GEOFT_CIDADE_2016.zip"</span><span class="w">       </span><span class="c1"># where it is downloaded from, if not there</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">sha256</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0311f4267c4e…"</span><span class="w">                        </span><span class="c1"># checked after the download</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">[[derive]]</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dist_seats"</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"seats"</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">operator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"distance"</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">crs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"EPSG:5880"</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>The distance is computed for every cell of the grid, including those outside the area of interest (the maps may mask
+them), and the layer is not clipped to the grid: a point outside it can be the nearest one. A vector source is
+not read by blocks (see <a href="../blocks/">Block-wise reading</a>); it is small. The complete file, for the state of Pará, is
+<code>cases/para/seats.toml</code> in <a href="https://github.com/LambdaGeo/disscube-grids">disscube-grids</a>.</p>
 <h3 id="taking-files-as-they-come">Taking files as they come</h3>
 <p>A <code>file</code> source can say how to read the file, so that the data need no
 preparation script:</p>
@@ -1310,22 +1409,22 @@ preparation script:</p>
 file are two products in the cache. A <code>union</code> joins vector sources — e.g.
 state roads from one file and federal roads from another, each filtered by
 its own attributes — in the first one's CRS:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[[source]]</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"state_paved"</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rodovias_estaduais.shp"</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"utf-8"</span><span class="p">,</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"SURFACE IN ('Paved', 'Duplicated')"</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">[[source]]</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"federal_paved"</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"zip://Transporte.zip!TRA_Trecho_Rodoviario_L.shp"</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"JURISDICAO = 'Federal' AND REVESTIMEN = 'Pavimentado'"</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="k">[[source]]</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"paved_roads"</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"union"</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">of</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"state_paved"</span><span class="p">,</span><span class="w"> </span><span class="s2">"federal_paved"</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[[source]]</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"state_paved"</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rodovias_estaduais.shp"</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"utf-8"</span><span class="p">,</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"SURFACE IN ('Paved', 'Duplicated')"</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">[[source]]</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"federal_paved"</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"zip://Transporte.zip!TRA_Trecho_Rodoviario_L.shp"</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">"JURISDICAO = 'Federal' AND REVESTIMEN = 'Pavimentado'"</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">[[source]]</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"paved_roads"</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"union"</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">of</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"state_paved"</span><span class="p">,</span><span class="w"> </span><span class="s2">"federal_paved"</span><span class="p">]</span>
 </code></pre></div>
 <h3 id="operator-params-and-fill">Operator <code>params</code> and <code>fill</code></h3>
 <table>
@@ -1346,6 +1445,11 @@ its own attributes — in the first one's CRS:</p>
 <td><code>percentage</code>, <code>majority</code>, <code>minority</code>, <code>std</code>, <code>median</code></td>
 <td><code>subcells</code></td>
 <td>at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90)</td>
+</tr>
+<tr>
+<td><code>majority</code>, <code>minority</code></td>
+<td><code>groups</code></td>
+<td><code>{label = [codes]}</code>: read a map of leaf classes at a coarser level; the result is the label of the group (codes in no group are ignored). See <a href="../mapbiomas/#level-1-classes">MapBiomas</a></td>
 </tr>
 <tr>
 <td><code>sum</code></td>
@@ -1376,12 +1480,17 @@ whose <code>source</code> contains <code>{year}</code> is expanded over the same
 product per year that <code>load()</code> returns as a <code>(time, y, x)</code> series. There are no
 other loops or conditions: what does not fit belongs in Python.</p>
 <h2 id="what-a-run-leaves-behind">What a run leaves behind</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&lt;workspace&gt;/
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── catalog.db          the catalog
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>├── store/              derived variables (Zarr)
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>├── raw/                every source: GeoTIFF + &lt;id&gt;.provenance.json
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>└── run.json            this run: DisSCube version, pipeline file and checksum, sources, products
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>&lt;workspace&gt;/
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>├── catalog.db          the catalog
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>├── store/              derived variables (Zarr)
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>├── raw/                every source: GeoTIFF + &lt;id&gt;.provenance.json
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>└── run.json            this run: DisSCube version, pipeline file and checksum, sources, products
 </code></pre></div>
+<p><code>run.json</code> (a copy is kept in <code>runs/&lt;pipeline file name&gt;.json</code>) holds, in this order: the DisSCube version that ran
+(<code>disscube</code>); the <code>pipeline</code> file, with its SHA-256 and name; the <code>started</code> and <code>finished</code> times (UTC); the <code>grid</code>;
+the <code>sources</code>, each with its <code>id</code>, <code>type</code>, the local <code>file</code>, the SHA-256 <code>checksum</code> of that file and its <code>time</code>; the
+<code>derived</code> products, each with its <code>target</code>, <code>source</code>, <code>spec_hash</code>, <code>times</code> and the Zarr <code>file</code>; and, if the run exported,
+the <code>exported</code> path. With the pipeline file, the checksums and the version, the same grid can be rebuilt and checked.</p>
 <p>Each provenance file gains a <code>pipeline</code> entry with the pipeline file's path,
 name and SHA-256, so every derived variable can be traced back to the exact
 file that declared it.</p>
@@ -1452,10 +1561,10 @@ file that declared it.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

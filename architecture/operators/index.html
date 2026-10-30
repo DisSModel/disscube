@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -835,6 +835,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/blocks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Block-wise reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/bdc/" class="md-nav__link">
         
   
@@ -1287,6 +1343,10 @@
 <p><code>sum</code> also accepts a vector source: <code>params = {area = true}</code> shares each polygon's value among the cells in proportion to the intersected area (total conserved); without it every feature adds its whole value to each cell it touches. The column is the one named like the target, or <code>params = {column = "…"}</code>.</p>
 <p>Each of the operators above accepts <code>params = {"subcells": n}</code>, a cap on the fine pixels per cell
 along each axis (see <code>GridAligner._align_fine</code>).</p>
+<p><code>majority</code> and <code>minority</code> accept <code>params = {groups = {label = [codes]}}</code>: the map is read at a coarser level, and the
+result is the label of the group that covers most (least) of the cell. The labels are integers (TOML keys are written as
+strings, <code>"1"</code>), a code cannot be in two groups, and codes in no group, and nodata, are ignored. With it one derivation
+turns a map of leaf classes into the MapBiomas level-1 classes; see <a href="../../guides/mapbiomas/#level-1-classes">MapBiomas</a>.</p>
 <p>The last three also produce <code>coverage_purity</code> and <code>dominance_purity</code> as coordinates of the output <code>DataArray</code> (persisted in the Zarr alongside the variable).</p>
 <h3 id="proximity-vector-and-passthrough-for-raster">Proximity — vector (and passthrough for raster)</h3>
 <table>
@@ -1427,10 +1487,10 @@ along each axis (see <code>GridAligner._align_fine</code>).</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
