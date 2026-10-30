@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- New guides: command line (`validate`, `fetch`, `run`, `export`, `plot`) and block-wise reading (the block budget, which operators and sources are read by blocks, measured runs).
+- `groups` of `majority` and `minority` (MapBiomas level-1 classes) in the operators page, the pipeline-file parameters and the MapBiomas guide; the point-source example of `distance`; the contents of `run.json`.
+
 ---
 
 ## [0.6.0] - 2026-10-14

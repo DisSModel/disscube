@@ -104,6 +104,32 @@ relative to the pipeline file, so a folder with its TOML and data is portable.
 
 Every source block also accepts `name` and `years`.
 
+### A vector source: distance to points
+
+A point, line or polygon layer is declared as a `file` source, like a raster, and the operator is the one that
+summarises it in a cell. The distance from each cell to the nearest municipal seat, measured in a projected CRS
+(`EPSG:5880`, in metres) although the grid is in BDC Albers:
+
+```toml
+[[source]]
+id = "seats"
+type = "file"
+path = "zip://ana/GEOFT_CIDADE_2016.zip"      # a shapefile inside a zip
+url = "https://…/GEOFT_CIDADE_2016.zip"       # where it is downloaded from, if not there
+sha256 = "0311f4267c4e…"                        # checked after the download
+
+[[derive]]
+target = "dist_seats"
+source = "seats"
+operator = "distance"
+params = { crs = "EPSG:5880" }
+```
+
+The distance is computed for every cell of the grid, including those outside the area of interest (the maps may mask
+them), and the layer is not clipped to the grid: a point outside it can be the nearest one. A vector source is
+not read by blocks (see [Block-wise reading](blocks.md)); it is small. The complete file, for the state of Pará, is
+`cases/para/seats.toml` in [disscube-grids](https://github.com/LambdaGeo/disscube-grids).
+
 ### Taking files as they come
 
 A `file` source can say how to read the file, so that the data need no
@@ -147,6 +173,7 @@ of = ["state_paved", "federal_paved"]
 |---|---|---|
 | `distance` | `crs` | measure in this CRS — e.g. a projected one, for metres on a geographic grid |
 | `percentage`, `majority`, `minority`, `std`, `median` | `subcells` | at most this many fine pixels per cell along each axis: bounds the memory of a fine source over a large grid (a 100 m raster on a 1/12° grid would give ~90 × 90) |
+| `majority`, `minority` | `groups` | `{label = [codes]}`: read a map of leaf classes at a coarser level; the result is the label of the group (codes in no group are ignored). See [MapBiomas](mapbiomas.md#level-1-classes) |
 | `sum` | `area` | vector polygons: share the value in proportion to the intersected area (default `false`) |
 | `sum` | `column` | vector: numeric column to sum (default: the target name) |
 | `std` | `ddof` | `0` (default, population) or `1` (sample standard deviation) |
@@ -174,6 +201,12 @@ other loops or conditions: what does not fit belongs in Python.
 ├── raw/                every source: GeoTIFF + <id>.provenance.json
 └── run.json            this run: DisSCube version, pipeline file and checksum, sources, products
 ```
+
+`run.json` (a copy is kept in `runs/<pipeline file name>.json`) holds, in this order: the DisSCube version that ran
+(`disscube`); the `pipeline` file, with its SHA-256 and name; the `started` and `finished` times (UTC); the `grid`;
+the `sources`, each with its `id`, `type`, the local `file`, the SHA-256 `checksum` of that file and its `time`; the
+`derived` products, each with its `target`, `source`, `spec_hash`, `times` and the Zarr `file`; and, if the run exported,
+the `exported` path. With the pipeline file, the checksums and the version, the same grid can be rebuilt and checked.
 
 Each provenance file gains a `pipeline` entry with the pipeline file's path,
 name and SHA-256, so every derived variable can be traced back to the exact

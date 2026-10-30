@@ -49,6 +49,30 @@ example open sea outside the mapped area). The reader treats 0 as nodata and
 writes the local file with `nodata=0`, so it never counts as a class in
 `majority` or `percentage`.
 
+## Level-1 classes
+
+The leaf classes of the legend are grouped in five level-1 classes: Forest, Herbaceous and shrubby vegetation, Farming,
+Non vegetated area and Water. `majority` reads a map at that level with `groups`, in one derivation and without a
+reclassified copy of the map. For Collection 11 (legend of 13 August 2026):
+
+```toml
+[[derive]]
+target = "l1_class"
+source = "lulc_{year}"
+operator = "majority"
+
+[derive.params.groups]
+"1" = [1, 3, 4, 5, 6, 7, 49]                                  # forest, savanna, mangrove, floodable forest, flooded savanna, wooded sandbank
+"2" = [10, 11, 12, 29, 32, 50, 77, 84]                        # wetland, grassland, herbaceous and shrub formation, rocky outcrop, tidal flat, salt marsh, herbaceous sandbank
+"3" = [9, 14, 15, 18, 19, 20, 21, 35, 36, 39, 40, 41, 46, 47, 48, 62]   # pasture, crops, forest plantation, mosaic of uses
+"4" = [22, 23, 24, 25, 30, 75, 91]                            # beach and dune, urban, mining, photovoltaic, wind farm, other
+"5" = [26, 31, 33]                                            # river, lake and ocean; aquaculture
+```
+
+A code that is in no group is ignored, as is nodata (0): a class missing from the table is a class that disappears from
+the map, so check the table against the legend of the collection in use. The share of a class, instead of the dominant
+one, is `operator = "percentage"` with `class_code = [3, 4, 5, 6, 49]` (a list is the share in any of them).
+
 ## Classes
 
 `disscube.sources.mapbiomas.CLASSES` names the classes most common in

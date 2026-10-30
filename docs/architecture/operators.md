@@ -60,6 +60,11 @@ These operators receive a high-resolution array snapped to the target grid origi
 Each of the operators above accepts `params = {"subcells": n}`, a cap on the fine pixels per cell
 along each axis (see `GridAligner._align_fine`).
 
+`majority` and `minority` accept `params = {groups = {label = [codes]}}`: the map is read at a coarser level, and the
+result is the label of the group that covers most (least) of the cell. The labels are integers (TOML keys are written as
+strings, `"1"`), a code cannot be in two groups, and codes in no group, and nodata, are ignored. With it one derivation
+turns a map of leaf classes into the MapBiomas level-1 classes; see [MapBiomas](../guides/mapbiomas.md#level-1-classes).
+
 The last three also produce `coverage_purity` and `dominance_purity` as coordinates of the output `DataArray` (persisted in the Zarr alongside the variable).
 
 ### Proximity — vector (and passthrough for raster)

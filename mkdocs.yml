@@ -40,6 +40,8 @@ nav:
       - TerraME Fill Cells Correspondence: terrame_fill_correspondence.md
   - Guides:
       - Pipeline files (TOML): guides/pipeline_files.md
+      - Command line: guides/cli.md
+      - Block-wise reading: guides/blocks.md
       - BDC Integration: guides/bdc.md
       - MapBiomas: guides/mapbiomas.md
       - "Land-cover maps: PRODES and SITS": guides/landcover.md
