@@ -56,3 +56,16 @@ da = cube.load("forest_pct", grid_id="AC/5km")
 - [**Catalog**](architecture/catalog.md) — SQLite, schema, hash and time series
 - [**Grids**](guides/grids.md) — snapping to the national mesh, local grids, spatial relations
 - [**BDC guide**](guides/bdc.md) — integration with Brazil Data Cube and tile-based processing
+
+---
+
+## The DisSModel ecosystem
+
+| Package | Role | Documentation |
+|:---|:---|:---|
+| [**dissmodel**](https://github.com/DisSModel/dissmodel) | Core framework: clock, spatial substrates, executor, I/O, visualization | [dissmodel.github.io/dissmodel](https://dissmodel.github.io/dissmodel/) |
+| [**disscube**](https://github.com/DisSModel/disscube) | Declarative pipelines that turn raster and vector sources into model-ready grids | [dissmodel.github.io/disscube](https://dissmodel.github.io/disscube/) |
+| [**disslucc**](https://github.com/DisSModel/disslucc) | Land use and cover change: demand, potential and allocation | [dissmodel.github.io/disslucc](https://dissmodel.github.io/disslucc/) |
+| [dissmodel-ca](https://github.com/DisSModel/dissmodel-ca), [dissmodel-sysdyn](https://github.com/DisSModel/dissmodel-sysdyn), [dissmodel-abm](https://github.com/DisSModel/dissmodel-abm) | Ready-to-use cellular automata, system dynamics and agent-based models | GitHub |
+
+Developed by the [LambdaGeo](https://github.com/LambdaGeo) group at the Federal University of Maranhão (UFMA). MIT licence.
