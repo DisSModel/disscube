@@ -6,8 +6,10 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Spatial data cube engine of the DisSModel ecosystem">
+        <meta name="description" content="Spatial data cube engine of the DisSModel ecosystem: declarative pipelines that turn raster and vector sources into model-ready grids.">
       
+      
+        <meta name="author" content="LambdaGeo / UFMA">
       
       
         <link rel="canonical" href="https://dissmodel.github.io/disscube/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>DisSCube Documentation</title>
+        <title>DisSCube</title>
       
     
     
@@ -43,13 +45,9 @@
     
     
       
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
     
+    
+      <link rel="stylesheet" href="stylesheets/lambdageo.css">
     
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -62,10 +60,12 @@
   
     
     
+      
     
     
     
-    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -88,7 +88,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="DisSCube Documentation" class="md-header__button md-logo" aria-label="DisSCube Documentation" data-md-component="logo">
+    <a href="." title="DisSCube" class="md-header__button md-logo" aria-label="DisSCube" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -102,7 +102,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            DisSCube Documentation
+            DisSCube
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -116,7 +116,33 @@
     </div>
     
       
+        <form class="md-header__option" data-md-component="palette">
+  
     
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -138,6 +164,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
           
@@ -213,17 +244,38 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="examples/" class="md-tabs__link">
+    
+    
+      <li class="md-tabs__item">
+        <a href="examples/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
         
   
   
-    
   
-  Examples
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="guides/pipeline_files/" class="md-tabs__link">
+          
+  
+  
+  Guides
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -255,11 +307,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="guides/pipeline_files/" class="md-tabs__link">
+        <a href="terrame_fill_correspondence/" class="md-tabs__link">
           
   
   
-  Guides
+  Validation
 
         </a>
       </li>
@@ -289,13 +341,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="DisSCube Documentation" class="md-nav__button md-logo" aria-label="DisSCube Documentation" data-md-component="logo">
+    <a href="." title="DisSCube" class="md-nav__button md-logo" aria-label="DisSCube" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    DisSCube Documentation
+    DisSCube
   </label>
   
     <div class="md-nav__source">
@@ -379,10 +431,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#core-concept" class="md-nav__link">
+  <a href="#one-file-describes-the-whole-preparation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core concept
+        One file describes the whole preparation
       
     </span>
   </a>
@@ -390,10 +442,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-install" class="md-nav__link">
+  <a href="#the-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick install
+        The commands
       
     </span>
   </a>
@@ -401,10 +453,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#main-workflow" class="md-nav__link">
+  <a href="#what-you-get" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Main workflow
+        What you get
       
     </span>
   </a>
@@ -412,10 +464,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#navigation" class="md-nav__link">
+  <a href="#sources-in-one-value-per-cell-out" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Navigation
+        Sources in, one value per cell out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hand-the-cube-to-a-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hand the cube to a model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dissmodel-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The DisSModel ecosystem
       
     </span>
   </a>
@@ -436,38 +521,13 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="examples/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
       
     
     
@@ -475,17 +535,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    Architecture
+    Getting started
   
 
     
@@ -496,12 +556,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Architecture
+    Getting started
   
 
           </label>
@@ -514,154 +574,14 @@
   
   
     <li class="md-nav__item">
-      <a href="architecture/overview/" class="md-nav__link">
+      <a href="examples/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="architecture/operators/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Operator System
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="architecture/catalog/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Catalog & Persistence
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="architecture/pipeline/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Pipeline Stages
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="architecture/tiling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Master Grids & Tiling
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="terrame_fill_correspondence/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TerraME Fill Cells Correspondence
+    Examples
   
 
     
@@ -694,16 +614,18 @@
     
       
       
+        
+      
     
     
     <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -721,8 +643,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -991,6 +913,292 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operator System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catalog & Persistence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline Stages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Master Grids & Tiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Validation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="terrame_fill_correspondence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraME Fill Cells correspondence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1018,10 +1226,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#core-concept" class="md-nav__link">
+  <a href="#one-file-describes-the-whole-preparation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core concept
+        One file describes the whole preparation
       
     </span>
   </a>
@@ -1029,10 +1237,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-install" class="md-nav__link">
+  <a href="#the-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick install
+        The commands
       
     </span>
   </a>
@@ -1040,10 +1248,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#main-workflow" class="md-nav__link">
+  <a href="#what-you-get" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Main workflow
+        What you get
       
     </span>
   </a>
@@ -1051,10 +1259,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#navigation" class="md-nav__link">
+  <a href="#sources-in-one-value-per-cell-out" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Navigation
+        Sources in, one value per cell out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hand-the-cube-to-a-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hand the cube to a model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dissmodel-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The DisSModel ecosystem
       
     </span>
   </a>
@@ -1086,50 +1327,180 @@
   
 
 
-<h1 id="disscube">DisSCube</h1>
-<p>DisSCube is the spatial data cube engine of the <strong>DisSModel</strong> ecosystem. It converts raw geospatial sources into derived variables aligned to LUCC (Land Use and Cover Change) modeling grids.</p>
-<h2 id="core-concept">Core concept</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>SpatialSource  →  Derivation  →  Variable  →  DerivedVariable (Zarr)
+<h1 id="disscube">DisSCube<a class="headerlink" href="#disscube" title="Permanent link">&para;</a></h1>
+<p><strong>Model-ready grids from heterogeneous raster and vector sources, declared in one TOML file.</strong></p>
+<p>You say which grid you want, which sources feed it and which variables to derive. DisSCube checks the file, fetches
+the data, aligns everything to the grid and gives back the variables, with the provenance of every number. It is the
+data-preparation step of the <strong>DisSModel</strong> ecosystem, and the counterpart of TerraME's <code>fill</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>disscube
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>disscube<span class="w"> </span>validate<span class="w"> </span>pipeline.toml<span class="w">     </span><span class="c1"># check the file; nothing is downloaded</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>disscube<span class="w"> </span>run<span class="w"> </span>pipeline.toml<span class="w"> </span>-o<span class="w"> </span>cube.tif
 </code></pre></div>
-<p>A <strong>source</strong> (<code>SpatialSource</code>) goes through a <strong>derivation</strong> that applies an <strong>operator</strong> on a <strong>grid</strong> (<code>GridSpec</code>), producing a variable registered in the SQLite catalog and stored in Zarr.</p>
-<h2 id="quick-install">Quick install</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>disscube<span class="w">                 </span><span class="c1"># from PyPI</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"disscube[dissmodel]"</span><span class="w">    </span><span class="c1"># + hand-off of the cube to DisSModel models</span>
+<hr />
+<h2 id="one-file-describes-the-whole-preparation">One file describes the whole preparation<a class="headerlink" href="#one-file-describes-the-whole-preparation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Quickstart"</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">[grid]</span><span class="w">                                   </span><span class="c1"># where: a 300 m grid</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"demo/300m"</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">crs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"EPSG:31983"</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">bbox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">570000.0</span><span class="p">,</span><span class="w"> </span><span class="mf">9708000.0</span><span class="p">,</span><span class="w"> </span><span class="mf">582000.0</span><span class="p">,</span><span class="w"> </span><span class="mf">9720000.0</span><span class="p">]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">[[source]]</span><span class="w">                               </span><span class="c1"># from what: files, MapBiomas, BDC, OSM…</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"landuse"</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"../data/quickstart/landuse.tif"</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">crs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"EPSG:31983"</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="k">[[source]]</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"elevation"</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"../data/quickstart/elevation.tif"</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">crs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"EPSG:31983"</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="k">[[derive]]</span><span class="w">                               </span><span class="c1"># which variables: one block each</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"forest_pct"</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"landuse"</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">operator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"percentage"</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">class_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="k">[[derive]]</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"landuse_major"</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"landuse"</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="n">operator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"majority"</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="k">[[derive]]</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"elev_mean"</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"elevation"</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="n">operator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mean"</span>
 </code></pre></div>
-<p>From a clone, for development:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DisSModel/disscube.git
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>disscube
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
+<p>The file is the experiment: it can be versioned, reviewed and re-run, and a change in any line changes the
+fingerprint (<code>spec_hash</code>) of the variables it affects. This is <code>examples/pipelines/quickstart.toml</code>, which runs offline on the
+synthetic data of the repository.</p>
+<p><strong>Several years?</strong> One block with <code>years = [2000, 2020]</code> and an <code>id = "lulc_{year}"</code> makes one source per year, and the
+derivations that use <code>{year}</code> make one variable per year. See <a href="guides/pipeline_files/">Pipeline files (TOML)</a>.</p>
+<hr />
+<h2 id="the-commands">The commands<a class="headerlink" href="#the-commands" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>disscube validate FILE</code></td>
+<td>checks the file and prints the plan, before any download</td>
+</tr>
+<tr>
+<td><code>disscube fetch FILE</code></td>
+<td>downloads the remote sources and checks their SHA-256</td>
+</tr>
+<tr>
+<td><code>disscube run FILE</code></td>
+<td>fetches, aligns and derives; with <code>-o OUT</code> also exports a GeoTIFF or netCDF</td>
+</tr>
+<tr>
+<td><code>disscube export FILE -o OUT</code></td>
+<td>exports variables from a workspace that already has them</td>
+</tr>
+<tr>
+<td><code>disscube plot OUT.tif</code></td>
+<td>a quick look at the bands, as a PNG</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>disscube<span class="w"> </span>validate<span class="w"> </span>examples/pipelines/quickstart.toml
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>disscube<span class="w"> </span>run<span class="w">      </span>examples/pipelines/quickstart.toml<span class="w"> </span>--workspace<span class="w"> </span>outputs/quickstart<span class="w"> </span>-o<span class="w"> </span>outputs/quickstart.tif
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>disscube<span class="w"> </span>plot<span class="w">     </span>outputs/quickstart.tif<span class="w"> </span>--cols<span class="w"> </span><span class="m">3</span>
 </code></pre></div>
-<h2 id="main-workflow">Main workflow</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">CubeClient</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Derivation</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">cube</span> <span class="o">=</span> <span class="n">CubeClient</span><span class="p">(</span><span class="n">catalog</span><span class="o">=</span><span class="s2">"catalog.db"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="s2">"./data/"</span><span class="p">)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">d</span> <span class="o">=</span> <span class="n">Derivation</span><span class="p">(</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">target</span><span class="o">=</span><span class="s2">"forest_pct"</span><span class="p">,</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">source_id</span><span class="o">=</span><span class="s2">"mapbiomas_2020"</span><span class="p">,</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">operator</span><span class="o">=</span><span class="s2">"percentage"</span><span class="p">,</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">class_code</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">valid_from</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">valid_until</span><span class="o">=</span><span class="s2">"2020"</span><span class="p">,</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="p">)</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">cube</span><span class="o">.</span><span class="n">derive_declarative</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">da</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"forest_pct"</span><span class="p">,</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"AC/5km"</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="navigation">Navigation</h2>
+<p><img alt="The three variables of the quickstart pipeline, drawn by disscube plot: share of forest, dominant class and mean elevation per 300 m cell" src="assets/quickstart.png" /></p>
+<p>Every option is in the <a href="guides/cli/">command-line reference</a>. Errors exit with status 2 and <code>--json</code> gives the
+report in a machine-readable form, so a pipeline runs in a script or in CI as it does on a laptop.</p>
+<hr />
+<h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="examples/"><strong>Examples</strong></a> — runnable scripts: the API on synthetic data, and TerraME's <em>Fill</em> examples reproduced on real data</li>
-<li><a href="architecture/overview/"><strong>Architecture</strong></a> — conceptual model, pipeline and reproducibility hash</li>
-<li><a href="architecture/operators/"><strong>Operators</strong></a> — plugin system, available operators, how to add new ones</li>
-<li><a href="architecture/pipeline/"><strong>Pipeline</strong></a> — detailed stages: Normalizer → GridAligner → Aggregator → Writer</li>
-<li><a href="architecture/catalog/"><strong>Catalog</strong></a> — SQLite, schema, hash and time series</li>
-<li><a href="guides/grids/"><strong>Grids</strong></a> — snapping to the national mesh, local grids, spatial relations</li>
-<li><a href="guides/bdc/"><strong>BDC guide</strong></a> — integration with Brazil Data Cube and tile-based processing</li>
+<li><strong>The variables</strong>, one band per variable and year in the exported GeoTIFF (or netCDF), aligned to your grid.</li>
+<li><strong>A workspace</strong> with the catalog, the stored variables and <code>run.json</code>: the sources with their checksums, the
+  fingerprint of each derivation, the times, and the file that produced it. Rerunning only redoes what changed.</li>
+<li><strong>Large sources without large memory.</strong> National rasters are read in blocks, so the peak memory depends on the
+  block and not on the source: MapBiomas for all of Brazil at 5 km ran in under two hours with 3.9 GB
+  (<a href="guides/blocks/">block-wise reading</a>).</li>
 </ul>
+<hr />
+<h2 id="sources-in-one-value-per-cell-out">Sources in, one value per cell out<a class="headerlink" href="#sources-in-one-value-per-cell-out" title="Permanent link">&para;</a></h2>
+<p><strong>Sources</strong> (<code>type</code>): <code>file</code> (a raster, a vector layer or a shapefile in a zip), <code>mapbiomas</code> and <code>prodes</code> (national
+land-cover maps), <code>bdc</code> (Brazil Data Cube, over STAC), <code>classified</code> (a classified map with its legend), <code>osm</code>
+(OpenStreetMap), <code>dem</code> (elevation and slope) and <code>union</code> (several vector sources as one).</p>
+<p><strong>Operators</strong> summarise a source in each cell:</p>
+<ul>
+<li>statistics of a raster: <code>mean</code>, <code>median</code>, <code>min</code>, <code>max</code>, <code>std</code>, <code>sum</code></li>
+<li>classes: <code>percentage</code>, <code>majority</code>, <code>minority</code> (with <code>groups</code>, to read leaf classes at level 1)</li>
+<li>vector layers: <code>distance</code>, <code>min_distance</code>, <code>count</code>, <code>presence</code>, <code>area</code>, <code>attribute</code></li>
+<li>road networks: <code>network_cost</code> (also <code>gpm_network</code>)</li>
+</ul>
+<p>The sources are in the <a href="guides/pipeline_files/#source-types">pipeline files guide</a>, and the operators in
+<a href="architecture/operators/">Operator System</a>. From TerraME's <code>fill</code>, each operation has a counterpart, measured in
+<a href="terrame_fill_correspondence/">TerraME Fill Cells Correspondence</a>.</p>
+<hr />
+<h2 id="hand-the-cube-to-a-model">Hand the cube to a model<a class="headerlink" href="#hand-the-cube-to-a-model" title="Permanent link">&para;</a></h2>
+<p>The workspace opens as a cube in Python, and <code>disscube[dissmodel]</code> hands it to a DisSModel model:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">disscube</span><span class="w"> </span><span class="kn">import</span> <span class="n">CubeClient</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">cube</span> <span class="o">=</span> <span class="n">CubeClient</span><span class="p">(</span><span class="n">catalog</span><span class="o">=</span><span class="s2">"outputs/quickstart/catalog.db"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="s2">"outputs/quickstart/store/"</span><span class="p">)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">to_dataset</span><span class="p">([</span><span class="s2">"forest_pct"</span><span class="p">,</span> <span class="s2">"elev_mean"</span><span class="p">],</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"demo/300m"</span><span class="p">)</span>                  <span class="c1"># xarray.Dataset</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">to_raster_backend</span><span class="p">([</span><span class="s2">"forest_pct"</span><span class="p">,</span> <span class="s2">"landuse_major"</span><span class="p">],</span> <span class="n">grid_id</span><span class="o">=</span><span class="s2">"demo/300m"</span><span class="p">)</span>  <span class="c1"># a DisSModel RasterBackend</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"disscube[dissmodel]"</span><span class="w">     </span><span class="c1"># + the hand-off to DisSModel</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"disscube[plot]"</span><span class="w">          </span><span class="c1"># + disscube plot</span>
+</code></pre></div>
+<p>The same operations are available as a Python API (<code>CubeClient</code>, <code>Derivation</code>) for what does not fit in a file: see
+<a href="examples/">Examples</a>.</p>
+<hr />
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="examples/">Examples</a></strong>: the quickstart pipeline and the Python API on synthetic data, then real study areas</li>
+<li><strong><a href="guides/pipeline_files/">Pipeline files (TOML)</a></strong>: the format, the source types, the operator options</li>
+<li><strong><a href="guides/cli/">Command line</a></strong> and <strong><a href="guides/blocks/">Block-wise reading</a></strong></li>
+<li><strong>Sources</strong>: <a href="guides/mapbiomas/">MapBiomas</a>, <a href="guides/landcover/">PRODES and SITS</a>, <a href="guides/bdc/">Brazil Data Cube</a>, <a href="guides/osm/">OpenStreetMap</a>, <a href="guides/dem/">elevation and slope</a></li>
+<li><strong><a href="architecture/overview/">Architecture</a></strong>: the model, the stages and the reproducibility hash</li>
+</ul>
+<hr />
+<h2 id="the-dissmodel-ecosystem">The DisSModel ecosystem<a class="headerlink" href="#the-dissmodel-ecosystem" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Package</th>
+<th style="text-align: left;">Role</th>
+<th style="text-align: left;">Documentation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><a href="https://github.com/DisSModel/dissmodel"><strong>dissmodel</strong></a></td>
+<td style="text-align: left;">Core framework: clock, spatial substrates, executor, I/O, visualization</td>
+<td style="text-align: left;"><a href="https://dissmodel.github.io/dissmodel/">dissmodel.github.io/dissmodel</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="https://github.com/DisSModel/disscube"><strong>disscube</strong></a></td>
+<td style="text-align: left;">Declarative pipelines that turn raster and vector sources into model-ready grids</td>
+<td style="text-align: left;"><a href="https://dissmodel.github.io/disscube/">dissmodel.github.io/disscube</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="https://github.com/DisSModel/disslucc"><strong>disslucc</strong></a></td>
+<td style="text-align: left;">Land use and cover change: demand, potential and allocation</td>
+<td style="text-align: left;"><a href="https://dissmodel.github.io/disslucc/">dissmodel.github.io/disslucc</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="https://github.com/DisSModel/dissmodel-ca">dissmodel-ca</a>, <a href="https://github.com/DisSModel/dissmodel-sysdyn">dissmodel-sysdyn</a>, <a href="https://github.com/DisSModel/dissmodel-abm">dissmodel-abm</a></td>
+<td style="text-align: left;">Ready-to-use cellular automata, system dynamics and agent-based models</td>
+<td style="text-align: left;">GitHub</td>
+</tr>
+</tbody>
+</table>
+<p>Developed by the <a href="https://github.com/LambdaGeo">LambdaGeo</a> group at the Federal University of Maranhão (UFMA). MIT licence.</p>
 
 
 
@@ -1147,8 +1518,16 @@
             </div>
           
           
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
         
       </main>
       
@@ -1179,10 +1558,18 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "content.code.copy", "content.action.edit"], "search": "assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "search.highlight", "search.share", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "content.action.edit", "toc.follow"], "search": "assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="javascripts/mathjax-config.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+        <script src="javascripts/mermaid-init.js"></script>
       
     
   </body>
