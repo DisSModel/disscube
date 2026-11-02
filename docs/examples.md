@@ -51,7 +51,7 @@ Real-world datasets, historical reproductions and large-scale case studies are m
   - `amazonia`: 2 229 cells (50 km) with PRODES deforestation and indigenous territory area fractions.
   - See [TerraME Fill Cells Correspondence](terrame_fill_correspondence.md).
 - **Ilha do Maranhão (`cases/ilha_maranhao`)**: Brazil Data Cube (Landsat-16D STAC) and MapBiomas land-cover series (2000, 2020) aligned on a 300 m BDC Albers grid with Python hand-off to DisSModel.
-- **PRODES BR-163 (`cases/prodes_br163`)**: Multi-year deforestation monitoring in the Mojuí dos Campos / BR-163 corridor (500 m grid).
+- **PRODES BR-163 (`cases/prodes_br163`)**: Multi-year deforestation monitoring around the PA Moju land-reform settlement, south of Santarém and east of the BR-163, the area of LuccME's lab15 (500 m grid).
 - **LUCCME-BR (`cases/luccme_br`)**: National-scale land-use change reconstruction for Brazil (BigEarth).
 
 ## Scope
