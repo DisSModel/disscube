@@ -74,7 +74,7 @@ netcdf = [                  # CubeClient.export_netcdf()
     "h5py",
 ]
 dissmodel = [               # CubeClient.to_raster_backend(): hand-off to DisSModel models
-    "dissmodel>=0.6.0,<0.7.0",
+    "dissmodel>=0.6.0,<0.8.0",
 ]
 docs = [                    # documentation site (mkdocs.yml, .github/workflows/docs.yml)
     "mkdocs>=1.6,<2",       # MkDocs 2.0 drops the plugin/theme system Material relies on

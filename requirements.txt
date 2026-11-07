@@ -27,7 +27,7 @@ h5netcdf
 h5py
 
 # Optional: DisSModel hand-off (to_raster_backend)
-dissmodel>=0.6.0,<0.7.0
+dissmodel>=0.6.0,<0.8.0
 
 # Development & Testing
 pytest
