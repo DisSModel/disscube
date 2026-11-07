@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.6.1] - 2026-11-07
+
+### Changed
+- Dependency: `dissmodel>=0.6.0,<0.8.0` (was `<0.7.0`), so `disscube` installs
+  next to `dissmodel` 0.7 without pip downgrading it. No code change.
+
 ### Documentation
 - New guides: command line (`validate`, `fetch`, `run`, `export`, `plot`) and block-wise reading (the block budget, which operators and sources are read by blocks, measured runs).
 - `groups` of `majority` and `minority` (MapBiomas level-1 classes) in the operators page, the pipeline-file parameters and the MapBiomas guide; the point-source example of `distance`; the contents of `run.json`.

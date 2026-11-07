@@ -312,7 +312,7 @@ If you use DisSCube in your research, dynamic modeling, or spatial data pipeline
   author       = {Costa, S{\'e}rgio Souza},
   title        = {{DisSCube: Declarative spatial data cubes}},
   year         = {2026},
-  version      = {0.6.0},
+  version      = {0.6.1},
   url          = {https://github.com/DisSModel/disscube}
 }
 ```
